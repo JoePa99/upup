@@ -1,0 +1,32 @@
+{
+  "name": "upup",
+  "version": "1.0.0",
+  "description": "AI Business Platform - Multi-tenant SaaS",
+  "scripts": {
+    "backend:install": "cd backend && npm install",
+    "frontend:install": "cd frontend && npm install",
+    "install:all": "npm run backend:install && npm run frontend:install",
+    "backend:dev": "cd backend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:build": "cd backend && npm run build",
+    "frontend:build": "cd frontend && npm run build",
+    "build": "npm run backend:build && npm run frontend:build",
+    "backend:start": "cd backend && npm start",
+    "frontend:start": "cd frontend && npm start",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
+    "db:init": "cd backend && node src/config/db-init.js"
+  },
+  "keywords": [
+    "ai",
+    "business",
+    "platform",
+    "multi-tenant",
+    "saas"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
