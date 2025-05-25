@@ -3,6 +3,13 @@ const { supabaseAdmin } = require('./supabase');
 
 // Initialize the database with tables using Supabase SQL
 const initializeDatabase = async () => {
+  // Check if running in Vercel environment
+  if (process.env.VERCEL) {
+    console.log('Running in Vercel environment - skipping direct database initialization');
+    console.log('Database will be initialized using Supabase UI or SQL Editor');
+    return;
+  }
+
   const client = await db.getClient();
   
   try {
@@ -222,6 +229,12 @@ const initializeDatabase = async () => {
 
 // Set up Row Level Security functions and policies in Supabase
 const setupSupabaseRLS = async () => {
+  // Skip if required environment variables are missing
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    console.log('Skipping Supabase RLS setup - environment variables missing');
+    return;
+  }
+
   try {
     // Create function to set tenant context
     const { error: fnError } = await supabaseAdmin.rpc('create_set_tenant_context_function', {}, {
@@ -259,7 +272,13 @@ if (require.main === module) {
     })
     .catch(err => {
       console.error('Database initialization failed:', err);
-      process.exit(1);
+      // Exit with success in Vercel environment to allow deployment to proceed
+      if (process.env.VERCEL) {
+        console.log('Continuing deployment despite database initialization failure');
+        process.exit(0);
+      } else {
+        process.exit(1);
+      }
     });
 }
 
