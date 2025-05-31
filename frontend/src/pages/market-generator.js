@@ -11,7 +11,9 @@ const MarketGenerator = () => {
   const [formData, setFormData] = useState({
     analysisFocus: 'Customer Behavior',
     marketScope: 'Current Market',
-    specificCompetitors: ''
+    specificCompetitors: '',
+    otherAnalysisFocus: '',
+    otherMarketScope: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -46,7 +48,9 @@ const MarketGenerator = () => {
 
   const aiAssist = (fieldName) => {
     const suggestions = {
-      specificCompetitors: ['Faber-Castell', 'Pilot Corporation', 'Prismacolor', 'Copic', 'Sakura']
+      specificCompetitors: ['Faber-Castell', 'Pilot Corporation', 'Prismacolor', 'Copic', 'Sakura'],
+      otherAnalysisFocus: ['SWOT Analysis', 'Porter Five Forces', 'Market Segmentation', 'Value Chain Analysis', 'Competitive Benchmarking'],
+      otherMarketScope: ['Vertical Markets', 'Niche Segments', 'Emerging Markets', 'B2B vs B2C', 'Online vs Offline']
     };
     
     const fieldSuggestions = suggestions[fieldName] || [];
@@ -122,7 +126,28 @@ const MarketGenerator = () => {
               <option>Market Trends</option>
               <option>Industry Analysis</option>
               <option>Pricing Strategy</option>
+              <option value="other">Other (specify)</option>
             </select>
+            {formData.analysisFocus === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherAnalysisFocus"
+                    value={formData.otherAnalysisFocus}
+                    onChange={handleInputChange}
+                    placeholder="Please specify analysis focus..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherAnalysisFocus')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">
@@ -136,7 +161,29 @@ const MarketGenerator = () => {
               <option>Adjacent Markets</option>
               <option>New Market Entry</option>
               <option>Global Expansion</option>
+              <option value="other">Other (specify)</option>
             </select>
+            {formData.marketScope === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherMarketScope"
+                    value={formData.otherMarketScope}
+                    onChange={handleInputChange}
+                    placeholder="Please specify market scope..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherMarketScope')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           </div>
 
           <div className="input-field">

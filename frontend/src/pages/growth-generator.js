@@ -10,7 +10,9 @@ const GrowthGenerator = () => {
   const [formData, setFormData] = useState({
     growthFocus: 'Revenue Expansion',
     timeHorizon: 'Next Quarter',
-    growthConstraints: ''
+    growthConstraints: '',
+    otherGrowthFocus: '',
+    otherTimeHorizon: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -45,7 +47,9 @@ const GrowthGenerator = () => {
 
   const aiAssist = (fieldName) => {
     const suggestions = {
-      growthConstraints: ['Limited marketing budget', 'Small team capacity', 'Seasonal demand fluctuations', 'Supply chain dependencies', 'Regulatory compliance requirements']
+      growthConstraints: ['Limited marketing budget', 'Small team capacity', 'Seasonal demand fluctuations', 'Supply chain dependencies', 'Regulatory compliance requirements'],
+      otherGrowthFocus: ['Customer Retention', 'Digital Transformation', 'Sustainability Initiatives', 'Innovation Pipeline', 'Brand Expansion'],
+      otherTimeHorizon: ['Next Month', 'Next 18 Months', 'Next 3-5 Years', 'Next Decade', 'Ongoing']
     };
     
     const fieldSuggestions = suggestions[fieldName] || [];
@@ -96,7 +100,28 @@ const GrowthGenerator = () => {
               <option>Product Development</option>
               <option>Partnership Opportunities</option>
               <option>Operational Efficiency</option>
+              <option value="other">Other (specify)</option>
             </select>
+            {formData.growthFocus === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherGrowthFocus"
+                    value={formData.otherGrowthFocus}
+                    onChange={handleInputChange}
+                    placeholder="Please specify growth focus..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherGrowthFocus')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">
@@ -110,7 +135,28 @@ const GrowthGenerator = () => {
               <option>Next 6 Months</option>
               <option>Next Year</option>
               <option>Long-term 2+ Years</option>
+              <option value="other">Other (specify)</option>
             </select>
+            {formData.timeHorizon === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherTimeHorizon"
+                    value={formData.otherTimeHorizon}
+                    onChange={handleInputChange}
+                    placeholder="Please specify time horizon..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherTimeHorizon')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">
