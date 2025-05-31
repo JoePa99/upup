@@ -5,10 +5,18 @@ import { usePins } from '../hooks/usePins';
 const PinsSidebar = ({ show, onClose }) => {
   const { pinnedSentences, removePinByIndex, clearPins, pinCount } = usePins();
   const router = useRouter();
+  const [contentType, setContentType] = React.useState('Strategic Content');
+  const [otherContentType, setOtherContentType] = React.useState('');
 
   const createFromPins = () => {
     if (pinnedSentences.length === 0) {
       alert('Please pin some sentences first');
+      return;
+    }
+    
+    const selectedContentType = contentType === 'other' ? otherContentType : contentType;
+    if (contentType === 'other' && !otherContentType.trim()) {
+      alert('Please specify the content type');
       return;
     }
     
@@ -24,8 +32,8 @@ const PinsSidebar = ({ show, onClose }) => {
       resultDiv.className = 'sidebar-result';
       resultDiv.innerHTML = `
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px;">
-          <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">✨ Content Created from ${pinnedSentences.length} Pins</div>
-          <div style="color: #15803d;">Strategic content piece generated combining your curated insights into customer trust, authentic relationships, and quality-focused business strategies. Full document available on My Pins page.</div>
+          <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">✨ ${selectedContentType} Created from ${pinnedSentences.length} Pins</div>
+          <div style="color: #15803d;">${selectedContentType} generated combining your curated insights. Full document available on My Pins page.</div>
         </div>
       `;
       
@@ -118,6 +126,49 @@ const PinsSidebar = ({ show, onClose }) => {
       </div>
 
       <div className="pin-actions">
+        <div className="content-type-selector">
+          <label style={{fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block'}}>
+            Content Type:
+          </label>
+          <select 
+            value={contentType} 
+            onChange={(e) => setContentType(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              fontSize: '12px',
+              marginBottom: '8px'
+            }}
+          >
+            <option>Strategic Content</option>
+            <option>Blog Post</option>
+            <option>Email Campaign</option>
+            <option>Social Media</option>
+            <option>Marketing Copy</option>
+            <option>Executive Summary</option>
+            <option>Proposal</option>
+            <option>Case Study</option>
+            <option value="other">Other (specify)</option>
+          </select>
+          {contentType === 'other' && (
+            <input
+              type="text"
+              value={otherContentType}
+              onChange={(e) => setOtherContentType(e.target.value)}
+              placeholder="Specify content type..."
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                fontSize: '12px',
+                marginBottom: '8px'
+              }}
+            />
+          )}
+        </div>
         <button 
           className="generate-btn" 
           onClick={createFromPins}

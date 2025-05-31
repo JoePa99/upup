@@ -13,6 +13,8 @@ const PinsPage = () => {
   const [selectedPins, setSelectedPins] = useState(new Set());
   const [editingPin, setEditingPin] = useState(null);
   const [editText, setEditText] = useState('');
+  const [contentType, setContentType] = useState('Strategic Content');
+  const [otherContentType, setOtherContentType] = useState('');
 
   useEffect(() => {
     // Only handle redirect on client side
@@ -60,10 +62,16 @@ const PinsPage = () => {
       alert('Please pin some sentences first or select pins to create content from!');
       return;
     }
+    
+    const selectedContentType = contentType === 'other' ? otherContentType : contentType;
+    if (contentType === 'other' && !otherContentType.trim()) {
+      alert('Please specify the content type');
+      return;
+    }
 
-    const newContent = `STRATEGIC CONTENT CREATED FROM ${selectedPins.size > 0 ? 'SELECTED' : 'ALL'} PINNED INSIGHTS
+    const newContent = `${selectedContentType.toUpperCase()} CREATED FROM ${selectedPins.size > 0 ? 'SELECTED' : 'ALL'} PINNED INSIGHTS
 
-Based on your curated collection of ${pinsToUse.length} strategic insights, here's a comprehensive content piece that weaves together your most valuable thoughts:
+Based on your curated collection of ${pinsToUse.length} strategic insights, here's a comprehensive ${selectedContentType.toLowerCase()} that weaves together your most valuable thoughts:
 
 EXECUTIVE SUMMARY
 
@@ -201,6 +209,49 @@ This content represents the strategic wisdom you've identified as most valuable 
         <h1 className="page-title">📌 My Pinned Sentences</h1>
         <p className="page-subtitle">Your curated collection of strategic insights and content gold</p>
         <div className="header-actions">
+          <div className="content-type-section">
+            <label style={{fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block'}}>
+              Content Type:
+            </label>
+            <select 
+              value={contentType} 
+              onChange={(e) => setContentType(e.target.value)}
+              style={{
+                padding: '6px 8px',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                fontSize: '12px',
+                marginBottom: '8px',
+                minWidth: '140px'
+              }}
+            >
+              <option>Strategic Content</option>
+              <option>Blog Post</option>
+              <option>Email Campaign</option>
+              <option>Social Media</option>
+              <option>Marketing Copy</option>
+              <option>Executive Summary</option>
+              <option>Proposal</option>
+              <option>Case Study</option>
+              <option value="other">Other (specify)</option>
+            </select>
+            {contentType === 'other' && (
+              <input
+                type="text"
+                value={otherContentType}
+                onChange={(e) => setOtherContentType(e.target.value)}
+                placeholder="Specify content type..."
+                style={{
+                  padding: '6px 8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  marginBottom: '8px',
+                  minWidth: '140px'
+                }}
+              />
+            )}
+          </div>
           <button className="secondary-btn" onClick={exportPins}>
             Export All
           </button>
@@ -374,6 +425,16 @@ This content represents the strategic wisdom you've identified as most valuable 
           font-size: 12px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+        }
+
+        .content-type-section {
+          margin-right: 16px;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: flex-end;
+          gap: 12px;
         }
 
         .pins-grid {
