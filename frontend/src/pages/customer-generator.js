@@ -10,8 +10,9 @@ const CustomerGenerator = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
     connectionGoal: 'Improve Retention',
-    customerSegment: 'Professional Artists',
-    currentChallenges: ''
+    customerSegment: '',
+    currentChallenges: '',
+    otherConnectionGoal: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -46,7 +47,9 @@ const CustomerGenerator = () => {
 
   const aiAssist = (fieldName) => {
     const suggestions = {
-      currentChallenges: ['High customer acquisition costs', 'Seasonal sales variations', 'Competition from digital tools', 'Retail partner relationships', 'Brand awareness in new markets']
+      customerSegment: ['Professional Artists & Designers', 'Design Students & Educators', 'Creative Agencies & Studios', 'Technical Illustrators', 'Hobbyist Creators', 'Architecture Firms', 'Fashion Designers', 'Product Designers'],
+      currentChallenges: ['High customer acquisition costs', 'Seasonal sales variations', 'Competition from digital tools', 'Retail partner relationships', 'Brand awareness in new markets'],
+      otherConnectionGoal: ['Build Brand Loyalty', 'Increase Purchase Frequency', 'Reduce Churn Rate', 'Expand Market Share', 'Enhance Customer Experience']
     };
     
     const fieldSuggestions = suggestions[fieldName] || [];
@@ -122,22 +125,48 @@ const CustomerGenerator = () => {
               <option>Recover At-Risk Customers</option>
               <option>Upsell/Cross-sell</option>
               <option>Build Community</option>
+              <option value="other">Other (specify)</option>
             </select>
+            {formData.connectionGoal === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherConnectionGoal"
+                    value={formData.otherConnectionGoal}
+                    onChange={handleInputChange}
+                    placeholder="Please specify your connection goal..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherConnectionGoal')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">
             <label htmlFor="customerSegment">Customer Segment</label>
-            <select 
-              name="customerSegment"
-              value={formData.customerSegment}
-              onChange={handleInputChange}
-            >
-              <option>Professional Artists</option>
-              <option>Design Students</option>
-              <option>Art Supply Retailers</option>
-              <option>Corporate Clients</option>
-              <option>Hobbyist Creators</option>
-            </select>
+            <div className="input-with-ai">
+              <input 
+                type="text"
+                name="customerSegment"
+                value={formData.customerSegment}
+                onChange={handleInputChange}
+                placeholder="e.g., Professional Artists & Designers, Creative Agencies"
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('customerSegment')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">

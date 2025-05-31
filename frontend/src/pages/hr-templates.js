@@ -12,7 +12,8 @@ const HRTemplates = () => {
     templateType: 'job-description',
     field1: '',
     field2: 'Marketing',
-    field3: ''
+    field3: '',
+    otherField2: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -45,8 +46,8 @@ const HRTemplates = () => {
   const aiAssist = (fieldName) => {
     const suggestions = {
       field1: ['Senior Marketing Manager', 'Data Analyst', 'Product Manager', 'Software Engineer', 'UX Designer', 'Sales Director'],
-      field2: ['Marketing', 'Engineering', 'Sales', 'Design', 'Operations', 'Customer Success'],
-      field3: ['• Lead strategic initiatives and cross-functional collaboration\n• Develop and execute comprehensive project plans\n• Mentor team members and drive professional development\n• Analyze performance metrics and optimize processes', '• Manage multiple projects simultaneously while maintaining high quality standards\n• Build and maintain relationships with key stakeholders\n• Drive innovation through data-driven insights and user feedback\n• Contribute to company culture and values through leadership and example']
+      field3: ['• Lead strategic initiatives and cross-functional collaboration\n• Develop and execute comprehensive project plans\n• Mentor team members and drive professional development\n• Analyze performance metrics and optimize processes', '• Manage multiple projects simultaneously while maintaining high quality standards\n• Build and maintain relationships with key stakeholders\n• Drive innovation through data-driven insights and user feedback\n• Contribute to company culture and values through leadership and example'],
+      otherField2: ['Design', 'Data Science', 'DevOps', 'Quality Assurance', 'Business Development', 'Legal']
     };
     
     const fieldSuggestions = suggestions[fieldName] || [];
@@ -158,28 +159,40 @@ Ready to join a team that values precision, creativity, and making a lasting imp
 
           <div className="input-field">
             <label htmlFor="field2">Department</label>
-            <div className="input-with-ai">
-              <select 
-                name="field2"
-                value={formData.field2}
-                onChange={handleInputChange}
-              >
-                <option>Marketing</option>
-                <option>Sales</option>
-                <option>Product</option>
-                <option>Engineering</option>
-                <option>Operations</option>
-                <option>HR</option>
-                <option>Finance</option>
-              </select>
-              <button 
-                className="ai-assist-btn" 
-                onClick={() => aiAssist('field2')}
-                type="button"
-              >
-                AI Assist
-              </button>
-            </div>
+            <select 
+              name="field2"
+              value={formData.field2}
+              onChange={handleInputChange}
+            >
+              <option>Marketing</option>
+              <option>Sales</option>
+              <option>Product</option>
+              <option>Engineering</option>
+              <option>Operations</option>
+              <option>HR</option>
+              <option>Finance</option>
+              <option value="other">Other (specify)</option>
+            </select>
+            {formData.field2 === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherField2"
+                    value={formData.otherField2}
+                    onChange={handleInputChange}
+                    placeholder="Please specify department..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherField2')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">

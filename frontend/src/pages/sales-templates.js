@@ -12,7 +12,8 @@ const SalesTemplates = () => {
     templateType: 'sales-proposal',
     field1: '',
     field2: 'New Business',
-    field3: ''
+    field3: '',
+    otherField2: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -45,8 +46,8 @@ const SalesTemplates = () => {
   const aiAssist = (fieldName) => {
     const suggestions = {
       field1: ['Metropolitan Art Academy', 'Creative Design Studio', 'Corporate Training Center', 'University Art Department', 'Professional Architects Firm'],
-      field2: ['New Business', 'Renewal/Expansion', 'Partnership', 'Volume Discount', 'Enterprise Solution'],
-      field3: ['• Professional-grade writing instruments for precise technical drawings\n• Custom branding options for corporate identity\n• Volume pricing with dedicated account management\n• Training and onboarding support for team adoption', '• Sustainable product options aligned with environmental goals\n• Premium gift sets for client appreciation programs\n• Educational discounts for students and faculty\n• Comprehensive warranty and replacement policies']
+      field3: ['• Professional-grade writing instruments for precise technical drawings\n• Custom branding options for corporate identity\n• Volume pricing with dedicated account management\n• Training and onboarding support for team adoption', '• Sustainable product options aligned with environmental goals\n• Premium gift sets for client appreciation programs\n• Educational discounts for students and faculty\n• Comprehensive warranty and replacement policies'],
+      otherField2: ['Strategic Partnership', 'Acquisition Proposal', 'Joint Venture', 'Licensing Agreement', 'Distribution Partnership']
     };
     
     const fieldSuggestions = suggestions[fieldName] || [];
@@ -189,25 +190,37 @@ CONTACT INFORMATION
 
           <div className="input-field">
             <label htmlFor="field2">Proposal Type</label>
-            <div className="input-with-ai">
-              <select 
-                name="field2"
-                value={formData.field2}
-                onChange={handleInputChange}
-              >
-                <option>New Business</option>
-                <option>Existing Client Expansion</option>
-                <option>RFP Response</option>
-                <option>Partnership Proposal</option>
-              </select>
-              <button 
-                className="ai-assist-btn" 
-                onClick={() => aiAssist('field2')}
-                type="button"
-              >
-                AI Assist
-              </button>
-            </div>
+            <select 
+              name="field2"
+              value={formData.field2}
+              onChange={handleInputChange}
+            >
+              <option>New Business</option>
+              <option>Existing Client Expansion</option>
+              <option>RFP Response</option>
+              <option>Partnership Proposal</option>
+              <option value="other">Other (specify)</option>
+            </select>
+            {formData.field2 === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherField2"
+                    value={formData.otherField2}
+                    onChange={handleInputChange}
+                    placeholder="Please specify proposal type..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherField2')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">

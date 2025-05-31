@@ -12,7 +12,8 @@ const LegalTemplates = () => {
     templateType: 'nda',
     field1: '',
     field2: 'Mutual/Bilateral',
-    field3: ''
+    field3: '',
+    otherField2: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -50,8 +51,8 @@ const LegalTemplates = () => {
   const aiAssist = (fieldName) => {
     const suggestions = {
       field1: ['Creative Design Agency', 'Tech Startup Inc.', 'Marketing Solutions LLC', 'Global Consulting Group', 'Digital Media Company'],
-      field2: ['Mutual/Bilateral', 'One-way/Unilateral', 'Employee NDA', 'Contractor NDA'],
-      field3: ['• Business plans, strategies, and financial information\n• Product designs, manufacturing processes, and technical specifications\n• Customer lists, pricing information, and market research\n• Trade secrets, formulations, and proprietary techniques', '• Software code, algorithms, and technical documentation\n• Marketing strategies, campaigns, and customer insights\n• Vendor relationships, supplier information, and pricing models\n• Employee data, compensation structures, and organizational charts']
+      field3: ['• Business plans, strategies, and financial information\n• Product designs, manufacturing processes, and technical specifications\n• Customer lists, pricing information, and market research\n• Trade secrets, formulations, and proprietary techniques', '• Software code, algorithms, and technical documentation\n• Marketing strategies, campaigns, and customer insights\n• Vendor relationships, supplier information, and pricing models\n• Employee data, compensation structures, and organizational charts'],
+      otherField2: ['Vendor NDA', 'Partnership NDA', 'Investor NDA', 'Board Member NDA', 'Advisory NDA']
     };
     
     const fieldSuggestions = suggestions[fieldName] || [];
@@ -296,25 +297,37 @@ CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal doc
 
           <div className="input-field">
             <label htmlFor="field2">Agreement Type</label>
-            <div className="input-with-ai">
-              <select 
-                name="field2"
-                value={formData.field2}
-                onChange={handleInputChange}
-              >
-                <option>Mutual/Bilateral</option>
-                <option>One-way/Unilateral</option>
-                <option>Employee NDA</option>
-                <option>Contractor NDA</option>
-              </select>
-              <button 
-                className="ai-assist-btn" 
-                onClick={() => aiAssist('field2')}
-                type="button"
-              >
-                AI Assist
-              </button>
-            </div>
+            <select 
+              name="field2"
+              value={formData.field2}
+              onChange={handleInputChange}
+            >
+              <option>Mutual/Bilateral</option>
+              <option>One-way/Unilateral</option>
+              <option>Employee NDA</option>
+              <option>Contractor NDA</option>
+              <option value="other">Other (specify)</option>
+            </select>
+            {formData.field2 === 'other' && (
+              <div className="other-input show">
+                <div className="input-with-ai">
+                  <input 
+                    type="text" 
+                    name="otherField2"
+                    value={formData.otherField2}
+                    onChange={handleInputChange}
+                    placeholder="Please specify agreement type..."
+                  />
+                  <button 
+                    className="ai-assist-btn" 
+                    onClick={() => aiAssist('otherField2')}
+                    type="button"
+                  >
+                    AI Assist
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="input-field">
