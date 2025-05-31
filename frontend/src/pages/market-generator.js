@@ -184,7 +184,6 @@ const MarketGenerator = () => {
               </div>
             )}
           </div>
-          </div>
 
           <div className="input-field">
             <label htmlFor="specificCompetitors">Specific Competitors</label>
