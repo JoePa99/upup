@@ -2,12 +2,33 @@ const express = require('express');
 const router = express.Router();
 const contentController = require('../controllers/content-controller');
 const templateController = require('../controllers/template-controller');
-const { authenticate } = require('../middleware/auth');
-const { tenantContext } = require('../middleware/tenant-context');
+const { auth } = require('../middleware/auth');
+const tenantContext = require('../middleware/tenant-context');
 
-// Apply authentication and tenant context to all routes
-router.use(authenticate);
-router.use(tenantContext);
+// Development mode - skip auth if no JWT_SECRET or in development without database
+const isDevelopmentWithoutDB = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
+
+if (!isDevelopmentWithoutDB) {
+  // Apply authentication and tenant context to all routes in production
+  router.use(auth);
+  router.use(tenantContext);
+} else {
+  // Development mode - add mock user and tenant
+  router.use((req, res, next) => {
+    req.user = {
+      id: 'dev-user-1',
+      tenantId: 'dev-tenant-1',
+      email: 'dev@example.com',
+      role: 'user'
+    };
+    req.tenant = {
+      id: 'dev-tenant-1',
+      name: 'Development Tenant',
+      subdomain: 'dev'
+    };
+    next();
+  });
+}
 
 // Content Generation Routes
 router.post('/generate', contentController.generateContent);

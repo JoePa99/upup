@@ -1,15 +1,27 @@
 const OpenAI = require('openai');
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Initialize Claude client (Anthropic)
 const Anthropic = require('@anthropic-ai/sdk');
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+
+// Lazy initialization of AI clients
+let openai = null;
+let anthropic = null;
+
+const getOpenAIClient = () => {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+};
+
+const getAnthropicClient = () => {
+  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+  return anthropic;
+};
 
 const aiService = {
   // Generate content using AI (defaults to OpenAI, falls back to Claude)
@@ -46,8 +58,13 @@ const aiService = {
   // Generate content using OpenAI
   async generateWithOpenAI(prompt, options) {
     const { maxTokens, temperature, model } = options;
+    const client = getOpenAIClient();
+    
+    if (!client) {
+      throw new Error('OpenAI client not initialized');
+    }
 
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: model,
       messages: [
         {
@@ -69,8 +86,13 @@ const aiService = {
   // Generate content using Claude (Anthropic)
   async generateWithClaude(prompt, options) {
     const { maxTokens, temperature } = options;
+    const client = getAnthropicClient();
+    
+    if (!client) {
+      throw new Error('Anthropic client not initialized');
+    }
 
-    const message = await anthropic.messages.create({
+    const message = await client.messages.create({
       model: "claude-3-sonnet-20240229",
       max_tokens: maxTokens,
       temperature: temperature,
