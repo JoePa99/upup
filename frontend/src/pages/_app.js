@@ -1,11 +1,14 @@
 import React from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
+import { PinsProvider } from '../contexts/PinsContext';
 import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }) {
   return (
     <AuthProvider>
-      <Component {...pageProps} />
+      <PinsProvider>
+        <Component {...pageProps} />
+      </PinsProvider>
     </AuthProvider>
   );
 }
