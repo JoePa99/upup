@@ -98,6 +98,9 @@ Ready to join a team that values precision, creativity, and making a lasting imp
       <div className="page-header">
         <h1 className="page-title">👥 HR Templates</h1>
         <p className="page-subtitle">Create professional HR documents powered by your company culture and brand voice</p>
+        <div className="ai-assist-btn">
+          🤖 AI Assistant Ready
+        </div>
       </div>
 
       <div className="generator-header">
@@ -157,7 +160,7 @@ Ready to join a team that values precision, creativity, and making a lasting imp
           </div>
 
           <button className="generate-btn" onClick={generateHRTemplate} disabled={isLoading}>
-            Generate Template
+            🤖 Generate Template with AI
           </button>
         </div>
       </div>
@@ -181,6 +184,21 @@ Ready to join a team that values precision, creativity, and making a lasting imp
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      
+      <style jsx>{`
+        .ai-assist-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+      `}</style>
     </Layout>
   );
 };

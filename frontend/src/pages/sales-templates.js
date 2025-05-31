@@ -129,6 +129,9 @@ CONTACT INFORMATION
       <div className="page-header">
         <h1 className="page-title">💼 Sales Templates</h1>
         <p className="page-subtitle">Create compelling sales materials that drive revenue and build relationships</p>
+        <div className="ai-assist-btn">
+          🤖 AI Assistant Ready
+        </div>
       </div>
 
       <div className="generator-header">
@@ -185,7 +188,7 @@ CONTACT INFORMATION
           </div>
 
           <button className="generate-btn" onClick={generateSalesTemplate} disabled={isLoading}>
-            Generate Template
+            🤖 Generate Template with AI
           </button>
         </div>
       </div>
@@ -209,6 +212,21 @@ CONTACT INFORMATION
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      
+      <style jsx>{`
+        .ai-assist-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+      `}</style>
     </Layout>
   );
 };

@@ -115,6 +115,9 @@ const ContentGenerator = () => {
       <div className="page-header">
         <h1 className="page-title">✨ Content Generator</h1>
         <p className="page-subtitle">Generate strategic content tailored to your brand and market position</p>
+        <div className="ai-assist-btn">
+          🤖 AI Assistant Ready
+        </div>
       </div>
 
       <div className="generator-header">
@@ -211,6 +214,21 @@ const ContentGenerator = () => {
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      
+      <style jsx>{`
+        .ai-assist-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+      `}</style>
     </Layout>
   );
 };
