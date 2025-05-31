@@ -4,25 +4,22 @@ import { auth as authApi } from '../api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // DEMO MODE: Always authenticated with mock user
+  const [user, setUser] = useState({
+    id: 1,
+    firstName: 'Demo',
+    lastName: 'User',
+    email: 'demo@staedtler.com',
+    tenantName: 'Staedtler Pencils',
+    tenantId: 1,
+    role: 'admin'
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check if user is logged in on page load
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error('Error parsing user data from localStorage:', e);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
-    
+    // DEMO MODE: Skip auth check, always set demo user
+    console.log('🎯 Demo Mode: Authentication bypassed - showing full AI platform');
     setLoading(false);
   }, []);
 
