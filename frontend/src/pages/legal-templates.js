@@ -47,6 +47,24 @@ const LegalTemplates = () => {
     }));
   };
 
+  const aiAssist = (fieldName) => {
+    const suggestions = {
+      field1: ['Creative Design Agency', 'Tech Startup Inc.', 'Marketing Solutions LLC', 'Global Consulting Group', 'Digital Media Company'],
+      field2: ['Mutual/Bilateral', 'One-way/Unilateral', 'Employee NDA', 'Contractor NDA'],
+      field3: ['• Business plans, strategies, and financial information\n• Product designs, manufacturing processes, and technical specifications\n• Customer lists, pricing information, and market research\n• Trade secrets, formulations, and proprietary techniques', '• Software code, algorithms, and technical documentation\n• Marketing strategies, campaigns, and customer insights\n• Vendor relationships, supplier information, and pricing models\n• Employee data, compensation structures, and organizational charts']
+    };
+    
+    const fieldSuggestions = suggestions[fieldName] || [];
+    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
+    
+    if (randomSuggestion) {
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: randomSuggestion
+      }));
+    }
+  };
+
   const generateLegalTemplate = async () => {
     setIsLoading(true);
     setShowContent(false);
@@ -204,9 +222,6 @@ CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal doc
       <div className="page-header">
         <h1 className="page-title">⚖️ Legal Templates</h1>
         <p className="page-subtitle">Create legal documents and analyze existing contracts with AI assistance</p>
-        <div className="ai-assist-btn">
-          🤖 AI Assistant Ready
-        </div>
       </div>
 
       <div className="tab-navigation">
@@ -261,37 +276,64 @@ CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal doc
 
           <div className="input-field">
             <label htmlFor="field1">Other Party Name</label>
-            <input 
-              type="text" 
-              name="field1"
-              value={formData.field1}
-              onChange={handleInputChange}
-              placeholder="Company or individual name"
-            />
+            <div className="input-with-ai">
+              <input 
+                type="text" 
+                name="field1"
+                value={formData.field1}
+                onChange={handleInputChange}
+                placeholder="Company or individual name"
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field1')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">
             <label htmlFor="field2">Agreement Type</label>
-            <select 
-              name="field2"
-              value={formData.field2}
-              onChange={handleInputChange}
-            >
-              <option>Mutual/Bilateral</option>
-              <option>One-way/Unilateral</option>
-              <option>Employee NDA</option>
-              <option>Contractor NDA</option>
-            </select>
+            <div className="input-with-ai">
+              <select 
+                name="field2"
+                value={formData.field2}
+                onChange={handleInputChange}
+              >
+                <option>Mutual/Bilateral</option>
+                <option>One-way/Unilateral</option>
+                <option>Employee NDA</option>
+                <option>Contractor NDA</option>
+              </select>
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field2')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">
             <label htmlFor="field3">Specific Terms</label>
-            <textarea 
-              name="field3"
-              value={formData.field3}
-              onChange={handleInputChange}
-              placeholder="Describe specific terms, scope, or requirements..."
-            />
+            <div className="input-with-ai">
+              <textarea 
+                name="field3"
+                value={formData.field3}
+                onChange={handleInputChange}
+                placeholder="Describe specific terms, scope, or requirements..."
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field3')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <button className="generate-btn" onClick={generateLegalTemplate} disabled={isLoading}>
@@ -383,19 +425,6 @@ CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal doc
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
       
       <style jsx>{`
-        .ai-assist-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: linear-gradient(135deg, #10b981, #059669);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: 500;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-
         .tab-navigation {
           display: flex;
           gap: 4px;

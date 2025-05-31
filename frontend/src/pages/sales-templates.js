@@ -42,6 +42,24 @@ const SalesTemplates = () => {
     }));
   };
 
+  const aiAssist = (fieldName) => {
+    const suggestions = {
+      field1: ['Metropolitan Art Academy', 'Creative Design Studio', 'Corporate Training Center', 'University Art Department', 'Professional Architects Firm'],
+      field2: ['New Business', 'Renewal/Expansion', 'Partnership', 'Volume Discount', 'Enterprise Solution'],
+      field3: ['• Professional-grade writing instruments for precise technical drawings\n• Custom branding options for corporate identity\n• Volume pricing with dedicated account management\n• Training and onboarding support for team adoption', '• Sustainable product options aligned with environmental goals\n• Premium gift sets for client appreciation programs\n• Educational discounts for students and faculty\n• Comprehensive warranty and replacement policies']
+    };
+    
+    const fieldSuggestions = suggestions[fieldName] || [];
+    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
+    
+    if (randomSuggestion) {
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: randomSuggestion
+      }));
+    }
+  };
+
   const generateSalesTemplate = async () => {
     setIsLoading(true);
     setShowContent(false);
@@ -129,9 +147,6 @@ CONTACT INFORMATION
       <div className="page-header">
         <h1 className="page-title">💼 Sales Templates</h1>
         <p className="page-subtitle">Create compelling sales materials that drive revenue and build relationships</p>
-        <div className="ai-assist-btn">
-          🤖 AI Assistant Ready
-        </div>
       </div>
 
       <div className="generator-header">
@@ -154,37 +169,64 @@ CONTACT INFORMATION
 
           <div className="input-field">
             <label htmlFor="field1">Prospect Company</label>
-            <input 
-              type="text" 
-              name="field1"
-              value={formData.field1}
-              onChange={handleInputChange}
-              placeholder="Client or prospect name"
-            />
+            <div className="input-with-ai">
+              <input 
+                type="text" 
+                name="field1"
+                value={formData.field1}
+                onChange={handleInputChange}
+                placeholder="Client or prospect name"
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field1')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">
             <label htmlFor="field2">Proposal Type</label>
-            <select 
-              name="field2"
-              value={formData.field2}
-              onChange={handleInputChange}
-            >
-              <option>New Business</option>
-              <option>Existing Client Expansion</option>
-              <option>RFP Response</option>
-              <option>Partnership Proposal</option>
-            </select>
+            <div className="input-with-ai">
+              <select 
+                name="field2"
+                value={formData.field2}
+                onChange={handleInputChange}
+              >
+                <option>New Business</option>
+                <option>Existing Client Expansion</option>
+                <option>RFP Response</option>
+                <option>Partnership Proposal</option>
+              </select>
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field2')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">
             <label htmlFor="field3">Key Pain Points</label>
-            <textarea 
-              name="field3"
-              value={formData.field3}
-              onChange={handleInputChange}
-              placeholder="What challenges are you solving for them..."
-            />
+            <div className="input-with-ai">
+              <textarea 
+                name="field3"
+                value={formData.field3}
+                onChange={handleInputChange}
+                placeholder="What challenges are you solving for them..."
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field3')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <button className="generate-btn" onClick={generateSalesTemplate} disabled={isLoading}>
@@ -212,21 +254,6 @@ CONTACT INFORMATION
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
-      
-      <style jsx>{`
-        .ai-assist-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: linear-gradient(135deg, #10b981, #059669);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: 500;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-      `}</style>
     </Layout>
   );
 };

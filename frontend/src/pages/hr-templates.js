@@ -42,6 +42,24 @@ const HRTemplates = () => {
     }));
   };
 
+  const aiAssist = (fieldName) => {
+    const suggestions = {
+      field1: ['Senior Marketing Manager', 'Data Analyst', 'Product Manager', 'Software Engineer', 'UX Designer', 'Sales Director'],
+      field2: ['Marketing', 'Engineering', 'Sales', 'Design', 'Operations', 'Customer Success'],
+      field3: ['• Lead strategic initiatives and cross-functional collaboration\n• Develop and execute comprehensive project plans\n• Mentor team members and drive professional development\n• Analyze performance metrics and optimize processes', '• Manage multiple projects simultaneously while maintaining high quality standards\n• Build and maintain relationships with key stakeholders\n• Drive innovation through data-driven insights and user feedback\n• Contribute to company culture and values through leadership and example']
+    };
+    
+    const fieldSuggestions = suggestions[fieldName] || [];
+    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
+    
+    if (randomSuggestion) {
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: randomSuggestion
+      }));
+    }
+  };
+
   const generateHRTemplate = async () => {
     setIsLoading(true);
     setShowContent(false);
@@ -98,9 +116,6 @@ Ready to join a team that values precision, creativity, and making a lasting imp
       <div className="page-header">
         <h1 className="page-title">👥 HR Templates</h1>
         <p className="page-subtitle">Create professional HR documents powered by your company culture and brand voice</p>
-        <div className="ai-assist-btn">
-          🤖 AI Assistant Ready
-        </div>
       </div>
 
       <div className="generator-header">
@@ -123,40 +138,67 @@ Ready to join a team that values precision, creativity, and making a lasting imp
 
           <div className="input-field">
             <label htmlFor="field1">Job Title</label>
-            <input 
-              type="text" 
-              name="field1"
-              value={formData.field1}
-              onChange={handleInputChange}
-              placeholder="e.g., Senior Marketing Manager"
-            />
+            <div className="input-with-ai">
+              <input 
+                type="text" 
+                name="field1"
+                value={formData.field1}
+                onChange={handleInputChange}
+                placeholder="e.g., Senior Marketing Manager"
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field1')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">
             <label htmlFor="field2">Department</label>
-            <select 
-              name="field2"
-              value={formData.field2}
-              onChange={handleInputChange}
-            >
-              <option>Marketing</option>
-              <option>Sales</option>
-              <option>Product</option>
-              <option>Engineering</option>
-              <option>Operations</option>
-              <option>HR</option>
-              <option>Finance</option>
-            </select>
+            <div className="input-with-ai">
+              <select 
+                name="field2"
+                value={formData.field2}
+                onChange={handleInputChange}
+              >
+                <option>Marketing</option>
+                <option>Sales</option>
+                <option>Product</option>
+                <option>Engineering</option>
+                <option>Operations</option>
+                <option>HR</option>
+                <option>Finance</option>
+              </select>
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field2')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <div className="input-field">
             <label htmlFor="field3">Key Responsibilities</label>
-            <textarea 
-              name="field3"
-              value={formData.field3}
-              onChange={handleInputChange}
-              placeholder="Describe main responsibilities and requirements..."
-            />
+            <div className="input-with-ai">
+              <textarea 
+                name="field3"
+                value={formData.field3}
+                onChange={handleInputChange}
+                placeholder="Describe main responsibilities and requirements..."
+              />
+              <button 
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('field3')}
+                type="button"
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
           <button className="generate-btn" onClick={generateHRTemplate} disabled={isLoading}>
@@ -184,21 +226,6 @@ Ready to join a team that values precision, creativity, and making a lasting imp
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
-      
-      <style jsx>{`
-        .ai-assist-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: linear-gradient(135deg, #10b981, #059669);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: 500;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-      `}</style>
     </Layout>
   );
 };
