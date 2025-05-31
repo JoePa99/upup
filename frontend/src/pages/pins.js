@@ -2,31 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
+import { usePins } from '../hooks/usePins';
 
 const PinsPage = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
-  const [pinnedSentences, setPinnedSentences] = useState([]);
+  const { pinnedSentences, removePin, updatePin, clearPins } = usePins();
   const [showResult, setShowResult] = useState(false);
   const [resultContent, setResultContent] = useState('');
+  const [selectedPins, setSelectedPins] = useState(new Set());
+  const [editingPin, setEditingPin] = useState(null);
+  const [editText, setEditText] = useState('');
 
   useEffect(() => {
     // Only handle redirect on client side
     if (typeof window !== 'undefined' && !isAuthenticated) {
       router.push('/login');
       return;
-    }
-
-    // Load pinned sentences from localStorage (client-side only)
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('pinnedSentences');
-      if (saved) {
-        try {
-          setPinnedSentences(JSON.parse(saved));
-        } catch (error) {
-          console.error('Error loading pinned sentences:', error);
-        }
-      }
     }
   }, [isAuthenticated, router]);
 
@@ -60,14 +52,18 @@ const PinsPage = () => {
   };
 
   const createFromPinsOnPage = () => {
-    if (pinnedSentences.length === 0) {
-      alert('Please pin some sentences first by generating content in the generators or templates!');
+    const pinsToUse = selectedPins.size > 0 ? 
+      pinnedSentences.filter((_, index) => selectedPins.has(index)) : 
+      pinnedSentences;
+
+    if (pinsToUse.length === 0) {
+      alert('Please pin some sentences first or select pins to create content from!');
       return;
     }
 
-    const newContent = `STRATEGIC CONTENT CREATED FROM YOUR PINNED INSIGHTS
+    const newContent = `STRATEGIC CONTENT CREATED FROM ${selectedPins.size > 0 ? 'SELECTED' : 'ALL'} PINNED INSIGHTS
 
-Based on your curated collection of strategic insights, here's a comprehensive content piece that weaves together your most valuable thoughts:
+Based on your curated collection of ${pinsToUse.length} strategic insights, here's a comprehensive content piece that weaves together your most valuable thoughts:
 
 EXECUTIVE SUMMARY
 
@@ -124,6 +120,71 @@ This content represents the strategic wisdom you've identified as most valuable 
     alert('Opening content editor for refinement... (This would open a rich text editor to refine the generated content)');
   };
 
+  // Pin management functions
+  const handleSelectPin = (index) => {
+    const newSelected = new Set(selectedPins);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedPins(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPins.size === pinnedSentences.length) {
+      setSelectedPins(new Set());
+    } else {
+      setSelectedPins(new Set(pinnedSentences.map((_, index) => index)));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedPins.size === 0) {
+      alert('Please select pins to delete');
+      return;
+    }
+
+    if (confirm(`Delete ${selectedPins.size} selected pins?`)) {
+      // Sort indices in descending order to delete from end first
+      const sortedIndices = Array.from(selectedPins).sort((a, b) => b - a);
+      sortedIndices.forEach(index => {
+        const pin = pinnedSentences[index];
+        if (pin) {
+          removePin(pin.id);
+        }
+      });
+      setSelectedPins(new Set());
+    }
+  };
+
+  const handleEditPin = (pin, index) => {
+    setEditingPin(index);
+    setEditText(pin.text);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingPin !== null && editText.trim()) {
+      const pin = pinnedSentences[editingPin];
+      if (pin) {
+        updatePin(pin.id, editText.trim());
+      }
+    }
+    setEditingPin(null);
+    setEditText('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPin(null);
+    setEditText('');
+  };
+
+  const handleDeletePin = (pin) => {
+    if (confirm('Delete this pin?')) {
+      removePin(pin.id);
+    }
+  };
+
   // Don't render anything on server if not authenticated
   if (typeof window === 'undefined' && !isAuthenticated) {
     return null;
@@ -143,9 +204,21 @@ This content represents the strategic wisdom you've identified as most valuable 
           <button className="secondary-btn" onClick={exportPins}>
             Export All
           </button>
-          <button className="action-button" onClick={createFromPinsOnPage}>
-            Create Content
-          </button>
+          {selectedPins.size > 0 && (
+            <>
+              <button className="secondary-btn" onClick={handleDeleteSelected}>
+                Delete Selected ({selectedPins.size})
+              </button>
+              <button className="action-button" onClick={createFromPinsOnPage}>
+                Create from Selected
+              </button>
+            </>
+          )}
+          {selectedPins.size === 0 && (
+            <button className="action-button" onClick={createFromPinsOnPage}>
+              Create Content
+            </button>
+          )}
         </div>
       </div>
 
@@ -168,6 +241,22 @@ This content represents the strategic wisdom you've identified as most valuable 
         </div>
       </div>
 
+      {pinnedSentences.length > 0 && (
+        <div className="batch-controls">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={selectedPins.size === pinnedSentences.length}
+              onChange={handleSelectAll}
+            />
+            Select All ({pinnedSentences.length})
+          </label>
+          {selectedPins.size > 0 && (
+            <span className="selection-info">{selectedPins.size} selected</span>
+          )}
+        </div>
+      )}
+
       <div className="pins-grid">
         {pinnedSentences.length === 0 ? (
           <div style={{
@@ -182,16 +271,60 @@ This content represents the strategic wisdom you've identified as most valuable 
           </div>
         ) : (
           pinnedSentences.map((pin, index) => (
-            <div key={index} className="pin-card">
+            <div key={pin.id || index} className={`pin-card ${selectedPins.has(index) ? 'selected' : ''}`}>
               <div className="pin-header">
                 <div className="pin-meta">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedPins.has(index)}
+                      onChange={() => handleSelectPin(index)}
+                    />
+                  </label>
                   <div className="pin-source">{pin.source}</div>
                   <div className="pin-date">
                     {new Date(pin.timestamp).toLocaleDateString()}
                   </div>
                 </div>
+                <div className="pin-actions">
+                  <button 
+                    className="pin-action-btn edit-btn"
+                    onClick={() => handleEditPin(pin, index)}
+                    title="Edit pin"
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    className="pin-action-btn delete-btn"
+                    onClick={() => handleDeletePin(pin)}
+                    title="Delete pin"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
-              <div className="pin-content">{pin.text}</div>
+              <div className="pin-content">
+                {editingPin === index ? (
+                  <div className="pin-edit">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="edit-textarea"
+                      rows={3}
+                    />
+                    <div className="edit-actions">
+                      <button className="save-btn" onClick={handleSaveEdit}>
+                        Save
+                      </button>
+                      <button className="cancel-btn" onClick={handleCancelEdit}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  pin.text
+                )}
+              </div>
             </div>
           ))
         )}
@@ -292,6 +425,138 @@ This content represents the strategic wisdom you've identified as most valuable 
           color: #374151;
           line-height: 1.6;
           margin-bottom: 12px;
+        }
+
+        .batch-controls {
+          background: white;
+          border-radius: 12px;
+          padding: 16px 20px;
+          margin-bottom: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+          margin: 0;
+          transform: scale(1.2);
+        }
+
+        .selection-info {
+          color: #10b981;
+          font-weight: 500;
+          font-size: 14px;
+        }
+
+        .pin-card.selected {
+          border-left-color: #3b82f6;
+          background: #f8fafc;
+        }
+
+        .pin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+        }
+
+        .pin-meta {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          flex: 1;
+        }
+
+        .pin-actions {
+          display: flex;
+          gap: 8px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .pin-card:hover .pin-actions {
+          opacity: 1;
+        }
+
+        .pin-action-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          font-size: 14px;
+          transition: background 0.2s;
+        }
+
+        .pin-action-btn:hover {
+          background: #f1f5f9;
+        }
+
+        .pin-edit {
+          margin-top: 8px;
+        }
+
+        .edit-textarea {
+          width: 100%;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          padding: 8px;
+          font-family: inherit;
+          font-size: 14px;
+          line-height: 1.6;
+          resize: vertical;
+          min-height: 60px;
+        }
+
+        .edit-textarea:focus {
+          outline: none;
+          border-color: #10b981;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .edit-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+          justify-content: flex-end;
+        }
+
+        .save-btn, .cancel-btn {
+          padding: 6px 12px;
+          border: none;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .save-btn {
+          background: #10b981;
+          color: white;
+        }
+
+        .save-btn:hover {
+          background: #059669;
+        }
+
+        .cancel-btn {
+          background: #f3f4f6;
+          color: #374151;
+        }
+
+        .cancel-btn:hover {
+          background: #e5e7eb;
         }
       `}</style>
     </Layout>
