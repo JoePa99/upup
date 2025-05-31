@@ -20,8 +20,20 @@ const ContentGenerator = () => {
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
 
-  if (!isAuthenticated) {
-    router.push('/login');
+  // Use useEffect for client-side redirects only
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, router]);
+
+  // Don't render anything on server if not authenticated
+  if (typeof window === 'undefined' && !isAuthenticated) {
+    return null;
+  }
+
+  // Don't render anything on client if not authenticated (until redirect happens)
+  if (typeof window !== 'undefined' && !isAuthenticated) {
     return null;
   }
 

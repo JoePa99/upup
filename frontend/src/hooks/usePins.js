@@ -3,14 +3,16 @@ import { useState, useEffect } from 'react';
 export const usePins = () => {
   const [pinnedSentences, setPinnedSentences] = useState([]);
 
-  // Load pins from localStorage on mount
+  // Load pins from localStorage on mount (client-side only)
   useEffect(() => {
-    const saved = localStorage.getItem('pinnedSentences');
-    if (saved) {
-      try {
-        setPinnedSentences(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading pinned sentences:', error);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pinnedSentences');
+      if (saved) {
+        try {
+          setPinnedSentences(JSON.parse(saved));
+        } catch (error) {
+          console.error('Error loading pinned sentences:', error);
+        }
       }
     }
   }, []);
@@ -18,7 +20,9 @@ export const usePins = () => {
   // Save to localStorage whenever pins change
   const savePins = (newPins) => {
     setPinnedSentences(newPins);
-    localStorage.setItem('pinnedSentences', JSON.stringify(newPins));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pinnedSentences', JSON.stringify(newPins));
+    }
   };
 
   // Add a pin

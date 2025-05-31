@@ -11,18 +11,21 @@ const PinsPage = () => {
   const [resultContent, setResultContent] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Only handle redirect on client side
+    if (typeof window !== 'undefined' && !isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    // Load pinned sentences from localStorage
-    const saved = localStorage.getItem('pinnedSentences');
-    if (saved) {
-      try {
-        setPinnedSentences(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading pinned sentences:', error);
+    // Load pinned sentences from localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pinnedSentences');
+      if (saved) {
+        try {
+          setPinnedSentences(JSON.parse(saved));
+        } catch (error) {
+          console.error('Error loading pinned sentences:', error);
+        }
       }
     }
   }, [isAuthenticated, router]);
@@ -121,7 +124,13 @@ This content represents the strategic wisdom you've identified as most valuable 
     alert('Opening content editor for refinement... (This would open a rich text editor to refine the generated content)');
   };
 
-  if (!isAuthenticated) {
+  // Don't render anything on server if not authenticated
+  if (typeof window === 'undefined' && !isAuthenticated) {
+    return null;
+  }
+
+  // Don't render anything on client if not authenticated (until redirect happens)
+  if (typeof window !== 'undefined' && !isAuthenticated) {
     return null;
   }
 
