@@ -1,163 +1,137 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 
-const Layout = ({ children, title = 'UPUP - AI Business Platform' }) => {
+const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
+  const [activePage, setActivePage] = useState('dashboard');
+
+  useEffect(() => {
+    const path = router.pathname;
+    if (path === '/dashboard') setActivePage('dashboard');
+    else if (path === '/pins') setActivePage('pins');
+    else if (path.includes('generator')) setActivePage(path.replace('/', ''));
+    else if (path.includes('templates')) setActivePage(path.replace('/', ''));
+  }, [router.pathname]);
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
+  const navigateToPage = (pageId) => {
+    setActivePage(pageId);
+    router.push(`/${pageId}`);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div>
+        <Head>
+          <title>{title}</title>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+        </Head>
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <div className="layout">
+    <div className="app-container">
       <Head>
         <title>{title}</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
 
-      <header className="header">
-        <div className="logo">
-          <Link href="/">
-            <a className="logo-link">UPUP</a>
-          </Link>
+      {/* Header */}
+      <div className="header">
+        <div className="logo">🚀 Up, Up, Down, Down</div>
+        <div className="user-info">
+          <span>{user?.tenantName || 'Staedtler Pencils'}</span>
+          <div className="avatar">
+            {user?.tenantName ? user.tenantName.substring(0, 2).toUpperCase() : 'SP'}
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Navigation */}
+      <div className="sidebar" id="sidebar">
+        <div className="nav-section">
+          <div className="nav-title">Main</div>
+          <div 
+            className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}
+            onClick={() => navigateToPage('dashboard')}
+          >
+            📊 Dashboard
+          </div>
+          <div 
+            className={`nav-item ${activePage === 'pins' ? 'active' : ''}`}
+            onClick={() => navigateToPage('pins')}
+          >
+            📌 My Pins
+          </div>
         </div>
 
-        <nav className="nav">
-          {isAuthenticated ? (
-            <>
-              <Link href="/dashboard">
-                <a className="nav-link">Dashboard</a>
-              </Link>
-              
-              {user?.isSuperAdmin ? (
-                <Link href="/admin">
-                  <a className="nav-link">Admin</a>
-                </Link>
-              ) : (
-                <>
-                  <Link href="/create">
-                    <a className="nav-link">Create</a>
-                  </Link>
-                  <Link href="/communicate">
-                    <a className="nav-link">Communicate</a>
-                  </Link>
-                  <Link href="/understand">
-                    <a className="nav-link">Understand</a>
-                  </Link>
-                  <Link href="/grow">
-                    <a className="nav-link">Grow</a>
-                  </Link>
-                  <Link href="/operate">
-                    <a className="nav-link">Operate</a>
-                  </Link>
-                </>
-              )}
-              
-              <button className="logout-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link href="/login">
-                <a className="nav-link">Login</a>
-              </Link>
-              <Link href="/register">
-                <a className="nav-link cta">Get Started</a>
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+        <div className="nav-section">
+          <div className="nav-title">Generators</div>
+          <div 
+            className={`nav-item ${activePage === 'content-generator' ? 'active' : ''}`}
+            onClick={() => navigateToPage('content-generator')}
+          >
+            ✨ Content Generator
+          </div>
+          <div 
+            className={`nav-item ${activePage === 'growth-generator' ? 'active' : ''}`}
+            onClick={() => navigateToPage('growth-generator')}
+          >
+            📈 Growth Opportunities
+          </div>
+          <div 
+            className={`nav-item ${activePage === 'market-generator' ? 'active' : ''}`}
+            onClick={() => navigateToPage('market-generator')}
+          >
+            🎯 Market Insights
+          </div>
+          <div 
+            className={`nav-item ${activePage === 'customer-generator' ? 'active' : ''}`}
+            onClick={() => navigateToPage('customer-generator')}
+          >
+            💬 Customer Connection
+          </div>
+        </div>
 
-      <main className="main">{children}</main>
+        <div className="nav-section">
+          <div className="nav-title">Templates</div>
+          <div 
+            className={`nav-item ${activePage === 'hr-templates' ? 'active' : ''}`}
+            onClick={() => navigateToPage('hr-templates')}
+          >
+            👥 HR Templates
+          </div>
+          <div 
+            className={`nav-item ${activePage === 'legal-templates' ? 'active' : ''}`}
+            onClick={() => navigateToPage('legal-templates')}
+          >
+            ⚖️ Legal Templates
+          </div>
+          <div 
+            className={`nav-item ${activePage === 'sales-templates' ? 'active' : ''}`}
+            onClick={() => navigateToPage('sales-templates')}
+          >
+            💼 Sales Templates
+          </div>
+        </div>
+      </div>
 
-      <footer className="footer">
-        <p>&copy; {new Date().getFullYear()} UPUP - AI Business Platform</p>
-      </footer>
-
-      <style jsx>{`
-        .layout {
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-        }
-
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 2rem;
-          background-color: white;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .logo-link {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #0070f3;
-          text-decoration: none;
-        }
-
-        .nav {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-
-        .nav-link {
-          color: #333;
-          text-decoration: none;
-          font-weight: 500;
-        }
-
-        .nav-link:hover {
-          color: #0070f3;
-        }
-
-        .nav-link.cta {
-          background-color: #0070f3;
-          color: white;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-        }
-
-        .nav-link.cta:hover {
-          background-color: #0051a2;
-        }
-
-        .logout-button {
-          background: none;
-          border: none;
-          color: #666;
-          cursor: pointer;
-          font-size: 1rem;
-          padding: 0;
-        }
-
-        .logout-button:hover {
-          color: #0070f3;
-        }
-
-        .main {
-          flex: 1;
-          padding: 2rem;
-        }
-
-        .footer {
-          padding: 1.5rem;
-          background-color: #f7f7f7;
-          text-align: center;
-          font-size: 0.875rem;
-          color: #666;
-        }
-      `}</style>
+      {/* Main Content Area */}
+      <div className="main-content">
+        {children}
+      </div>
     </div>
   );
 };

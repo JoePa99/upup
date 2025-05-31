@@ -212,6 +212,86 @@ const initializeDatabase = async () => {
         USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
     `);
     
+    // Pinned sentences table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pinned_sentences (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        sentence_text TEXT NOT NULL,
+        source_title VARCHAR(255) NOT NULL,
+        source_type VARCHAR(50) NOT NULL, -- 'content', 'growth', 'market', 'customer', 'template'
+        source_metadata JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    // Add RLS for pinned_sentences
+    await client.query(`
+      ALTER TABLE pinned_sentences ENABLE ROW LEVEL SECURITY;
+      
+      CREATE POLICY tenant_isolation_policy ON pinned_sentences
+        USING (tenant_id = current_setting('app.current_tenant_id', true)::INTEGER);
+      
+      CREATE POLICY super_admin_policy ON pinned_sentences
+        USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
+    `);
+    
+    // Content generations table (tracks all AI-generated content)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS content_generations (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        generation_type VARCHAR(50) NOT NULL, -- 'content', 'growth', 'market', 'customer', 'hr_template', 'legal_template', 'sales_template'
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        input_parameters JSONB NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    // Add RLS for content_generations
+    await client.query(`
+      ALTER TABLE content_generations ENABLE ROW LEVEL SECURITY;
+      
+      CREATE POLICY tenant_isolation_policy ON content_generations
+        USING (tenant_id = current_setting('app.current_tenant_id', true)::INTEGER);
+      
+      CREATE POLICY super_admin_policy ON content_generations
+        USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
+    `);
+    
+    // Created content from pins table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS created_content (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        source_pins INTEGER[] NOT NULL, -- Array of pinned_sentences ids
+        creation_type VARCHAR(50) DEFAULT 'strategic', -- 'strategic', 'expanded', etc.
+        metadata JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    // Add RLS for created_content
+    await client.query(`
+      ALTER TABLE created_content ENABLE ROW LEVEL SECURITY;
+      
+      CREATE POLICY tenant_isolation_policy ON created_content
+        USING (tenant_id = current_setting('app.current_tenant_id', true)::INTEGER);
+      
+      CREATE POLICY super_admin_policy ON created_content
+        USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
+    `);
+    
     await client.query('COMMIT');
     console.log('Database tables created successfully');
     

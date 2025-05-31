@@ -10,6 +10,7 @@ dotenv.config();
 const tenantRoutes = require('./routes/tenant-routes');
 const authRoutes = require('./routes/auth-routes');
 const usageRoutes = require('./routes/usage-routes');
+const contentRoutes = require('./routes/content-routes');
 
 // Import middleware
 const tenantContext = require('./middleware/tenant-context');
@@ -34,6 +35,7 @@ app.use('/api/tenant', tenantContext, authRoutes);
 // Protected tenant routes
 app.use('/api/tenant', tenantContext, auth, tenantRoutes);
 app.use('/api/tenant', tenantContext, usageRoutes);
+app.use('/api/content', contentRoutes);
 
 // Super admin routes
 app.use('/api/admin', authRoutes);
