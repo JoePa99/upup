@@ -123,11 +123,19 @@ const CompanyKnowledgeAdmin = () => {
       
       if (response.success) {
         alert('Company knowledge uploaded successfully!');
+        
+        // Add the uploaded item directly to the list (since Vercel can't persist files)
+        if (response.data) {
+          setKnowledgeList(prev => [response.data, ...prev]);
+        }
+        
         setShowUploadForm(false);
         setUploadForm({ title: '', content: '', documentType: 'general', metadata: {} });
         setSelectedFile(null);
         setUploadMode('text');
-        loadCompanyKnowledge(); // Reload the list
+        
+        // Also reload from server in case there are other items
+        loadCompanyKnowledge();
       } else {
         throw new Error(response.message || 'Upload failed');
       }
@@ -164,12 +172,12 @@ const CompanyKnowledgeAdmin = () => {
   const deleteKnowledge = async (id) => {
     if (!confirm('Are you sure you want to delete this knowledge item?')) return;
     
-    // Check if this is a mock item
+    // Check if this is a mock item or temporary item
     const item = knowledgeList.find(k => k.id === id);
-    if (item && item.is_mock) {
-      // For mock items, just remove from local state
+    if (item && (item.is_mock || item.is_temporary)) {
+      // For mock/temporary items, just remove from local state
       setKnowledgeList(prev => prev.filter(k => k.id !== id));
-      alert('Sample knowledge item removed');
+      alert(item.is_mock ? 'Sample knowledge item removed' : 'Knowledge item removed');
       return;
     }
     
@@ -182,6 +190,7 @@ const CompanyKnowledgeAdmin = () => {
       
       if (response.success) {
         alert('Knowledge deleted successfully');
+        setKnowledgeList(prev => prev.filter(k => k.id !== id));
         loadCompanyKnowledge();
       } else {
         throw new Error(response.message || 'Delete failed');

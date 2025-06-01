@@ -190,7 +190,7 @@ export default async function handler(req, res) {
         }
       }
       
-      // If Supabase storage failed or unavailable, use temporary storage
+      // If Supabase storage failed or unavailable, create record for frontend
       if (!knowledgeRecord) {
         knowledgeRecord = {
           id: Date.now(),
@@ -203,14 +203,11 @@ export default async function handler(req, res) {
           file_size_kb: fileSize || (content ? Math.round(content.length / 10) : 0),
           tenant_id: user.tenantId,
           created_by: user.id,
-          is_temporary: true
+          is_temporary: true,
+          created_by_name: 'Demo User'
         };
         
-        // Store in temporary storage
-        const tempStorage = loadTempStorage();
-        tempStorage.push(knowledgeRecord);
-        saveTempStorage(tempStorage);
-        console.log('Stored to temp storage:', knowledgeRecord.title, 'Total items:', tempStorage.length);
+        console.log('Created temporary record:', knowledgeRecord.title, 'ID:', knowledgeRecord.id);
       }
       
       // Return stored record
@@ -261,15 +258,8 @@ export default async function handler(req, res) {
         }
       }
 
-      // Add temporary storage items if Supabase unavailable or failed
-      if (!supabase || knowledgeList.length === 0) {
-        const tempStorage = loadTempStorage();
-        const tempItems = tempStorage.filter(item => item.tenant_id === user.tenantId);
-        knowledgeList = [...knowledgeList, ...tempItems];
-      }
-
-      // Only show sample mock data if no real data and no temp data
-      if (knowledgeList.length === 0) {
+      // If no Supabase data, show sample mock data
+      if (!supabase && knowledgeList.length === 0) {
         knowledgeList = [
           {
             id: 'mock-1',
@@ -301,11 +291,10 @@ export default async function handler(req, res) {
           total: knowledgeList.length
         },
         debug: {
-          source: supabase ? 'supabase' : 'temp_storage',
+          source: supabase ? 'supabase' : 'frontend_only',
           supabase_available: !!supabase,
-          temp_storage_file_exists: fs.existsSync(STORAGE_FILE),
-          temp_storage_contents: loadTempStorage(),
-          user_tenant_id: user.tenantId
+          user_tenant_id: user.tenantId,
+          note: 'Without Supabase, uploads only persist in frontend session'
         }
       });
     } catch (error) {
