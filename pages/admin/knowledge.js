@@ -164,12 +164,20 @@ const CompanyKnowledgeAdmin = () => {
   const deleteKnowledge = async (id) => {
     if (!confirm('Are you sure you want to delete this knowledge item?')) return;
     
+    // Check if this is a mock item
+    const item = knowledgeList.find(k => k.id === id);
+    if (item && item.is_mock) {
+      // For mock items, just remove from local state
+      setKnowledgeList(prev => prev.filter(k => k.id !== id));
+      alert('Sample knowledge item removed');
+      return;
+    }
+    
     try {
       const { apiRequest } = await import('../../utils/api-config');
       
       const response = await apiRequest(`/knowledge/company/${id}`, {
-        method: 'DELETE',
-        body: JSON.stringify({ knowledgeType: 'company' })
+        method: 'DELETE'
       });
       
       if (response.success) {

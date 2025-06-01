@@ -216,26 +216,28 @@ export default async function handler(req, res) {
         }
       }
 
-      // Fall back to mock data if no Supabase data
-      if (knowledgeList.length === 0) {
+      // Only show mock data if Supabase is not available
+      if (knowledgeList.length === 0 && !supabase) {
         knowledgeList = [
           {
-            id: 1,
-            title: 'Brand Guidelines 2024',
+            id: 'mock-1',
+            title: 'Brand Guidelines 2024 (Sample)',
             document_type: 'brand_guide',
             created_at: '2024-01-15T10:30:00Z',
             created_by_name: 'System Admin',
             size_kb: 2450,
-            tenant_id: user.tenantId
+            tenant_id: user.tenantId,
+            is_mock: true
           },
           {
-            id: 2,
-            title: 'Company Policies',
+            id: 'mock-2',
+            title: 'Company Policies (Sample)',
             document_type: 'policy',
             created_at: '2024-01-10T14:20:00Z',
             created_by_name: 'System Admin',
             size_kb: 1890,
-            tenant_id: user.tenantId
+            tenant_id: user.tenantId,
+            is_mock: true
           }
         ];
       }
@@ -246,13 +248,61 @@ export default async function handler(req, res) {
           knowledge: knowledgeList,
           total: knowledgeList.length
         },
-        source: knowledgeList.length > 0 ? 'supabase' : 'mock'
+        source: supabase ? 'supabase' : 'mock',
+        supabase_available: !!supabase
       });
     } catch (error) {
       console.error('Knowledge retrieval error:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to retrieve knowledge',
+        error: error.message
+      });
+    }
+  } else if (req.method === 'DELETE') {
+    // Handle knowledge deletion
+    try {
+      const user = getUserFromRequest(req);
+      const { id } = req.query;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required parameter: id'
+        });
+      }
+
+      // Delete from Supabase if available
+      let deleted = false;
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('company_knowledge')
+            .delete()
+            .eq('id', id)
+            .eq('tenant_id', user.tenantId);
+
+          if (error) {
+            console.error('Supabase delete error:', error);
+          } else {
+            deleted = true;
+          }
+        } catch (error) {
+          console.error('Error deleting from Supabase:', error);
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Knowledge item deleted successfully',
+        deleted_from_supabase: deleted
+      });
+
+    } catch (error) {
+      console.error('Knowledge deletion error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete knowledge item',
         error: error.message
       });
     }
