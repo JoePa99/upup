@@ -14,6 +14,10 @@ if (supabaseUrl && supabaseServiceKey) {
   });
 }
 
+// Import temporary storage from main API file
+// Note: In a real app, this would be in a shared module or database
+let tempKnowledgeStorage = [];
+
 // Helper function to get user info from request
 function getUserFromRequest(req) {
   // In a real implementation, decode JWT token

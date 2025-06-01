@@ -1,6 +1,7 @@
 import { IncomingForm } from 'formidable';
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
+import path from 'path';
 
 // Disable default body parser to handle FormData
 export const config = {
@@ -21,6 +22,30 @@ if (supabaseUrl && supabaseServiceKey) {
       persistSession: false
     }
   });
+}
+
+// Simple file-based storage when Supabase is not configured
+
+const STORAGE_FILE = path.join(process.cwd(), 'temp-knowledge.json');
+
+function loadTempStorage() {
+  try {
+    if (fs.existsSync(STORAGE_FILE)) {
+      const data = fs.readFileSync(STORAGE_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading temp storage:', error);
+  }
+  return [];
+}
+
+function saveTempStorage(data) {
+  try {
+    fs.writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error saving temp storage:', error);
+  }
 }
 
 // Helper function to parse JSON body
@@ -129,7 +154,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Store to Supabase if available
+      // Store to Supabase if available, otherwise use temporary storage
       let knowledgeRecord = null;
       if (supabase) {
         try {
@@ -155,34 +180,53 @@ export default async function handler(req, res) {
 
           if (error) {
             console.error('Supabase insert error:', error);
-            // Fall back to mock response if Supabase fails
+            // Fall back to temporary storage
           } else {
             knowledgeRecord = data;
           }
         } catch (error) {
           console.error('Error storing to Supabase:', error);
-          // Continue with mock response
+          // Continue with temporary storage
         }
       }
       
-      // Return stored record or mock
-      const responseData = knowledgeRecord || {
-        id: Date.now(),
-        title,
-        content,
-        document_type: documentType || 'general',
-        created_at: new Date().toISOString(),
-        knowledge_level: 'company',
-        file_name: fileName,
-        size_kb: fileSize || (content ? Math.round(content.length / 10) : 0),
-        tenant_id: user.tenantId
-      };
+      // If Supabase storage failed or unavailable, use temporary storage
+      if (!knowledgeRecord) {
+        knowledgeRecord = {
+          id: Date.now(),
+          title,
+          content,
+          document_type: documentType || 'general',
+          created_at: new Date().toISOString(),
+          knowledge_level: 'company',
+          file_name: fileName,
+          file_size_kb: fileSize || (content ? Math.round(content.length / 10) : 0),
+          tenant_id: user.tenantId,
+          created_by: user.id,
+          is_temporary: true
+        };
+        
+        // Store in temporary storage
+        const tempStorage = loadTempStorage();
+        tempStorage.push(knowledgeRecord);
+        saveTempStorage(tempStorage);
+      }
       
+      // Return stored record
       res.status(200).json({
         success: true,
-        data: responseData,
+        data: knowledgeRecord,
         message: `Company knowledge ${fileName ? 'file' : 'content'} uploaded successfully`,
-        stored_to_supabase: !!knowledgeRecord
+        storage_type: knowledgeRecord.is_temporary ? 'temporary' : (supabase ? 'supabase' : 'mock'),
+        supabase_configured: !!supabase,
+        debug_info: {
+          supabase_url: !!supabaseUrl,
+          supabase_key: !!supabaseServiceKey,
+          title,
+          content_length: content ? content.length : 0,
+          file_name: fileName,
+          stored_to_temp: knowledgeRecord.is_temporary
+        }
       });
     } catch (error) {
       console.error('Knowledge upload error:', error);
@@ -216,8 +260,15 @@ export default async function handler(req, res) {
         }
       }
 
-      // Only show mock data if Supabase is not available
-      if (knowledgeList.length === 0 && !supabase) {
+      // Add temporary storage items if Supabase unavailable or failed
+      if (!supabase || knowledgeList.length === 0) {
+        const tempStorage = loadTempStorage();
+        const tempItems = tempStorage.filter(item => item.tenant_id === user.tenantId);
+        knowledgeList = [...knowledgeList, ...tempItems];
+      }
+
+      // Only show sample mock data if no real data and no temp data
+      if (knowledgeList.length === 0) {
         knowledgeList = [
           {
             id: 'mock-1',
