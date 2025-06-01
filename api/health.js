@@ -2,8 +2,9 @@
 export default function handler(req, res) {
   res.status(200).json({ 
     status: 'ok', 
-    message: 'NEW individual health endpoint working!',
+    message: 'VERCEL SERVERLESS ENDPOINT WORKING!',
     timestamp: new Date().toISOString(),
-    version: '2.0'
+    version: '3.0',
+    note: 'Environment variable deleted, forcing fresh deploy'
   });
 }
