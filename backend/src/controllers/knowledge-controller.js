@@ -1,5 +1,6 @@
 const { logUsage } = require('../services/usage-service');
-const documentService = require('../services/document-service');
+// Temporarily comment out document service to test
+// const documentService = require('../services/document-service');
 
 const knowledgeController = {
   // Company Admin: Upload company-wide knowledge (text or file)
@@ -10,39 +11,16 @@ const knowledgeController = {
       const userId = req.user.id;
       const uploadedFile = req.file;
 
-      // Validate: either content or file must be provided
-      if (!title || (!content && !uploadedFile)) {
+      // Validate required fields (temporarily only text content)
+      if (!title || !content) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: title and either content or file upload'
+          message: 'Missing required fields: title, content (file upload temporarily disabled)'
         });
       }
 
-      let finalContent = content;
-      let fileInfo = null;
-      let embeddings = null;
-
-      // Process uploaded file if provided
-      if (uploadedFile) {
-        try {
-          const processedDoc = await documentService.processDocument(
-            uploadedFile, 
-            tenantId, 
-            userId, 
-            'company'
-          );
-          
-          finalContent = processedDoc.textContent;
-          fileInfo = processedDoc.fileInfo;
-          embeddings = processedDoc.embeddings;
-        } catch (fileError) {
-          console.error('File processing error:', fileError);
-          return res.status(400).json({
-            success: false,
-            message: `File upload failed: ${fileError.message}`
-          });
-        }
-      }
+      const finalContent = content;
+      // File processing temporarily disabled for debugging
 
       // TODO: Implement database storage for company knowledge
       // For now, return mock response
@@ -50,7 +28,7 @@ const knowledgeController = {
         id: Date.now(),
         tenant_id: tenantId,
         title,
-        content,
+        content: finalContent,
         document_type: documentType || 'text',
         metadata: metadata || {},
         created_by: userId,

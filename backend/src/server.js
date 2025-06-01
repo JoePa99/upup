@@ -30,6 +30,38 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Service is running' });
 });
 
+// Debug endpoint to check routes
+app.get('/api/debug/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) { // routes registered directly on the app
+      routes.push({
+        path: middleware.route.path,
+        methods: Object.keys(middleware.route.methods)
+      });
+    } else if (middleware.name === 'router') { // router middleware 
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push({
+            path: handler.route.path,
+            methods: Object.keys(handler.route.methods)
+          });
+        }
+      });
+    }
+  });
+  
+  res.json({
+    message: 'Available routes',
+    routes,
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      DATABASE_URL_SET: !!process.env.DATABASE_URL
+    }
+  });
+});
+
 // Public tenant routes (like authentication)
 app.use('/api/tenant', tenantContext, authRoutes);
 

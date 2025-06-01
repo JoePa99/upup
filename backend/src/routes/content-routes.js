@@ -30,6 +30,15 @@ if (!isDevelopmentWithoutDB) {
   });
 }
 
+// Test route for debugging
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Content routes are working!',
+    user: req.user || 'No user context',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Content Generation Routes
 router.post('/generate', contentController.generateContent);
 router.post('/generate/growth', contentController.generateGrowthOpportunities);
