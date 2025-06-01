@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { auth as authApi } from '../api';
 
 const AuthContext = createContext(null);
 
@@ -28,16 +27,24 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await authApi.login(email, password);
-      const { token, user } = response.data.data;
+      // DEMO MODE: Mock successful login
+      const mockUser = {
+        id: 1,
+        firstName: 'Demo',
+        lastName: 'User',
+        email: email,
+        tenantName: 'Staedtler Pencils',
+        tenantId: 1,
+        role: 'admin'
+      };
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', 'demo-token');
+      localStorage.setItem('user', JSON.stringify(mockUser));
       
-      setUser(user);
-      return user;
+      setUser(mockUser);
+      return mockUser;
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
+      setError('Login failed');
       throw error;
     } finally {
       setLoading(false);
@@ -49,10 +56,20 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await authApi.register(userData);
-      return response.data.data;
+      // DEMO MODE: Mock successful registration
+      const mockUser = {
+        id: 1,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        tenantName: userData.tenantName || 'Demo Company',
+        tenantId: 1,
+        role: 'admin'
+      };
+      
+      return mockUser;
     } catch (error) {
-      setError(error.response?.data?.message || 'Registration failed');
+      setError('Registration failed');
       throw error;
     } finally {
       setLoading(false);
@@ -70,16 +87,25 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await authApi.superAdminLogin(email, password);
-      const { token, user } = response.data.data;
+      // DEMO MODE: Mock successful super admin login
+      const mockSuperUser = {
+        id: 1,
+        firstName: 'Super',
+        lastName: 'Admin',
+        email: email,
+        tenantName: 'UPUP Platform',
+        tenantId: 0,
+        role: 'super_admin',
+        isSuperAdmin: true
+      };
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', 'demo-super-token');
+      localStorage.setItem('user', JSON.stringify(mockSuperUser));
       
-      setUser(user);
-      return user;
+      setUser(mockSuperUser);
+      return mockSuperUser;
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
+      setError('Login failed');
       throw error;
     } finally {
       setLoading(false);
