@@ -89,7 +89,76 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+/**
+ * Middleware to check if user has company admin role
+ */
+const requireCompanyAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Unauthorized - Authentication required'
+    });
+  }
+  
+  if (req.user.role !== 'company_admin' && req.user.role !== 'admin') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Forbidden - Company admin access required'
+    });
+  }
+  
+  next();
+};
+
+/**
+ * Middleware to check if user has any admin privileges (admin or company_admin)
+ */
+const requireAnyAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Unauthorized - Authentication required'
+    });
+  }
+  
+  const adminRoles = ['admin', 'company_admin'];
+  if (!adminRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Forbidden - Admin privileges required'
+    });
+  }
+  
+  next();
+};
+
+/**
+ * Check if user has permission for specific role
+ */
+const hasRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Unauthorized - Authentication required'
+      });
+    }
+    
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        status: 'error',
+        message: `Forbidden - Requires one of: ${allowedRoles.join(', ')}`
+      });
+    }
+    
+    next();
+  };
+};
+
 module.exports = {
   auth,
-  requireAdmin
+  requireAdmin,
+  requireCompanyAdmin,
+  requireAnyAdmin,
+  hasRole
 };

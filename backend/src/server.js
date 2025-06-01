@@ -11,6 +11,7 @@ const tenantRoutes = require('./routes/tenant-routes');
 const authRoutes = require('./routes/auth-routes');
 const usageRoutes = require('./routes/usage-routes');
 const contentRoutes = require('./routes/content-routes');
+const knowledgeRoutes = require('./routes/knowledge-routes');
 
 // Import middleware
 const tenantContext = require('./middleware/tenant-context');
@@ -36,6 +37,7 @@ app.use('/api/tenant', tenantContext, authRoutes);
 app.use('/api/tenant', tenantContext, auth, tenantRoutes);
 app.use('/api/tenant', tenantContext, usageRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
 
 // Super admin routes
 app.use('/api/admin', authRoutes);
