@@ -1,6 +1,6 @@
 // API Configuration for UPUP Frontend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api' : 'http://localhost:3001/api');
 
 export const apiConfig = {
   baseURL: API_BASE_URL,
