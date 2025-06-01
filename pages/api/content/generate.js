@@ -1,4 +1,36 @@
 // Content generation API endpoint in Next.js pages/api
+// Helper function to get company context
+async function getCompanyContext(query) {
+  try {
+    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/knowledge/context`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.data;
+    }
+  } catch (error) {
+    console.error('Error fetching company context:', error);
+  }
+
+  // Fallback context
+  return {
+    tenantInfo: {
+      companyName: 'Your Company',
+      industry: 'Professional Services',
+      size: 'Medium Business',
+      values: 'Quality, Innovation, Customer Success'
+    },
+    companyContext: '',
+    relevantKnowledge: []
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -13,8 +45,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // Generate mock content based on input
-    const mockContent = generateMockContent(contentTopic, contentType, contentAudience, pins);
+    // Get company context for personalized content
+    const companyContext = await getCompanyContext(contentTopic);
+
+    // Generate content with company context
+    const mockContent = generateMockContent(contentTopic, contentType, contentAudience, pins, companyContext);
 
     return res.status(200).json({
       success: true,
@@ -27,6 +62,8 @@ export default async function handler(req, res) {
           audience: contentAudience,
           topic: contentTopic,
           pinsUsed: pins.length,
+          companyName: companyContext.tenantInfo.companyName,
+          contextUsed: companyContext.relevantKnowledge.length > 0,
           wordCount: mockContent.content.split(' ').length
         }
       }
@@ -41,75 +78,85 @@ export default async function handler(req, res) {
   }
 }
 
-function generateMockContent(topic, type, audience, pins) {
+function generateMockContent(topic, type, audience, pins, companyContext) {
+  const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
+  const companyName = tenantInfo.companyName;
+  
   const pinsContext = pins.length > 0 
     ? `\n\nBased on your pinned content: ${pins.map(p => p.content).join(', ')}`
     : '';
 
+  const knowledgeContextSection = relevantKnowledge.length > 0
+    ? `\n\nBased on ${companyName}'s knowledge base:\n${relevantKnowledge.map(k => `• ${k.title}: ${k.excerpt}`).join('\n')}`
+    : '';
+
   const contentMap = {
     'Blog Post': {
-      title: `The Ultimate Guide to ${topic}`,
-      content: `# The Ultimate Guide to ${topic}
+      title: `${companyName}'s Guide to ${topic}`,
+      content: `# ${companyName}'s Guide to ${topic}
 
 ## Introduction
-In today's rapidly evolving business landscape, ${topic} has become increasingly important for ${audience}. This comprehensive guide will walk you through everything you need to know.
+As a leader in ${tenantInfo.industry}, ${companyName} understands that ${topic} has become increasingly important for ${audience}. Based on our experience and expertise, this comprehensive guide will walk you through everything you need to know.
 
-## Why ${topic} Matters
+## Why ${topic} Matters for Your Business
 Understanding ${topic} is crucial because:
 - It drives business growth and innovation
 - It helps ${audience} achieve their goals more effectively
-- It provides competitive advantages in the market
+- It provides competitive advantages in today's market
+- It aligns with core values like ${tenantInfo.values}
 
-## Key Strategies
-Here are the top strategies for implementing ${topic}:
+## ${companyName}'s Proven Strategies
+Here are the top strategies we've developed for implementing ${topic}:
 
 1. **Start with Clear Objectives**
-   Define what you want to achieve with ${topic}
+   Define what you want to achieve with ${topic}, ensuring alignment with your business goals
 
 2. **Develop a Structured Approach**
-   Create a step-by-step plan tailored to ${audience}
+   Create a step-by-step plan tailored to ${audience} in the ${tenantInfo.industry} sector
 
 3. **Monitor and Optimize**
-   Continuously track performance and make improvements
+   Continuously track performance and make improvements based on industry best practices
 
-## Best Practices
-- Focus on value creation
-- Maintain consistency in your approach
-- Stay updated with industry trends
-- Engage with your target audience regularly
+## Best Practices from Our Experience
+- Focus on value creation that resonates with your market
+- Maintain consistency in your approach across all touchpoints
+- Stay updated with ${tenantInfo.industry} trends and innovations
+- Engage with your target audience through authentic communication
 
 ## Conclusion
-${topic} is a powerful tool that can transform how ${audience} operate. By following the strategies outlined in this guide, you'll be well-positioned for success.${pinsContext}`
+${topic} is a powerful tool that can transform how ${audience} operate in ${tenantInfo.industry}. At ${companyName}, we've seen firsthand how following these strategies positions businesses for sustainable success.${knowledgeContextSection}${pinsContext}`
     },
     
     'Email Campaign': {
-      title: `${topic} Email Campaign for ${audience}`,
-      content: `Subject: Transform Your Business with ${topic}
+      title: `${companyName} ${topic} Campaign for ${audience}`,
+      content: `Subject: ${companyName}: Transform Your ${tenantInfo.industry} Business with ${topic}
 
 Dear ${audience},
 
-Are you looking to revolutionize your approach to ${topic}? You're in the right place.
+As a trusted partner in ${tenantInfo.industry}, ${companyName} understands the challenges you face. Are you looking to revolutionize your approach to ${topic}?
 
-${topic} has become a game-changer for businesses like yours. Here's why:
+${topic} has become a game-changer for ${tenantInfo.industry} businesses like yours. Here's why:
 
-✓ Increased efficiency and productivity
-✓ Better customer engagement
+✓ Increased efficiency and productivity in ${tenantInfo.industry} operations
+✓ Better customer engagement and satisfaction
 ✓ Improved ROI and growth metrics
+✓ Alignment with ${tenantInfo.values}
 
-**What You'll Get:**
-- Proven strategies that work
+**What ${companyName} Offers:**
+- Proven strategies developed for ${tenantInfo.industry}
 - Step-by-step implementation guide
-- Real-world case studies
+- Real-world case studies from our experience
+- Ongoing support aligned with our values of ${tenantInfo.values}
 
 **Take Action Today:**
-Don't let your competitors get ahead. Start implementing ${topic} strategies now.
+Don't let your competitors get ahead. Partner with ${companyName} to implement ${topic} strategies now.
 
-[Call-to-Action Button: Get Started]
+[Call-to-Action Button: Connect with ${companyName}]
 
 Best regards,
-The UPUP Team
+The ${companyName} Team
 
-P.S. Limited time offer - Act now to secure your competitive advantage!${pinsContext}`
+P.S. As a ${tenantInfo.size} company, we understand your unique needs and are committed to your success.${knowledgeContextSection}${pinsContext}`
     },
     
     'Social Media Post': {

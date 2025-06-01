@@ -8,8 +8,8 @@ export const AuthProvider = ({ children }) => {
     id: 1,
     firstName: 'Demo',
     lastName: 'User',
-    email: 'demo@staedtler.com',
-    tenantName: 'Staedtler Pencils',
+    email: 'demo@company.com',
+    tenantName: 'Demo Company',
     tenantId: 1,
     role: 'admin'
   });
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
         firstName: 'Demo',
         lastName: 'User',
         email: email,
-        tenantName: 'Staedtler Pencils',
+        tenantName: 'Demo Company',
         tenantId: 1,
         role: 'admin'
       };
