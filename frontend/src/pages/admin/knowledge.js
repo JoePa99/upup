@@ -15,6 +15,8 @@ const CompanyKnowledgeAdmin = () => {
     documentType: 'general',
     metadata: {}
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadMode, setUploadMode] = useState('text'); // 'text' or 'file'
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !isAuthenticated) {
@@ -73,8 +75,20 @@ const CompanyKnowledgeAdmin = () => {
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
-    if (!uploadForm.title.trim() || !uploadForm.content.trim()) {
-      alert('Please fill in title and content');
+    
+    // Validate based on upload mode
+    if (!uploadForm.title.trim()) {
+      alert('Please enter a title');
+      return;
+    }
+    
+    if (uploadMode === 'text' && !uploadForm.content.trim()) {
+      alert('Please enter content or switch to file upload');
+      return;
+    }
+    
+    if (uploadMode === 'file' && !selectedFile) {
+      alert('Please select a file to upload');
       return;
     }
 
@@ -82,22 +96,44 @@ const CompanyKnowledgeAdmin = () => {
     try {
       const { apiRequest } = await import('../../utils/api-config');
       
-      const response = await apiRequest('/knowledge/company', {
-        method: 'POST',
-        body: JSON.stringify(uploadForm)
-      });
+      let response;
+      
+      if (uploadMode === 'file') {
+        // File upload using FormData
+        const formData = new FormData();
+        formData.append('title', uploadForm.title);
+        formData.append('documentType', uploadForm.documentType);
+        formData.append('document', selectedFile);
+        if (uploadForm.content.trim()) {
+          formData.append('content', uploadForm.content); // Optional additional content
+        }
+        
+        response = await apiRequest('/knowledge/company', {
+          method: 'POST',
+          body: formData,
+          headers: {} // Remove Content-Type to let browser set it for FormData
+        });
+      } else {
+        // Text upload using JSON
+        response = await apiRequest('/knowledge/company', {
+          method: 'POST',
+          body: JSON.stringify(uploadForm)
+        });
+      }
       
       if (response.success) {
         alert('Company knowledge uploaded successfully!');
         setShowUploadForm(false);
         setUploadForm({ title: '', content: '', documentType: 'general', metadata: {} });
+        setSelectedFile(null);
+        setUploadMode('text');
         loadCompanyKnowledge(); // Reload the list
       } else {
         throw new Error(response.message || 'Upload failed');
       }
     } catch (error) {
       console.error('Error uploading knowledge:', error);
-      alert('Upload failed. Please try again.');
+      alert(`Upload failed: ${error.message || 'Please try again'}`);
     } finally {
       setIsLoading(false);
     }
@@ -109,6 +145,20 @@ const CompanyKnowledgeAdmin = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    
+    // Auto-fill title from filename if title is empty
+    if (file && !uploadForm.title.trim()) {
+      const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+      setUploadForm(prev => ({
+        ...prev,
+        title: fileName
+      }));
+    }
   };
 
   const deleteKnowledge = async (id) => {
@@ -182,6 +232,23 @@ const CompanyKnowledgeAdmin = () => {
             <button className="close-btn" onClick={() => setShowUploadForm(false)}>×</button>
           </div>
           <form onSubmit={handleUploadSubmit}>
+            <div className="upload-mode-toggle">
+              <button
+                type="button"
+                className={uploadMode === 'text' ? 'active' : ''}
+                onClick={() => setUploadMode('text')}
+              >
+                📝 Text Input
+              </button>
+              <button
+                type="button"
+                className={uploadMode === 'file' ? 'active' : ''}
+                onClick={() => setUploadMode('file')}
+              >
+                📄 File Upload
+              </button>
+            </div>
+
             <div className="form-row">
               <div className="input-field">
                 <label>Title</label>
@@ -210,21 +277,49 @@ const CompanyKnowledgeAdmin = () => {
                 </select>
               </div>
             </div>
+
+            {uploadMode === 'file' && (
+              <div className="input-field">
+                <label>Upload Document</label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt,.md"
+                  onChange={handleFileChange}
+                  className="file-input"
+                />
+                {selectedFile && (
+                  <div className="file-info">
+                    <span>📎 {selectedFile.name}</span>
+                    <span>({Math.round(selectedFile.size / 1024)}KB)</span>
+                  </div>
+                )}
+                <div className="file-help">
+                  Supported: PDF, DOC, DOCX, TXT, MD files (max 10MB)
+                </div>
+              </div>
+            )}
+
             <div className="input-field">
-              <label>Content</label>
+              <label>
+                {uploadMode === 'file' ? 'Additional Notes (Optional)' : 'Content'}
+              </label>
               <textarea
                 name="content"
                 value={uploadForm.content}
                 onChange={handleInputChange}
-                placeholder="Enter the knowledge content that will enhance AI responses for your team..."
-                rows={8}
-                required
+                placeholder={
+                  uploadMode === 'file' 
+                    ? "Add any additional context or notes about this document..."
+                    : "Enter the knowledge content that will enhance AI responses for your team..."
+                }
+                rows={uploadMode === 'file' ? 4 : 8}
+                required={uploadMode === 'text'}
               />
             </div>
             <div className="form-actions">
               <button type="button" onClick={() => setShowUploadForm(false)}>Cancel</button>
               <button type="submit" disabled={isLoading}>
-                {isLoading ? 'Uploading...' : 'Upload Knowledge'}
+                {isLoading ? 'Uploading...' : `Upload ${uploadMode === 'file' ? 'Document' : 'Knowledge'}`}
               </button>
             </div>
           </form>
@@ -388,6 +483,69 @@ const CompanyKnowledgeAdmin = () => {
         .form-actions button[type="submit"] {
           background: #3b82f6;
           color: white;
+        }
+
+        .upload-mode-toggle {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 20px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          padding: 4px;
+          background: #f9fafb;
+        }
+
+        .upload-mode-toggle button {
+          flex: 1;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          background: transparent;
+          color: #6b7280;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .upload-mode-toggle button.active {
+          background: white;
+          color: #1f2937;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .file-input {
+          width: 100%;
+          padding: 8px 12px;
+          border: 2px dashed #d1d5db;
+          border-radius: 6px;
+          background: #f9fafb;
+          font-size: 14px;
+          cursor: pointer;
+        }
+
+        .file-input:hover {
+          border-color: #3b82f6;
+          background: #f0f9ff;
+        }
+
+        .file-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 8px;
+          padding: 8px 12px;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 4px;
+          font-size: 12px;
+          color: #166534;
+        }
+
+        .file-help {
+          font-size: 11px;
+          color: #6b7280;
+          margin-top: 4px;
+          font-style: italic;
         }
 
         .knowledge-grid {

@@ -1,19 +1,47 @@
 const { logUsage } = require('../services/usage-service');
+const documentService = require('../services/document-service');
 
 const knowledgeController = {
-  // Company Admin: Upload company-wide knowledge
+  // Company Admin: Upload company-wide knowledge (text or file)
   async uploadCompanyKnowledge(req, res) {
     try {
       const { title, content, documentType, metadata } = req.body;
       const tenantId = req.user.tenantId;
       const userId = req.user.id;
+      const uploadedFile = req.file;
 
-      // Validate required fields
-      if (!title || !content) {
+      // Validate: either content or file must be provided
+      if (!title || (!content && !uploadedFile)) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: title, content'
+          message: 'Missing required fields: title and either content or file upload'
         });
+      }
+
+      let finalContent = content;
+      let fileInfo = null;
+      let embeddings = null;
+
+      // Process uploaded file if provided
+      if (uploadedFile) {
+        try {
+          const processedDoc = await documentService.processDocument(
+            uploadedFile, 
+            tenantId, 
+            userId, 
+            'company'
+          );
+          
+          finalContent = processedDoc.textContent;
+          fileInfo = processedDoc.fileInfo;
+          embeddings = processedDoc.embeddings;
+        } catch (fileError) {
+          console.error('File processing error:', fileError);
+          return res.status(400).json({
+            success: false,
+            message: `File upload failed: ${fileError.message}`
+          });
+        }
       }
 
       // TODO: Implement database storage for company knowledge

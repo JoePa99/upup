@@ -65,10 +65,19 @@ export const getAuthHeaders = () => {
 // API request helper with error handling
 export const apiRequest = async (endpoint, options = {}) => {
   const url = buildApiUrl(endpoint);
+  
+  // Handle FormData (for file uploads) vs JSON
+  const isFormData = options.body instanceof FormData;
+  const defaultHeaders = isFormData 
+    ? getAuthHeaders() // Don't set Content-Type for FormData
+    : {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      };
+
   const defaultOptions = {
     headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
+      ...defaultHeaders,
       ...options.headers
     }
   };
