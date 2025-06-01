@@ -210,6 +210,7 @@ export default async function handler(req, res) {
         const tempStorage = loadTempStorage();
         tempStorage.push(knowledgeRecord);
         saveTempStorage(tempStorage);
+        console.log('Stored to temp storage:', knowledgeRecord.title, 'Total items:', tempStorage.length);
       }
       
       // Return stored record
@@ -299,8 +300,13 @@ export default async function handler(req, res) {
           knowledge: knowledgeList,
           total: knowledgeList.length
         },
-        source: supabase ? 'supabase' : 'mock',
-        supabase_available: !!supabase
+        debug: {
+          source: supabase ? 'supabase' : 'temp_storage',
+          supabase_available: !!supabase,
+          temp_storage_file_exists: fs.existsSync(STORAGE_FILE),
+          temp_storage_contents: loadTempStorage(),
+          user_tenant_id: user.tenantId
+        }
       });
     } catch (error) {
       console.error('Knowledge retrieval error:', error);
