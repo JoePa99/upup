@@ -91,8 +91,8 @@ const ContentGenerator = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
+      setGeneratedContent(data.data.content);
+      setContentTitle(data.data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {
