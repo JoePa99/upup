@@ -73,25 +73,28 @@ const ContentGenerator = () => {
     setShowContent(false);
     
     try {
-      const { apiRequest, apiConfig } = await import('../utils/api-config');
-      
-      const response = await apiRequest(apiConfig.endpoints.content.generate, {
+      const response = await fetch('/api/content/generate', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           contentTopic: formData.contentTopic || 'customer retention',
           contentType: formData.contentType,
           contentAudience: formData.contentAudience || 'professional customers'
         })
       });
-      
-      if (response.success) {
-        setGeneratedContent(response.data.content);
-        setContentTitle(response.data.title);
-        setShowContent(true);
-        setShowPinsSidebar(true);
-      } else {
-        throw new Error(response.message || 'Failed to generate content');
+
+      if (!response.ok) {
+        throw new Error('Failed to generate content');
       }
+
+      const data = await response.json();
+      
+      setGeneratedContent(data.content);
+      setContentTitle(data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
     } catch (error) {
       console.error('Content generation error:', error);
       

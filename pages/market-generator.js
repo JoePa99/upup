@@ -69,25 +69,28 @@ const MarketGenerator = () => {
     setShowContent(false);
     
     try {
-      const { apiRequest, apiConfig } = await import('../utils/api-config');
-      
-      const response = await apiRequest(apiConfig.endpoints.content.generateMarket, {
+      const response = await fetch('/api/content/generate/market', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           analysisFocus: formData.analysisFocus,
           marketScope: formData.marketScope,
           specificCompetitors: formData.specificCompetitors || 'general competitors'
         })
       });
-      
-      if (response.success) {
-        setGeneratedContent(response.data.content);
-        setContentTitle(response.data.title);
-        setShowContent(true);
-        setShowPinsSidebar(true);
-      } else {
-        throw new Error(response.message || 'Failed to generate market insights');
+
+      if (!response.ok) {
+        throw new Error('Failed to generate market insights');
       }
+
+      const data = await response.json();
+      
+      setGeneratedContent(data.content);
+      setContentTitle(data.title || `Market Analysis: ${formData.analysisFocus}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
     } catch (error) {
       console.error('Market insights generation error:', error);
       
