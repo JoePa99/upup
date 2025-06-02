@@ -4,9 +4,11 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const ContentGenerator = () => {
   const { isAuthenticated } = useAuth();
+  const { trackContentGenerated } = useUsageTracking();
   const router = useRouter();
   const [formData, setFormData] = useState({
     contentTopic: '',
@@ -95,6 +97,9 @@ const ContentGenerator = () => {
       setContentTitle(data.data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      
+      // Track successful content generation
+      trackContentGenerated('content', 800); // Estimate 800 tokens for content generation
     } catch (error) {
       console.error('Content generation error:', error);
       
@@ -105,6 +110,9 @@ const ContentGenerator = () => {
       setContentTitle(`Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      
+      // Track fallback content generation (no tokens used)
+      trackContentGenerated('content', 0);
       
       // Show user-friendly error message
       alert('Content generated using fallback mode. Please check your internet connection or contact support if this persists.');

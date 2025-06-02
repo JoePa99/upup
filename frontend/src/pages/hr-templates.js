@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const HRTemplates = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackTemplateUsed } = useUsageTracking();
   const [formData, setFormData] = useState({
     templateType: 'job-description',
     field1: '',
@@ -65,51 +67,43 @@ const HRTemplates = () => {
     setIsLoading(true);
     setShowContent(false);
     
-    // Simulate API call with fallback content
-    setTimeout(() => {
-      const content = `JOB DESCRIPTION
+    try {
+      const response = await fetch('/api/content/templates/hr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateType: formData.templateType,
+          jobTitle: formData.field1,
+          department: formData.field2,
+          responsibilities: formData.field3
+        })
+      });
 
-${formData.field1 || 'Senior Marketing Manager'}
-${formData.field2} Department | Full-time
+      if (!response.ok) {
+        throw new Error('Failed to generate HR template');
+      }
 
-ABOUT THE ROLE
-
-We're looking for a dynamic ${formData.field1 || 'Senior Marketing Manager'} to join our growing ${formData.field2.toLowerCase()} team at Staedtler. This role is perfect for someone who thrives in our collaborative, innovation-driven culture and wants to make a meaningful impact on our mission of empowering creativity through precision tools for artists and professionals worldwide. As our ${formData.field1 || 'Senior Marketing Manager'}, you'll be at the forefront of driving strategic initiatives that align with our core values of precision, reliability, and timeless innovation. You'll work closely with cross-functional teams to deliver results that matter, while enjoying the flexibility of our hybrid work environment.
-
-KEY RESPONSIBILITIES
-
-${formData.field3 || '• Lead strategic planning and execution for marketing initiatives that drive measurable business growth\n• Collaborate with product, sales, and customer success teams to ensure cohesive brand messaging\n• Develop and implement data-driven strategies that align with our company\'s focus on quality and innovation\n• Mentor junior team members and contribute to our culture of continuous learning and excellence'}
-
-WHAT WE'RE LOOKING FOR
-
-Experience & Skills:
-• 3-5 years of relevant experience in ${formData.field2.toLowerCase()} or related field
-• Proven track record of delivering results in fast-paced, growth-oriented environments
-• Strong analytical skills with experience in data-driven decision making
-• Excellent communication and presentation skills
-
-Cultural Fit:
-• Passion for quality craftsmanship and attention to detail (just like our pencils!)
-• Collaborative mindset with a drive for continuous improvement
-• Adaptability and resilience in a dynamic startup environment
-• Alignment with our values of precision, reliability, and innovation
-
-WHAT WE OFFER
-
-• Competitive salary and equity package
-• Comprehensive health, dental, and vision insurance
-• Flexible PTO and professional development budget
-• Top-of-the-line equipment and tools (including our premium writing instruments!)
-• Collaborative workspace designed for creativity and focus
-
-Ready to join a team that values precision, creativity, and making a lasting impact? We'd love to hear from you.`;
+      const data = await response.json();
       
-      setGeneratedContent(content);
-      setContentTitle(`Job Description: ${formData.field1 || 'Senior Marketing Manager'}`);
-      setIsLoading(false);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `${formData.templateType}: ${formData.field1 || 'HR Document'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
-    }, 2000);
+      trackTemplateUsed(formData.templateType, 1000);
+    } catch (error) {
+      console.error('Error generating HR template:', error);
+      // Fallback content on error
+      const fallbackContent = `${formData.templateType} for ${formData.field1 || 'Position'} in ${formData.field2 || 'Department'}. This document would include comprehensive details based on your input: ${formData.field3 || 'No additional details provided'}.`;
+      setGeneratedContent(fallbackContent);
+      setContentTitle(`${formData.templateType}: ${formData.field1 || 'HR Document'}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
+      trackTemplateUsed(formData.templateType, 0);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const CustomerGenerator = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackContentGenerated } = useUsageTracking();
   const [formData, setFormData] = useState({
     connectionGoal: 'Improve Retention',
     customerSegment: '',
@@ -68,25 +70,29 @@ const CustomerGenerator = () => {
     setShowContent(false);
     
     try {
-      const { apiRequest, apiConfig } = await import('../utils/api-config');
-      
-      const response = await apiRequest(apiConfig.endpoints.content.generateCustomer, {
+      const response = await fetch('/api/content/generate/customer', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           connectionGoal: formData.connectionGoal,
           customerSegment: formData.customerSegment,
           currentChallenges: formData.currentChallenges || 'General customer relationship challenges'
         })
       });
-      
-      if (response.success) {
-        setGeneratedContent(response.data.content);
-        setContentTitle(response.data.title);
-        setShowContent(true);
-        setShowPinsSidebar(true);
-      } else {
-        throw new Error(response.message || 'Failed to generate customer connection strategies');
+
+      if (!response.ok) {
+        throw new Error('Failed to generate customer connection strategies');
       }
+
+      const data = await response.json();
+      
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Customer Strategy: ${formData.connectionGoal}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
+      trackContentGenerated('customer-connection', 800);
     } catch (error) {
       console.error('Customer connection generation error:', error);
       
@@ -97,6 +103,7 @@ const CustomerGenerator = () => {
       setContentTitle(`Customer Strategy: ${formData.connectionGoal}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('customer-connection', 0);
       
       alert('Customer strategies generated using fallback mode. Please check your internet connection or contact support if this persists.');
     } finally {

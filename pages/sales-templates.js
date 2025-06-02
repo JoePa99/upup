@@ -4,9 +4,11 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const SalesTemplates = () => {
   const { isAuthenticated } = useAuth();
+  const { trackTemplateUsed } = useUsageTracking();
   const router = useRouter();
   const [formData, setFormData] = useState({
     templateType: 'sales-proposal',
@@ -89,6 +91,9 @@ const SalesTemplates = () => {
       setContentTitle(data.data?.title || `Sales Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      
+      // Track successful template generation
+      trackTemplateUsed(formData.templateType, 1000); // Estimate 1000 tokens for templates
     } catch (error) {
       console.error('Error generating sales template:', error);
       // Fallback content on error
@@ -164,6 +169,9 @@ CONTACT INFORMATION
       setContentTitle(`Sales Proposal: ${formData.field1 || 'Metropolitan Art Academy'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      
+      // Track fallback template generation (no tokens used)
+      trackTemplateUsed(formData.templateType, 0);
     } finally {
       setIsLoading(false);
     }

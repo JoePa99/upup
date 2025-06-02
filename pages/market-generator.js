@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const MarketGenerator = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackContentGenerated } = useUsageTracking();
   const [formData, setFormData] = useState({
     analysisFocus: 'Customer Behavior',
     marketScope: 'Current Market',
@@ -91,6 +93,7 @@ const MarketGenerator = () => {
       setContentTitle(data.data?.title || `Market Analysis: ${formData.analysisFocus}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('market-insights', 800);
     } catch (error) {
       console.error('Market insights generation error:', error);
       
@@ -101,6 +104,7 @@ const MarketGenerator = () => {
       setContentTitle(`Market Analysis: ${formData.analysisFocus}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('market-insights', 0);
       
       alert('Market insights generated using fallback mode. Please check your internet connection or contact support if this persists.');
     } finally {

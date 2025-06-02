@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const LegalTemplates = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackTemplateUsed } = useUsageTracking();
   const [formData, setFormData] = useState({
     templateType: 'nda',
     field1: '',
@@ -70,65 +72,45 @@ const LegalTemplates = () => {
     setIsLoading(true);
     setShowContent(false);
     
-    // Simulate API call with fallback content
-    setTimeout(() => {
-      const content = `NON-DISCLOSURE AGREEMENT
+    try {
+      const response = await fetch('/api/content/templates/legal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateType: formData.templateType,
+          partyName: formData.field1,
+          projectDetails: formData.field2,
+          specificTerms: formData.field3
+        })
+      });
 
-This Non-Disclosure Agreement ("Agreement") is entered into between Staedtler Pencils Company ("Disclosing Party") and ${formData.field1 || 'ABC Creative Agency'} ("Receiving Party").
+      if (!response.ok) {
+        throw new Error('Failed to generate legal template');
+      }
 
-RECITALS
-
-WHEREAS, the parties wish to engage in discussions regarding potential business opportunities that may require the disclosure of confidential and proprietary information;
-
-WHEREAS, both parties desire to protect the confidentiality of such information;
-
-NOW, THEREFORE, the parties agree as follows:
-
-1. CONFIDENTIAL INFORMATION
-
-For purposes of this Agreement, "Confidential Information" means all information disclosed by Staedtler, including but not limited to:
-
-${formData.field3 || '• Business plans, strategies, and financial information\n• Product designs, manufacturing processes, and technical specifications\n• Customer lists, pricing information, and market research\n• Trade secrets, formulations, and proprietary manufacturing techniques\n• Any other information marked as confidential or that would reasonably be considered confidential'}
-
-2. OBLIGATIONS OF RECEIVING PARTY
-
-The Receiving Party agrees to:
-• Maintain strict confidentiality of all Confidential Information
-• Use Confidential Information solely for the purpose of evaluating potential business opportunities
-• Not disclose Confidential Information to any third parties without prior written consent
-• Take reasonable precautions to protect the confidentiality of all disclosed information
-• Return or destroy all Confidential Information upon request or termination of discussions
-
-3. TERM AND DURATION
-
-This Agreement shall remain in effect for a period of three (3) years from the date of execution, unless terminated earlier by mutual written agreement of the parties.
-
-4. REMEDIES
-
-The parties acknowledge that any breach of this Agreement may cause irreparable harm to the Disclosing Party, and that monetary damages may be inadequate. Therefore, the Disclosing Party shall be entitled to seek injunctive relief and other equitable remedies in addition to any other available legal remedies.
-
-5. GENERAL PROVISIONS
-
-This Agreement shall be governed by the laws of [State] and any disputes shall be resolved through binding arbitration. This Agreement constitutes the entire understanding between the parties regarding the subject matter herein.
-
-IN WITNESS WHEREOF, the parties have executed this Agreement as of the date last signed below.
-
-STAEDTLER PENCILS COMPANY          ${(formData.field1 || 'ABC CREATIVE AGENCY').toUpperCase()}
-
-_________________________          _________________________
-Signature                          Signature
-
-_________________________          _________________________
-Date                              Date
-
-IMPORTANT: This template is for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before using this agreement.`;
+      const data = await response.json();
       
-      setGeneratedContent(content);
-      setContentTitle(`Non-Disclosure Agreement: ${formData.field1 || 'ABC Creative Agency'}`);
-      setIsLoading(false);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Legal Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
-    }, 2500);
+      trackTemplateUsed(formData.templateType, 1000);
+    } catch (error) {
+      console.error('Error generating legal template:', error);
+      // Fallback content on error
+      const fallbackContent = `${formData.templateType} document for ${formData.field1 || 'Party'}. Project: ${formData.field2 || 'Business Relationship'}. Specific terms: ${formData.field3 || 'Standard terms apply'}.
+
+IMPORTANT: This template is for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before using this agreement.`;
+      setGeneratedContent(fallbackContent);
+      setContentTitle(`Legal Document: ${formData.templateType}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
+      trackTemplateUsed(formData.templateType, 0);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileUpload = (e) => {

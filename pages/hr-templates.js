@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const HRTemplates = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackTemplateUsed } = useUsageTracking();
   const [formData, setFormData] = useState({
     templateType: 'job-description',
     field1: '',
@@ -89,6 +91,7 @@ const HRTemplates = () => {
       setContentTitle(data.data?.title || `${formData.templateType}: ${formData.field1 || 'HR Document'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackTemplateUsed(formData.templateType, 1000);
     } catch (error) {
       console.error('Error generating HR template:', error);
       // Fallback content on error
@@ -97,6 +100,7 @@ const HRTemplates = () => {
       setContentTitle(`${formData.templateType}: ${formData.field1 || 'HR Document'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackTemplateUsed(formData.templateType, 0);
     } finally {
       setIsLoading(false);
     }

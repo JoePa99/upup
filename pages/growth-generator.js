@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const GrowthGenerator = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackContentGenerated } = useUsageTracking();
   const [formData, setFormData] = useState({
     growthFocus: 'Revenue Expansion',
     timeHorizon: 'Next Quarter',
@@ -91,6 +93,7 @@ const GrowthGenerator = () => {
       setContentTitle(data.data?.title || `Growth Opportunities: ${formData.growthFocus}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('growth-opportunities', 800);
     } catch (error) {
       console.error('Error generating growth opportunities:', error);
       // Fallback content on error
@@ -99,6 +102,7 @@ const GrowthGenerator = () => {
       setContentTitle(`Growth Opportunities: ${formData.growthFocus}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('growth-opportunities', 0);
     } finally {
       setIsLoading(false);
     }

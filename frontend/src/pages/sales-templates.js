@@ -4,9 +4,11 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const SalesTemplates = () => {
   const { isAuthenticated } = useAuth();
+  const { trackTemplateUsed } = useUsageTracking();
   const router = useRouter();
   const [formData, setFormData] = useState({
     templateType: 'sales-proposal',
@@ -65,8 +67,36 @@ const SalesTemplates = () => {
     setIsLoading(true);
     setShowContent(false);
     
-    // Simulate API call with fallback content
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/content/templates/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateType: formData.templateType,
+          clientName: formData.field1,
+          proposalType: formData.field2,
+          requirements: formData.field3
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate sales template');
+      }
+
+      const data = await response.json();
+      
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Sales Document: ${formData.templateType}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
+      
+      // Track successful template generation
+      trackTemplateUsed(formData.templateType, 1000); // Estimate 1000 tokens for templates
+    } catch (error) {
+      console.error('Error generating sales template:', error);
+      // Fallback content on error
       const content = `BUSINESS PROPOSAL
 
 Prepared for: ${formData.field1 || 'Metropolitan Art Academy'}
@@ -137,10 +167,14 @@ CONTACT INFORMATION
       
       setGeneratedContent(content);
       setContentTitle(`Sales Proposal: ${formData.field1 || 'Metropolitan Art Academy'}`);
-      setIsLoading(false);
       setShowContent(true);
       setShowPinsSidebar(true);
-    }, 2000);
+      
+      // Track fallback template generation (no tokens used)
+      trackTemplateUsed(formData.templateType, 0);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

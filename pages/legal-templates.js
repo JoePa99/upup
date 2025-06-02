@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const LegalTemplates = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackTemplateUsed } = useUsageTracking();
   const [formData, setFormData] = useState({
     templateType: 'nda',
     field1: '',
@@ -94,6 +96,7 @@ const LegalTemplates = () => {
       setContentTitle(data.data?.title || `Legal Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackTemplateUsed(formData.templateType, 1000);
     } catch (error) {
       console.error('Error generating legal template:', error);
       // Fallback content on error
@@ -104,6 +107,7 @@ IMPORTANT: This template is for informational purposes only and does not constit
       setContentTitle(`Legal Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackTemplateUsed(formData.templateType, 0);
     } finally {
       setIsLoading(false);
     }

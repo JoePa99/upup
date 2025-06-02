@@ -2,10 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
+import { usePins } from '../contexts/PinsContext';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const Dashboard = () => {
   const { isAuthenticated, user } = useAuth();
+  const { pinCount } = usePins();
+  const { getFormattedStats } = useUsageTracking();
   const router = useRouter();
+
+  const [stats, setStats] = useState({
+    contentGenerated: '0',
+    contentGeneratedWeekly: '+0 this week',
+    templatesUsed: '0', 
+    templatesUsedWeekly: '+0 this week',
+    apiTokensUsed: '0',
+    apiTokensPercentage: '0% of monthly limit'
+  });
+
+  useEffect(() => {
+    // Update stats when component mounts
+    setStats(getFormattedStats());
+  }, [getFormattedStats]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -30,24 +48,24 @@ const Dashboard = () => {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">47</div>
+          <div className="stat-value">{stats.contentGenerated}</div>
           <div className="stat-label">Content Pieces Generated</div>
-          <div className="stat-change">+12 this week</div>
+          <div className="stat-change">{stats.contentGeneratedWeekly}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">238</div>
+          <div className="stat-value">{pinCount}</div>
           <div className="stat-label">Sentences Pinned</div>
-          <div className="stat-change">+34 this week</div>
+          <div className="stat-change">Active pins</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">15</div>
+          <div className="stat-value">{stats.templatesUsed}</div>
           <div className="stat-label">Templates Used</div>
-          <div className="stat-change">+3 this week</div>
+          <div className="stat-change">{stats.templatesUsedWeekly}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">8.2k</div>
-          <div className="stat-label">API Tokens Used</div>
-          <div className="stat-change">73% of monthly limit</div>
+          <div className="stat-value">{stats.apiTokensUsed}</div>
+          <div className="stat-label">AI Tokens Used</div>
+          <div className="stat-change">{stats.apiTokensPercentage}</div>
         </div>
       </div>
 

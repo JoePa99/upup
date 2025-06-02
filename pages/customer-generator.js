@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const CustomerGenerator = () => {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { trackContentGenerated } = useUsageTracking();
   const [formData, setFormData] = useState({
     connectionGoal: 'Improve Retention',
     customerSegment: '',
@@ -90,6 +92,7 @@ const CustomerGenerator = () => {
       setContentTitle(data.data?.title || `Customer Strategy: ${formData.connectionGoal}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('customer-connection', 800);
     } catch (error) {
       console.error('Customer connection generation error:', error);
       
@@ -100,6 +103,7 @@ const CustomerGenerator = () => {
       setContentTitle(`Customer Strategy: ${formData.connectionGoal}`);
       setShowContent(true);
       setShowPinsSidebar(true);
+      trackContentGenerated('customer-connection', 0);
       
       alert('Customer strategies generated using fallback mode. Please check your internet connection or contact support if this persists.');
     } finally {
