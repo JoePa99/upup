@@ -22,28 +22,42 @@ export default async function handler(req, res) {
 
     // Verify the auth user exists before proceeding
     let authUserExists = false;
+    let authUserData = null;
     let attempts = 0;
     const maxAttempts = 10;
 
     while (!authUserExists && attempts < maxAttempts) {
       try {
         const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(authUserId);
+        console.log(`Auth user check attempt ${attempts + 1}:`, { 
+          hasUser: !!authUser, 
+          error: error?.message,
+          userId: authUserId 
+        });
+        
         if (authUser && !error) {
           authUserExists = true;
+          authUserData = authUser;
           break;
         }
       } catch (error) {
         console.log(`Auth user check attempt ${attempts + 1} failed:`, error.message);
       }
       
-      // Wait 500ms before trying again
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait 1 second before trying again
+      await new Promise(resolve => setTimeout(resolve, 1000));
       attempts++;
     }
 
     if (!authUserExists) {
-      throw new Error('Auth user not found or not ready. Please try again.');
+      throw new Error(`Auth user not found after ${maxAttempts} attempts. User ID: ${authUserId}`);
     }
+
+    console.log('Auth user verified:', { 
+      id: authUserData.id, 
+      email: authUserData.email,
+      created_at: authUserData.created_at 
+    });
 
     // Generate unique subdomain
     let finalSubdomain = subdomain;
@@ -102,19 +116,41 @@ export default async function handler(req, res) {
     // Create user record using service key (bypasses RLS)
     console.log('Creating user with auth_user_id:', authUserId, 'tenant_id:', tenantData.id);
     
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        auth_user_id: authUserId,
-        tenant_id: tenantData.id,
-        email: email,
-        password_hash: 'auth_managed', // Placeholder since password is managed by Supabase Auth
-        first_name: firstName,
-        last_name: lastName,
-        role: 'admin' // First user in tenant is admin
-      })
-      .select()
-      .single();
+    // Try creating user record with retries for foreign key issues
+    let userData = null;
+    let userError = null;
+    let userAttempts = 0;
+    const maxUserAttempts = 3;
+
+    while (!userData && userAttempts < maxUserAttempts) {
+      const { data, error } = await supabaseAdmin
+        .from('users')
+        .insert({
+          auth_user_id: authUserId,
+          tenant_id: tenantData.id,
+          email: email,
+          password_hash: 'auth_managed', // Placeholder since password is managed by Supabase Auth
+          first_name: firstName,
+          last_name: lastName,
+          role: 'admin' // First user in tenant is admin
+        })
+        .select()
+        .single();
+
+      if (!error) {
+        userData = data;
+        break;
+      } else {
+        userError = error;
+        console.log(`User creation attempt ${userAttempts + 1} failed:`, error);
+        
+        // Wait 2 seconds before retrying
+        if (userAttempts < maxUserAttempts - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      userAttempts++;
+    }
 
     if (userError) {
       console.error('User creation error details:', {
