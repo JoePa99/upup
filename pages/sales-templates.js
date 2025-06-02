@@ -65,8 +65,33 @@ const SalesTemplates = () => {
     setIsLoading(true);
     setShowContent(false);
     
-    // Simulate API call with fallback content
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/content/templates/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateType: selectedTemplate,
+          clientName: formData.field1,
+          proposalType: formData.field2,
+          requirements: formData.field3
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate sales template');
+      }
+
+      const data = await response.json();
+      
+      setGeneratedContent(data.content);
+      setContentTitle(`Sales Document: ${selectedTemplate}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
+    } catch (error) {
+      console.error('Error generating sales template:', error);
+      // Fallback content on error
       const content = `BUSINESS PROPOSAL
 
 Prepared for: ${formData.field1 || 'Metropolitan Art Academy'}
@@ -140,7 +165,9 @@ CONTACT INFORMATION
       setIsLoading(false);
       setShowContent(true);
       setShowPinsSidebar(true);
-    }, 2000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

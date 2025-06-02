@@ -67,16 +67,40 @@ const GrowthGenerator = () => {
     setIsLoading(true);
     setShowContent(false);
     
-    // Simulate API call
-    setTimeout(() => {
-      const content = `Staedtler's revenue expansion opportunities lie in leveraging your premium brand positioning to capture higher-value market segments within the specified timeframe. The growing market of professional digital artists who still value traditional sketching tools represents a $2.3 billion opportunity that aligns perfectly with your precision engineering heritage. Your German craftsmanship story resonates powerfully with design schools and professional artists who prioritize quality over price, creating natural upselling opportunities from basic pencils to premium drawing sets. The trend toward mindful creativity and analog experiences among younger professionals opens doors for Staedtler to position drawing and sketching as premium lifestyle activities, not just functional tools. Partnership opportunities with high-end art schools, design agencies, and creative co-working spaces could generate recurring revenue through bulk purchasing agreements and brand partnership deals. Your existing relationship with art supply retailers provides the foundation for expanded product placement in premium sections, potentially increasing average transaction value by 35-40%. The rise of adult coloring and artistic therapy markets presents opportunities to develop specialized product lines that command premium pricing while serving growing wellness trends. E-commerce expansion beyond traditional art supply channels into lifestyle and luxury goods platforms could capture customers who view quality writing instruments as status symbols rather than just tools. International expansion into emerging markets with growing creative professional populations offers revenue growth potential that leverages your existing manufacturing capabilities and brand heritage. Subscription box partnerships with creative learning platforms could create recurring revenue streams while introducing Staedtler products to artists who might not otherwise discover your premium offerings.`;
+    try {
+      const response = await fetch('/api/content/generate/growth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          growthFocus: formData.growthFocus,
+          timeHorizon: formData.timeHorizon,
+          constraints: formData.constraints
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate growth opportunities');
+      }
+
+      const data = await response.json();
       
-      setGeneratedContent(content);
+      setGeneratedContent(data.content);
       setContentTitle(`Growth Opportunities: ${formData.growthFocus}`);
-      setIsLoading(false);
       setShowContent(true);
       setShowPinsSidebar(true);
-    }, 2500);
+    } catch (error) {
+      console.error('Error generating growth opportunities:', error);
+      // Fallback content on error
+      const fallbackContent = `Growth opportunity analysis for ${formData.growthFocus} focus with ${formData.timeHorizon} timeline. Based on your constraints: ${formData.constraints}, here are strategic recommendations for business expansion and revenue optimization.`;
+      setGeneratedContent(fallbackContent);
+      setContentTitle(`Growth Opportunities: ${formData.growthFocus}`);
+      setShowContent(true);
+      setShowPinsSidebar(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
