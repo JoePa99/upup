@@ -4,16 +4,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { growthFocus, growthTimeframe, currentChallenges } = req.body;
+    const { growthFocus, timeHorizon, constraints } = req.body;
 
-    if (!growthFocus || !growthTimeframe) {
+    if (!growthFocus || !timeHorizon) {
       return res.status(400).json({
-        message: 'Missing required fields: growthFocus, growthTimeframe'
+        message: 'Missing required fields: growthFocus, timeHorizon'
       });
     }
 
     // Generate growth strategy based on input
-    const mockContent = generateGrowthStrategy(growthFocus, growthTimeframe, currentChallenges);
+    const mockContent = generateGrowthStrategy(growthFocus, timeHorizon, constraints);
 
     return res.status(200).json({
       success: true,
@@ -23,8 +23,8 @@ export default async function handler(req, res) {
         metadata: {
           generatedAt: new Date().toISOString(),
           growthFocus,
-          growthTimeframe,
-          challenges: currentChallenges || 'general challenges'
+          timeHorizon,
+          constraints: constraints || 'general constraints'
         }
       }
     });
