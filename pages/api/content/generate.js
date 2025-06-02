@@ -80,6 +80,14 @@ export default async function handler(req, res) {
 
 async function generateAIContent(topic, type, audience, pins, companyContext) {
   try {
+    console.log('Generating AI content for:', { topic, type, audience });
+    
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.log('No OpenAI API key found, using mock content');
+      return generateMockContent(topic, type, audience, pins, companyContext);
+    }
+    
     const { tenantInfo } = companyContext;
     
     const prompt = `Generate a ${type} about ${topic} for ${audience}.
@@ -97,6 +105,7 @@ Requirements:
 
 Format: Return only the content, no extra formatting or explanations.`;
 
+    console.log('Making OpenAI API call...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -116,12 +125,18 @@ Format: Return only the content, no extra formatting or explanations.`;
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+
     if (!response.ok) {
-      throw new Error('OpenAI API request failed');
+      const errorData = await response.text();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API request failed: ${response.status}`);
     }
 
     const data = await response.json();
     const content = data.choices[0]?.message?.content || 'Failed to generate content';
+    
+    console.log('AI content generated successfully, length:', content.length);
     
     return {
       title: `${type}: ${topic}`,
@@ -131,6 +146,7 @@ Format: Return only the content, no extra formatting or explanations.`;
   } catch (error) {
     console.error('OpenAI API error:', error);
     // Fallback to mock content if API fails
+    console.log('Falling back to mock content');
     return generateMockContent(topic, type, audience, pins, companyContext);
   }
 }
