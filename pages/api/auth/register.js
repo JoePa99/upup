@@ -20,44 +20,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Verify the auth user exists before proceeding
-    let authUserExists = false;
-    let authUserData = null;
-    let attempts = 0;
-    const maxAttempts = 15;
-
-    while (!authUserExists && attempts < maxAttempts) {
-      try {
-        const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(authUserId);
-        console.log(`Auth user check attempt ${attempts + 1}:`, { 
-          hasUser: !!authUser, 
-          error: error?.message,
-          userId: authUserId 
-        });
-        
-        if (authUser && !error) {
-          authUserExists = true;
-          authUserData = authUser;
-          break;
-        }
-      } catch (error) {
-        console.log(`Auth user check attempt ${attempts + 1} failed:`, error.message);
-      }
-      
-      // Wait longer between attempts (2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      attempts++;
-    }
-
-    if (!authUserExists) {
-      throw new Error(`Auth user not found after ${maxAttempts} attempts. This may be a temporary issue. Please try again in a moment.`);
-    }
-
-    console.log('Auth user verified:', { 
-      id: authUserData.id, 
-      email: authUserData.email,
-      created_at: authUserData.created_at 
-    });
+    // Log the auth user ID we received
+    console.log('Processing registration for auth user:', authUserId);
 
     // Generate unique subdomain
     let finalSubdomain = subdomain;
@@ -120,7 +84,7 @@ export default async function handler(req, res) {
     let userData = null;
     let userError = null;
     let userAttempts = 0;
-    const maxUserAttempts = 3;
+    const maxUserAttempts = 2;
 
     while (!userData && userAttempts < maxUserAttempts) {
       const { data, error } = await supabaseAdmin
@@ -144,9 +108,9 @@ export default async function handler(req, res) {
         userError = error;
         console.log(`User creation attempt ${userAttempts + 1} failed:`, error);
         
-        // Wait 2 seconds before retrying
+        // Wait 1 second before retrying
         if (userAttempts < maxUserAttempts - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
       userAttempts++;
