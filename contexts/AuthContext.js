@@ -85,9 +85,44 @@ export const AuthProvider = ({ children }) => {
           role: userData.user_role
         });
       } else {
-        // User exists in auth but not in users table
-        console.error('User not found in users table');
-        setError('Account setup incomplete. Please contact support.');
+        // Function returned empty - try direct query as fallback
+        console.log('Function returned empty, trying direct query...');
+        
+        const { data: directData, error: directError } = await supabase
+          .from('users')
+          .select(`
+            id,
+            tenant_id,
+            role,
+            email,
+            first_name,
+            last_name,
+            tenants!inner (
+              id,
+              name,
+              subdomain
+            )
+          `)
+          .eq('auth_user_id', authUser.id)
+          .single();
+
+        if (directError) throw directError;
+
+        if (directData) {
+          setUser({
+            id: directData.id,
+            authUserId: authUser.id,
+            email: authUser.email,
+            firstName: authUser.user_metadata?.first_name || directData.first_name || '',
+            lastName: authUser.user_metadata?.last_name || directData.last_name || '',
+            tenantId: directData.tenant_id,
+            tenantName: directData.tenants.name,
+            role: directData.role
+          });
+        } else {
+          console.error('User not found in users table');
+          setError('Account setup incomplete. Please contact support.');
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
