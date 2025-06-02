@@ -72,38 +72,33 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🔍 Loading user data for:', authUser.email);
       
-      // Skip the problematic RPC call and use direct query instead
-      console.log('🔍 Using direct query approach...');
+      // Use API endpoint to bypass RLS issues
+      console.log('🔍 Using API endpoint approach...');
       
-      const { data: directData, error: directError } = await supabase
-        .from('users')
-        .select(`
-          id,
-          tenant_id,
-          role,
-          email,
-          first_name,
-          last_name,
-          tenants!inner (
-            id,
-            name,
-            subdomain
-          )
-        `)
-        .eq('auth_user_id', authUser.id)
-        .single();
+      const response = await fetch('/api/auth/get-user-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authUserId: authUser.id })
+      });
 
-      console.log('🔍 Direct query result:', { data: directData, error: directError?.message });
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data: ' + response.status);
+      }
+
+      const directData = await response.json();
+      const directError = directData.error ? { message: directData.error } : null;
+
+      console.log('🔍 API response result:', { data: directData, error: directError?.message });
 
       if (directError) {
-        // If direct query fails, the user might not exist in users table
+        // If API call fails, the user might not exist in users table
         console.error('User not found in users table:', directError.message);
         setError('Account setup incomplete. Please contact support.');
         return;
       }
 
-      if (directData) {
-        console.log('✅ Found user data via direct query:', directData);
+      if (directData && directData.id) {
+        console.log('✅ Found user data via API:', directData);
         
         setUser({
           id: directData.id,
@@ -116,9 +111,9 @@ export const AuthProvider = ({ children }) => {
           role: directData.role
         });
         
-        console.log('✅ User set successfully via direct query');
+        console.log('✅ User set successfully via API');
       } else {
-        console.error('No user data returned from direct query');
+        console.error('No user data returned from API');
         setError('Account setup incomplete. Please contact support.');
       }
     } catch (error) {
