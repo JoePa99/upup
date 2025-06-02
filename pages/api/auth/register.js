@@ -20,12 +20,50 @@ export default async function handler(req, res) {
       });
     }
 
+    // Generate unique subdomain
+    let finalSubdomain = subdomain;
+    if (!finalSubdomain) {
+      // Generate from tenant name if not provided
+      finalSubdomain = tenantName.toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 30); // Limit length
+    }
+
+    // Ensure subdomain is unique by checking and adding suffix if needed
+    let uniqueSubdomain = finalSubdomain;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const { data: existingTenant } = await supabaseAdmin
+        .from('tenants')
+        .select('id')
+        .eq('subdomain', uniqueSubdomain)
+        .single();
+
+      if (!existingTenant) {
+        // Subdomain is available
+        break;
+      }
+
+      // Add random suffix to make it unique
+      const randomSuffix = Math.floor(Math.random() * 1000);
+      uniqueSubdomain = `${finalSubdomain}-${randomSuffix}`;
+      attempts++;
+    }
+
+    if (attempts >= maxAttempts) {
+      throw new Error('Unable to generate unique subdomain. Please try a different company name.');
+    }
+
     // Create tenant record using service key (bypasses RLS)
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from('tenants')
       .insert({
         name: tenantName,
-        subdomain: subdomain || `${firstName.toLowerCase()}-${Date.now()}`,
+        subdomain: uniqueSubdomain,
         admin_email: email
       })
       .select()
@@ -63,7 +101,9 @@ export default async function handler(req, res) {
         user: userData,
         tenant: tenantData
       },
-      message: 'Registration completed successfully'
+      message: uniqueSubdomain !== finalSubdomain 
+        ? `Registration completed! Your subdomain is: ${uniqueSubdomain}` 
+        : 'Registration completed successfully'
     });
 
   } catch (error) {

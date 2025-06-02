@@ -62,7 +62,7 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      await register(formData);
+      const result = await register(formData);
       
       // Show success message
       alert('Registration successful! Please check your email to verify your account, then you can log in.');
