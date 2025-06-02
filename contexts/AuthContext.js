@@ -53,9 +53,13 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, session?.user?.email);
+      
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('🔄 Processing SIGNED_IN event...');
         await loadUserData(session.user);
       } else if (event === 'SIGNED_OUT') {
+        console.log('🔄 Processing SIGNED_OUT event...');
         setUser(null);
       }
       setLoading(false);
@@ -66,14 +70,20 @@ export const AuthProvider = ({ children }) => {
 
   const loadUserData = async (authUser) => {
     try {
+      console.log('🔍 Loading user data for:', authUser.email);
+      
       // Get user data with tenant info from database
       const { data, error } = await supabase
         .rpc('get_user_tenant_info');
+
+      console.log('🔍 RPC result:', { data, error: error?.message });
 
       if (error) throw error;
 
       if (data && data.length > 0) {
         const userData = data[0];
+        console.log('✅ Found user data:', userData);
+        
         setUser({
           id: userData.user_id,
           authUserId: authUser.id,
@@ -84,6 +94,8 @@ export const AuthProvider = ({ children }) => {
           tenantName: userData.tenant_name,
           role: userData.user_role
         });
+        
+        console.log('✅ User set successfully');
       } else {
         // Function returned empty - try direct query as fallback
         console.log('Function returned empty, trying direct query...');
@@ -136,6 +148,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      console.log('🔐 Starting login for:', email);
       setLoading(true);
       setError(null);
       
@@ -144,11 +157,15 @@ export const AuthProvider = ({ children }) => {
         password
       });
 
+      console.log('🔐 Auth response:', { user: data?.user?.id, error: error?.message });
+
       if (error) throw error;
 
+      console.log('🔐 Login successful, waiting for auth state change...');
       // User data will be loaded by the auth state change listener
       return data.user;
     } catch (error) {
+      console.error('🔐 Login error:', error);
       setError(error.message);
       throw error;
     } finally {
