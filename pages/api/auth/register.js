@@ -81,6 +81,7 @@ export default async function handler(req, res) {
         auth_user_id: authUserId,
         tenant_id: tenantData.id,
         email: email,
+        password_hash: 'auth_managed', // Placeholder since password is managed by Supabase Auth
         first_name: firstName,
         last_name: lastName,
         role: 'admin' // First user in tenant is admin
