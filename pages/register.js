@@ -83,7 +83,7 @@ const Register = () => {
         <div className="auth-card">
           <div className="auth-header">
             <h1>Create Your Account</h1>
-            <p>Start your AI-powered business platform</p>
+            <p>Start your AI-powered business platform today</p>
           </div>
 
           {errorMessage && (
