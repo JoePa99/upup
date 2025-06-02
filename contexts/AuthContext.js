@@ -72,72 +72,57 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🔍 Loading user data for:', authUser.email);
       
-      // Get user data with tenant info from database
-      const { data, error } = await supabase
-        .rpc('get_user_tenant_info');
+      // Skip the problematic RPC call and use direct query instead
+      console.log('🔍 Using direct query approach...');
+      
+      const { data: directData, error: directError } = await supabase
+        .from('users')
+        .select(`
+          id,
+          tenant_id,
+          role,
+          email,
+          first_name,
+          last_name,
+          tenants!inner (
+            id,
+            name,
+            subdomain
+          )
+        `)
+        .eq('auth_user_id', authUser.id)
+        .single();
 
-      console.log('🔍 RPC result:', { data, error: error?.message });
+      console.log('🔍 Direct query result:', { data: directData, error: directError?.message });
 
-      if (error) throw error;
+      if (directError) {
+        // If direct query fails, the user might not exist in users table
+        console.error('User not found in users table:', directError.message);
+        setError('Account setup incomplete. Please contact support.');
+        return;
+      }
 
-      if (data && data.length > 0) {
-        const userData = data[0];
-        console.log('✅ Found user data:', userData);
+      if (directData) {
+        console.log('✅ Found user data via direct query:', directData);
         
         setUser({
-          id: userData.user_id,
+          id: directData.id,
           authUserId: authUser.id,
           email: authUser.email,
-          firstName: authUser.user_metadata?.first_name || '',
-          lastName: authUser.user_metadata?.last_name || '',
-          tenantId: userData.tenant_id,
-          tenantName: userData.tenant_name,
-          role: userData.user_role
+          firstName: authUser.user_metadata?.first_name || directData.first_name || '',
+          lastName: authUser.user_metadata?.last_name || directData.last_name || '',
+          tenantId: directData.tenant_id,
+          tenantName: directData.tenants.name,
+          role: directData.role
         });
         
-        console.log('✅ User set successfully');
+        console.log('✅ User set successfully via direct query');
       } else {
-        // Function returned empty - try direct query as fallback
-        console.log('Function returned empty, trying direct query...');
-        
-        const { data: directData, error: directError } = await supabase
-          .from('users')
-          .select(`
-            id,
-            tenant_id,
-            role,
-            email,
-            first_name,
-            last_name,
-            tenants!inner (
-              id,
-              name,
-              subdomain
-            )
-          `)
-          .eq('auth_user_id', authUser.id)
-          .single();
-
-        if (directError) throw directError;
-
-        if (directData) {
-          setUser({
-            id: directData.id,
-            authUserId: authUser.id,
-            email: authUser.email,
-            firstName: authUser.user_metadata?.first_name || directData.first_name || '',
-            lastName: authUser.user_metadata?.last_name || directData.last_name || '',
-            tenantId: directData.tenant_id,
-            tenantName: directData.tenants.name,
-            role: directData.role
-          });
-        } else {
-          console.error('User not found in users table');
-          setError('Account setup incomplete. Please contact support.');
-        }
+        console.error('No user data returned from direct query');
+        setError('Account setup incomplete. Please contact support.');
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('❌ Error loading user data:', error);
       setError(error.message);
     }
   };
