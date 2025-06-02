@@ -48,14 +48,14 @@ export default async function handler(req, res) {
     // Get company context for personalized content
     const companyContext = await getCompanyContext(contentTopic);
 
-    // Generate content with company context
-    const mockContent = generateMockContent(contentTopic, contentType, contentAudience, pins, companyContext);
+    // Generate content with OpenAI
+    const aiContent = await generateAIContent(contentTopic, contentType, contentAudience, pins, companyContext);
 
     return res.status(200).json({
       success: true,
       data: {
-        content: mockContent.content,
-        title: mockContent.title,
+        content: aiContent.content,
+        title: aiContent.title,
         metadata: {
           generatedAt: new Date().toISOString(),
           contentType,
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
           pinsUsed: pins.length,
           companyName: companyContext.tenantInfo.companyName,
           contextUsed: companyContext.relevantKnowledge.length > 0,
-          wordCount: mockContent.content.split(' ').length
+          wordCount: aiContent.content.split(' ').length
         }
       }
     });
@@ -75,6 +75,63 @@ export default async function handler(req, res) {
       message: 'Content generation failed',
       error: error.message
     });
+  }
+}
+
+async function generateAIContent(topic, type, audience, pins, companyContext) {
+  try {
+    const { tenantInfo } = companyContext;
+    
+    const prompt = `Generate a ${type} about ${topic} for ${audience}.
+    
+Company context:
+- Company: ${tenantInfo.companyName}
+- Industry: ${tenantInfo.industry}  
+- Values: ${tenantInfo.values}
+
+Requirements:
+- Professional and engaging tone
+- Actionable insights
+- Industry-specific language
+- Length: ${type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
+
+Format: Return only the content, no extra formatting or explanations.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('OpenAI API request failed');
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content || 'Failed to generate content';
+    
+    return {
+      title: `${type}: ${topic}`,
+      content: content.trim()
+    };
+    
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    // Fallback to mock content if API fails
+    return generateMockContent(topic, type, audience, pins, companyContext);
   }
 }
 
