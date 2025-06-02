@@ -53,13 +53,9 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state change:', event, session?.user?.email);
-      
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔄 Processing SIGNED_IN event...');
         await loadUserData(session.user);
       } else if (event === 'SIGNED_OUT') {
-        console.log('🔄 Processing SIGNED_OUT event...');
         setUser(null);
       }
       setLoading(false);
@@ -70,10 +66,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadUserData = async (authUser) => {
     try {
-      console.log('🔍 Loading user data for:', authUser.email);
-      
       // Use API endpoint to bypass RLS issues
-      console.log('🔍 Using API endpoint approach...');
       
       const response = await fetch('/api/auth/get-user-data', {
         method: 'POST',
@@ -88,18 +81,12 @@ export const AuthProvider = ({ children }) => {
       const directData = await response.json();
       const directError = directData.error ? { message: directData.error } : null;
 
-      console.log('🔍 API response result:', { data: directData, error: directError?.message });
-
       if (directError) {
-        // If API call fails, the user might not exist in users table
-        console.error('User not found in users table:', directError.message);
         setError('Account setup incomplete. Please contact support.');
         return;
       }
 
       if (directData && directData.id) {
-        console.log('✅ Found user data via API:', directData);
-        
         setUser({
           id: directData.id,
           authUserId: authUser.id,
@@ -110,10 +97,7 @@ export const AuthProvider = ({ children }) => {
           tenantName: directData.tenants.name,
           role: directData.role
         });
-        
-        console.log('✅ User set successfully via API');
       } else {
-        console.error('No user data returned from API');
         setError('Account setup incomplete. Please contact support.');
       }
     } catch (error) {
@@ -128,7 +112,6 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      console.log('🔐 Starting login for:', email);
       setLoading(true);
       setError(null);
       
@@ -137,15 +120,11 @@ export const AuthProvider = ({ children }) => {
         password
       });
 
-      console.log('🔐 Auth response:', { user: data?.user?.id, error: error?.message });
-
       if (error) throw error;
 
-      console.log('🔐 Login successful, waiting for auth state change...');
       // User data will be loaded by the auth state change listener
       return data.user;
     } catch (error) {
-      console.error('🔐 Login error:', error);
       setError(error.message);
       throw error;
     } finally {
