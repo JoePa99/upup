@@ -144,6 +144,9 @@ export const AuthProvider = ({ children }) => {
 
       if (authError) throw authError;
 
+      // Wait a moment for the auth user to be fully created
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       // Call our registration API endpoint to create tenant and user records
       // This uses the service key on the backend to bypass RLS
       const response = await fetch('/api/auth/register', {

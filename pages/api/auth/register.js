@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     let authUserExists = false;
     let authUserData = null;
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 15;
 
     while (!authUserExists && attempts < maxAttempts) {
       try {
@@ -44,13 +44,13 @@ export default async function handler(req, res) {
         console.log(`Auth user check attempt ${attempts + 1} failed:`, error.message);
       }
       
-      // Wait 1 second before trying again
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait longer between attempts (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
       attempts++;
     }
 
     if (!authUserExists) {
-      throw new Error(`Auth user not found after ${maxAttempts} attempts. User ID: ${authUserId}`);
+      throw new Error(`Auth user not found after ${maxAttempts} attempts. This may be a temporary issue. Please try again in a moment.`);
     }
 
     console.log('Auth user verified:', { 
