@@ -112,14 +112,16 @@ const initializeDatabase = async () => {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        auth_user_id UUID,
         email VARCHAR(255) NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255),
         first_name VARCHAR(100),
         last_name VARCHAR(100),
         role VARCHAR(50) NOT NULL DEFAULT 'user',
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        UNIQUE(tenant_id, email)
+        UNIQUE(tenant_id, email),
+        UNIQUE(auth_user_id)
       )
     `);
     
@@ -292,8 +294,11 @@ const initializeDatabase = async () => {
         USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
     `);
     
+    // Create database functions
+    await createDatabaseFunctions(client);
+    
     await client.query('COMMIT');
-    console.log('Database tables created successfully');
+    console.log('Database tables and functions created successfully');
     
     // Set up RLS policies and functions in Supabase
     await setupSupabaseRLS();
@@ -304,6 +309,28 @@ const initializeDatabase = async () => {
     throw error;
   } finally {
     client.release();
+  }
+};
+
+// Create database functions
+const createDatabaseFunctions = async (client) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    console.log('Creating database functions...');
+    
+    // Read the SQL functions file
+    const functionsPath = path.join(__dirname, 'db-functions.sql');
+    const functionsSQL = fs.readFileSync(functionsPath, 'utf8');
+    
+    // Execute the functions SQL
+    await client.query(functionsSQL);
+    
+    console.log('Database functions created successfully');
+  } catch (error) {
+    console.error('Error creating database functions:', error);
+    // Don't throw error to allow tables to be created even if functions fail
   }
 };
 

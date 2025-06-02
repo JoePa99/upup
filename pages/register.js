@@ -16,6 +16,7 @@ const Register = () => {
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   const router = useRouter();
   const { register } = useAuth();
 
@@ -69,9 +70,52 @@ const Register = () => {
       router.push('/login');
     } catch (error) {
       console.error('Registration error:', error);
-      setErrorMessage(
-        error.message || 'Registration failed. Please try again.'
-      );
+      const errorMsg = error.message || 'Registration failed. Please try again.';
+      
+      // Check if it's a "user already exists" error
+      if (errorMsg.includes('User already registered') || errorMsg.includes('already been registered')) {
+        setShowRecovery(true);
+        setErrorMessage('An account with this email already exists but may be incomplete.');
+      } else {
+        setErrorMessage(errorMsg);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRecovery = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/auth/recover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Recovery failed');
+      }
+
+      if (data.hasUserRecord) {
+        alert('Your account is properly set up. Try logging in.');
+        router.push('/login');
+      } else {
+        alert('Incomplete registration cleaned up. You can now register again.');
+        setShowRecovery(false);
+        // Allow user to try registration again
+      }
+    } catch (error) {
+      console.error('Recovery error:', error);
+      setErrorMessage(error.message || 'Recovery failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +133,26 @@ const Register = () => {
           {errorMessage && (
             <div className="error-message">
               {errorMessage}
+              {showRecovery && (
+                <div style={{ marginTop: '12px' }}>
+                  <button 
+                    type="button" 
+                    onClick={handleRecovery}
+                    disabled={isLoading}
+                    style={{
+                      background: '#f59e0b',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      cursor: isLoading ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isLoading ? 'Fixing...' : 'Fix Incomplete Registration'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
