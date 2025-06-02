@@ -144,32 +144,27 @@ export const AuthProvider = ({ children }) => {
 
       if (authError) throw authError;
 
-      // Create tenant and user records
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: userData.tenantName || `${userData.firstName}'s Company`,
-          subdomain: userData.subdomain || `${userData.firstName.toLowerCase()}-${Date.now()}`,
-          admin_email: userData.email
-        })
-        .select()
-        .single();
-
-      if (tenantError) throw tenantError;
-
-      // Create user record linked to auth user
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          auth_user_id: authData.user.id,
-          tenant_id: tenantData.id,
+      // Call our registration API endpoint to create tenant and user records
+      // This uses the service key on the backend to bypass RLS
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          authUserId: authData.user.id,
           email: userData.email,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          role: 'admin' // First user in tenant is admin
-        });
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          tenantName: userData.tenantName,
+          subdomain: userData.subdomain
+        })
+      });
 
-      if (userError) throw userError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
 
       return authData.user;
     } catch (error) {
