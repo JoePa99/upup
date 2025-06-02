@@ -5,6 +5,7 @@ const DebugLogin = () => {
   const [email, setEmail] = useState('');
   const [debugResult, setDebugResult] = useState(null);
   const [fixResult, setFixResult] = useState(null);
+  const [cleanupResult, setCleanupResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const runDebug = async () => {
@@ -55,6 +56,30 @@ const DebugLogin = () => {
     }
   };
 
+  const cleanupDuplicates = async () => {
+    if (!email) {
+      alert('Please enter your email');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/cleanup-duplicates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      setCleanupResult(data);
+    } catch (error) {
+      console.error('Cleanup error:', error);
+      setCleanupResult({ error: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Layout title="Debug Login | UPUP">
       <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
@@ -99,6 +124,7 @@ const DebugLogin = () => {
             disabled={isLoading}
             style={{
               padding: '10px 20px',
+              marginRight: '10px',
               background: '#28a745',
               color: 'white',
               border: 'none',
@@ -107,6 +133,21 @@ const DebugLogin = () => {
             }}
           >
             {isLoading ? 'Fixing...' : 'Fix User Link'}
+          </button>
+          
+          <button
+            onClick={cleanupDuplicates}
+            disabled={isLoading}
+            style={{
+              padding: '10px 20px',
+              background: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isLoading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isLoading ? 'Cleaning...' : 'Cleanup Duplicates'}
           </button>
         </div>
 
@@ -135,7 +176,8 @@ const DebugLogin = () => {
             background: '#d4edda',
             padding: '15px',
             border: '1px solid #c3e6cb',
-            borderRadius: '4px'
+            borderRadius: '4px',
+            marginBottom: '20px'
           }}>
             <h3>Fix Results:</h3>
             <pre style={{ 
@@ -149,14 +191,39 @@ const DebugLogin = () => {
           </div>
         )}
 
+        {cleanupResult && (
+          <div style={{
+            background: cleanupResult.success ? '#d4edda' : '#f8d7da',
+            padding: '15px',
+            border: `1px solid ${cleanupResult.success ? '#c3e6cb' : '#f5c6cb'}`,
+            borderRadius: '4px',
+            marginBottom: '20px'
+          }}>
+            <h3>Cleanup Results:</h3>
+            <pre style={{ 
+              background: 'white', 
+              padding: '10px', 
+              overflow: 'auto',
+              fontSize: '12px'
+            }}>
+              {JSON.stringify(cleanupResult, null, 2)}
+            </pre>
+          </div>
+        )}
+
         <div style={{ marginTop: '30px', padding: '15px', background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
           <h4>Instructions:</h4>
           <ol>
             <li>Enter the email you're trying to log in with</li>
             <li>Click "Debug Login" to see what's wrong</li>
+            <li><strong>If you see duplicate users (like your current issue):</strong> Click "Cleanup Duplicates"</li>
             <li>If the debug shows missing auth_user_id link, click "Fix User Link"</li>
             <li>Try logging in again</li>
           </ol>
+          
+          <div style={{ marginTop: '15px', padding: '10px', background: '#ffe6e6', borderRadius: '4px' }}>
+            <strong>Your Issue:</strong> You have duplicate user records in the database. Click "Cleanup Duplicates" to remove the extra records and keep only the one with the proper auth link.
+          </div>
         </div>
       </div>
     </Layout>
