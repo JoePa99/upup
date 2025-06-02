@@ -3,9 +3,11 @@ import Layout from '../components/Layout';
 
 const DebugLogin = () => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [debugResult, setDebugResult] = useState(null);
   const [fixResult, setFixResult] = useState(null);
   const [cleanupResult, setCleanupResult] = useState(null);
+  const [loginTestResult, setLoginTestResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const runDebug = async () => {
@@ -80,26 +82,68 @@ const DebugLogin = () => {
     }
   };
 
+  const testLogin = async () => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/test-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      setLoginTestResult(data);
+    } catch (error) {
+      console.error('Login test error:', error);
+      setLoginTestResult({ error: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Layout title="Debug Login | UPUP">
       <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
         <h1>Debug Login Issue</h1>
         
         <div style={{ marginBottom: '20px' }}>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your-email@example.com"
-            style={{
-              width: '300px',
-              padding: '8px',
-              marginLeft: '10px',
-              border: '1px solid #ccc',
-              borderRadius: '4px'
-            }}
-          />
+          <div style={{ marginBottom: '10px' }}>
+            <label>Email:</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your-email@example.com"
+              style={{
+                width: '300px',
+                padding: '8px',
+                marginLeft: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
+          <div>
+            <label>Password:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="your-password"
+              style={{
+                width: '300px',
+                padding: '8px',
+                marginLeft: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
         </div>
 
         <div style={{ marginBottom: '20px' }}>
@@ -140,6 +184,7 @@ const DebugLogin = () => {
             disabled={isLoading}
             style={{
               padding: '10px 20px',
+              marginRight: '10px',
               background: '#dc3545',
               color: 'white',
               border: 'none',
@@ -148,6 +193,21 @@ const DebugLogin = () => {
             }}
           >
             {isLoading ? 'Cleaning...' : 'Cleanup Duplicates'}
+          </button>
+
+          <button
+            onClick={testLogin}
+            disabled={isLoading}
+            style={{
+              padding: '10px 20px',
+              background: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isLoading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isLoading ? 'Testing...' : 'Test Login Process'}
           </button>
         </div>
 
@@ -211,18 +271,38 @@ const DebugLogin = () => {
           </div>
         )}
 
+        {loginTestResult && (
+          <div style={{
+            background: loginTestResult.success ? '#d4edda' : '#f8d7da',
+            padding: '15px',
+            border: `1px solid ${loginTestResult.success ? '#c3e6cb' : '#f5c6cb'}`,
+            borderRadius: '4px',
+            marginBottom: '20px'
+          }}>
+            <h3>Login Test Results:</h3>
+            <pre style={{ 
+              background: 'white', 
+              padding: '10px', 
+              overflow: 'auto',
+              fontSize: '12px'
+            }}>
+              {JSON.stringify(loginTestResult, null, 2)}
+            </pre>
+          </div>
+        )}
+
         <div style={{ marginTop: '30px', padding: '15px', background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
           <h4>Instructions:</h4>
           <ol>
-            <li>Enter the email you're trying to log in with</li>
-            <li>Click "Debug Login" to see what's wrong</li>
-            <li><strong>If you see duplicate users (like your current issue):</strong> Click "Cleanup Duplicates"</li>
+            <li>Enter your email and password</li>
+            <li>Click "Test Login Process" to see exactly where login fails</li>
+            <li>Click "Debug Login" to check user records</li>
+            <li>If you see duplicate users: Click "Cleanup Duplicates"</li>
             <li>If the debug shows missing auth_user_id link, click "Fix User Link"</li>
-            <li>Try logging in again</li>
           </ol>
           
-          <div style={{ marginTop: '15px', padding: '10px', background: '#ffe6e6', borderRadius: '4px' }}>
-            <strong>Your Issue:</strong> You have duplicate user records in the database. Click "Cleanup Duplicates" to remove the extra records and keep only the one with the proper auth link.
+          <div style={{ marginTop: '15px', padding: '10px', background: '#e6f3ff', borderRadius: '4px' }}>
+            <strong>Current Status:</strong> Your user records look good. Use "Test Login Process" to see exactly where the login is hanging.
           </div>
         </div>
       </div>
