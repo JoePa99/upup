@@ -18,6 +18,11 @@ const SentenceDisplay = ({ content, title, sourceType = 'content' }) => {
   };
 
   const renderSentences = () => {
+    // Safety check for content
+    if (!content || typeof content !== 'string') {
+      return <div>No content available</div>;
+    }
+    
     // Split content into sentences
     const sentences = content.match(/[^\.!?]+[\.!?]+/g) || [];
     
