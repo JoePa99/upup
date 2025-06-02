@@ -72,10 +72,10 @@ export default async function handler(req, res) {
 
     // Ensure subdomain is unique by checking and adding suffix if needed
     let uniqueSubdomain = finalSubdomain;
-    let attempts = 0;
-    const maxAttempts = 10;
+    let subdomainAttempts = 0;
+    const maxSubdomainAttempts = 10;
 
-    while (attempts < maxAttempts) {
+    while (subdomainAttempts < maxSubdomainAttempts) {
       const { data: existingTenant } = await supabaseAdmin
         .from('tenants')
         .select('id')
@@ -90,10 +90,10 @@ export default async function handler(req, res) {
       // Add random suffix to make it unique
       const randomSuffix = Math.floor(Math.random() * 1000);
       uniqueSubdomain = `${finalSubdomain}-${randomSuffix}`;
-      attempts++;
+      subdomainAttempts++;
     }
 
-    if (attempts >= maxAttempts) {
+    if (subdomainAttempts >= maxSubdomainAttempts) {
       throw new Error('Unable to generate unique subdomain. Please try a different company name.');
     }
 
