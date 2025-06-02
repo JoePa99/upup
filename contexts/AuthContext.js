@@ -40,11 +40,12 @@ export const AuthProvider = ({ children }) => {
         
         if (session?.user) {
           await loadUserData(session.user);
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error getting session:', error);
         setError(error.message);
-      } finally {
         setLoading(false);
       }
     };
@@ -58,11 +59,11 @@ export const AuthProvider = ({ children }) => {
           await loadUserData(session.user);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setLoading(false);
         }
       } catch (error) {
         console.error('Auth state change error:', error);
         setError(error.message || 'Authentication error');
-      } finally {
         setLoading(false);
       }
     });
@@ -108,12 +109,15 @@ export const AuthProvider = ({ children }) => {
           tenantName: directData.tenants?.name || '',
           role: directData.role || 'user'
         });
+        setLoading(false);
       } else {
         setError('Account setup incomplete. Please contact support.');
+        setLoading(false);
       }
     } catch (error) {
       console.error('❌ Error loading user data:', error);
       setError(error.message || 'Failed to load user data');
+      setLoading(false);
     }
   };
 

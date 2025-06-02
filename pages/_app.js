@@ -51,6 +51,11 @@ class ErrorBoundary extends React.Component {
 }
 
 function MyApp({ Component, pageProps }) {
+  // Add safety checks
+  if (!Component) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <ErrorBoundary>
       <AuthProvider>
