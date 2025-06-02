@@ -77,7 +77,7 @@ const LegalTemplates = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          templateType: selectedTemplate,
+          templateType: formData.templateType,
           partyName: formData.field1,
           projectDetails: formData.field2,
           specificTerms: formData.field3
@@ -91,17 +91,17 @@ const LegalTemplates = () => {
       const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
-      setContentTitle(data.data?.title || `Legal Document: ${selectedTemplate}`);
+      setContentTitle(data.data?.title || `Legal Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {
       console.error('Error generating legal template:', error);
       // Fallback content on error
-      const fallbackContent = `${selectedTemplate} document for ${formData.field1 || 'Party'}. Project: ${formData.field2 || 'Business Relationship'}. Specific terms: ${formData.field3 || 'Standard terms apply'}.
+      const fallbackContent = `${formData.templateType} document for ${formData.field1 || 'Party'}. Project: ${formData.field2 || 'Business Relationship'}. Specific terms: ${formData.field3 || 'Standard terms apply'}.
 
 IMPORTANT: This template is for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before using this agreement.`;
       setGeneratedContent(fallbackContent);
-      setContentTitle(`Legal Document: ${selectedTemplate}`);
+      setContentTitle(`Legal Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } finally {

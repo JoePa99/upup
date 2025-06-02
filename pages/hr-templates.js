@@ -72,7 +72,7 @@ const HRTemplates = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          templateType: selectedTemplate,
+          templateType: formData.templateType,
           jobTitle: formData.field1,
           department: formData.field2,
           responsibilities: formData.field3
@@ -86,15 +86,15 @@ const HRTemplates = () => {
       const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
-      setContentTitle(data.data?.title || `${selectedTemplate}: ${formData.field1 || 'HR Document'}`);
+      setContentTitle(data.data?.title || `${formData.templateType}: ${formData.field1 || 'HR Document'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {
       console.error('Error generating HR template:', error);
       // Fallback content on error
-      const fallbackContent = `${selectedTemplate} for ${formData.field1 || 'Position'} in ${formData.field2 || 'Department'}. This document would include comprehensive details based on your input: ${formData.field3 || 'No additional details provided'}.`;
+      const fallbackContent = `${formData.templateType} for ${formData.field1 || 'Position'} in ${formData.field2 || 'Department'}. This document would include comprehensive details based on your input: ${formData.field3 || 'No additional details provided'}.`;
       setGeneratedContent(fallbackContent);
-      setContentTitle(`${selectedTemplate}: ${formData.field1 || 'HR Document'}`);
+      setContentTitle(`${formData.templateType}: ${formData.field1 || 'HR Document'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } finally {

@@ -72,7 +72,7 @@ const SalesTemplates = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          templateType: selectedTemplate,
+          templateType: formData.templateType,
           clientName: formData.field1,
           proposalType: formData.field2,
           requirements: formData.field3
@@ -86,7 +86,7 @@ const SalesTemplates = () => {
       const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
-      setContentTitle(data.data?.title || `Sales Document: ${selectedTemplate}`);
+      setContentTitle(data.data?.title || `Sales Document: ${formData.templateType}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {
@@ -162,7 +162,6 @@ CONTACT INFORMATION
       
       setGeneratedContent(content);
       setContentTitle(`Sales Proposal: ${formData.field1 || 'Metropolitan Art Academy'}`);
-      setIsLoading(false);
       setShowContent(true);
       setShowPinsSidebar(true);
     } finally {

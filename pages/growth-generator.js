@@ -77,7 +77,7 @@ const GrowthGenerator = () => {
         body: JSON.stringify({
           growthFocus: formData.growthFocus,
           timeHorizon: formData.timeHorizon,
-          constraints: formData.constraints
+          constraints: formData.growthConstraints
         })
       });
 
