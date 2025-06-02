@@ -294,6 +294,148 @@ const initializeDatabase = async () => {
         USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
     `);
     
+    // Knowledge base tables for hierarchical knowledge system
+    
+    // Super Admin Knowledge Base (Platform Level)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS platform_knowledge (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        document_type VARCHAR(50) NOT NULL, -- 'industry_standards', 'compliance', 'best_practices', 'templates'
+        category VARCHAR(100), -- 'HR', 'Legal', 'Sales', 'Marketing', 'General'
+        tags TEXT[], -- Array of searchable tags
+        status VARCHAR(20) DEFAULT 'active', -- 'active', 'archived', 'draft'
+        created_by_super_admin VARCHAR(255), -- Super admin email who created it
+        version INTEGER DEFAULT 1,
+        metadata JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Company Knowledge Base (Tenant Level)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS company_knowledge (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        document_type VARCHAR(50) NOT NULL, -- 'brand_guidelines', 'policies', 'procedures', 'company_info'
+        category VARCHAR(100), -- 'Brand', 'HR', 'Legal', 'Sales', 'Product', 'Culture'
+        tags TEXT[], -- Array of searchable tags
+        status VARCHAR(20) DEFAULT 'active', -- 'active', 'archived', 'draft'
+        created_by INTEGER REFERENCES users(id), -- Company admin who created it
+        approved_by INTEGER REFERENCES users(id), -- If approval workflow is needed
+        version INTEGER DEFAULT 1,
+        is_public BOOLEAN DEFAULT false, -- Whether this knowledge is shared across company
+        metadata JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Add RLS for company_knowledge
+    await client.query(`
+      ALTER TABLE company_knowledge ENABLE ROW LEVEL SECURITY;
+      
+      DROP POLICY IF EXISTS tenant_isolation_policy ON company_knowledge;
+      CREATE POLICY tenant_isolation_policy ON company_knowledge
+        USING (tenant_id = current_setting('app.current_tenant_id', true)::INTEGER);
+      
+      DROP POLICY IF EXISTS super_admin_policy ON company_knowledge;
+      CREATE POLICY super_admin_policy ON company_knowledge
+        USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
+    `);
+
+    // User Session Knowledge (User Level)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_knowledge (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        document_type VARCHAR(50) NOT NULL, -- 'project_doc', 'research', 'notes', 'brief'
+        project_name VARCHAR(255), -- Optional project grouping
+        tags TEXT[], -- Array of searchable tags
+        status VARCHAR(20) DEFAULT 'active', -- 'active', 'archived', 'draft'
+        is_session_specific BOOLEAN DEFAULT true, -- Whether this is just for current session
+        expires_at TIMESTAMP, -- Optional expiration for session-specific docs
+        metadata JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Add RLS for user_knowledge
+    await client.query(`
+      ALTER TABLE user_knowledge ENABLE ROW LEVEL SECURITY;
+      
+      DROP POLICY IF EXISTS tenant_user_isolation_policy ON user_knowledge;
+      CREATE POLICY tenant_user_isolation_policy ON user_knowledge
+        USING (
+          tenant_id = current_setting('app.current_tenant_id', true)::INTEGER 
+          AND user_id = current_setting('app.current_user_id', true)::INTEGER
+        );
+      
+      DROP POLICY IF EXISTS super_admin_policy ON user_knowledge;
+      CREATE POLICY super_admin_policy ON user_knowledge
+        USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
+    `);
+
+    // Knowledge Usage Tracking (for analytics)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_usage (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        knowledge_type VARCHAR(20) NOT NULL, -- 'platform', 'company', 'user'
+        knowledge_id INTEGER NOT NULL, -- ID of the knowledge document used
+        usage_context VARCHAR(50), -- 'content_generation', 'template_creation', etc.
+        generation_id INTEGER REFERENCES content_generations(id),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Add RLS for knowledge_usage
+    await client.query(`
+      ALTER TABLE knowledge_usage ENABLE ROW LEVEL SECURITY;
+      
+      DROP POLICY IF EXISTS tenant_isolation_policy ON knowledge_usage;
+      CREATE POLICY tenant_isolation_policy ON knowledge_usage
+        USING (tenant_id = current_setting('app.current_tenant_id', true)::INTEGER);
+      
+      DROP POLICY IF EXISTS super_admin_policy ON knowledge_usage;
+      CREATE POLICY super_admin_policy ON knowledge_usage
+        USING (current_setting('app.is_super_admin', true)::BOOLEAN = true);
+    `);
+
+    // Knowledge Search Index (for semantic search optimization)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS knowledge_search_index (
+        id SERIAL PRIMARY KEY,
+        knowledge_type VARCHAR(20) NOT NULL, -- 'platform', 'company', 'user'
+        knowledge_id INTEGER NOT NULL,
+        tenant_id INTEGER, -- NULL for platform knowledge
+        search_vector TSVECTOR, -- Full-text search vector
+        embedding_vector VECTOR(1536), -- OpenAI embedding vector (if using pgvector)
+        last_indexed_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Create indexes for performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_company_knowledge_tenant ON company_knowledge(tenant_id);
+      CREATE INDEX IF NOT EXISTS idx_company_knowledge_category ON company_knowledge(category);
+      CREATE INDEX IF NOT EXISTS idx_company_knowledge_tags ON company_knowledge USING GIN(tags);
+      CREATE INDEX IF NOT EXISTS idx_user_knowledge_tenant_user ON user_knowledge(tenant_id, user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_knowledge_project ON user_knowledge(project_name);
+      CREATE INDEX IF NOT EXISTS idx_platform_knowledge_category ON platform_knowledge(category);
+      CREATE INDEX IF NOT EXISTS idx_platform_knowledge_tags ON platform_knowledge USING GIN(tags);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_usage_tracking ON knowledge_usage(tenant_id, user_id, created_at);
+    `);
+
     // Create database functions
     await createDatabaseFunctions(client);
     

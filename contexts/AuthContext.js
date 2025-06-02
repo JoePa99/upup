@@ -71,6 +71,22 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkSuperAdminStatus = async (email) => {
+    try {
+      const SUPER_ADMIN_EMAILS = [
+        'admin@upup.ai',
+        'joe@upup.ai', 
+        'super@upup.ai',
+        process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL
+      ].filter(Boolean);
+
+      return SUPER_ADMIN_EMAILS.includes(email);
+    } catch (error) {
+      console.error('Error checking super admin status:', error);
+      return false;
+    }
+  };
+
   const loadUserData = async (authUser) => {
     try {
       // Safety check
@@ -99,6 +115,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (directData && directData.id) {
+        // Check if user is super admin
+        const isSuperAdmin = await checkSuperAdminStatus(authUser.email);
+        
         setUser({
           id: directData.id,
           authUserId: authUser.id,
@@ -107,7 +126,10 @@ export const AuthProvider = ({ children }) => {
           lastName: authUser.user_metadata?.last_name || directData.last_name || '',
           tenantId: directData.tenant_id,
           tenantName: directData.tenants?.name || '',
-          role: directData.role || 'user'
+          role: directData.role || 'user',
+          isSuperAdmin,
+          isCompanyAdmin: directData.role === 'admin',
+          isUser: directData.role === 'user'
         });
         setLoading(false);
       } else {
