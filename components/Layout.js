@@ -10,21 +10,33 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
   const [activePage, setActivePage] = useState('dashboard');
 
   useEffect(() => {
-    const path = router.pathname;
-    if (path === '/dashboard') setActivePage('dashboard');
-    else if (path === '/pins') setActivePage('pins');
-    else if (path.includes('generator')) setActivePage(path.replace('/', ''));
-    else if (path.includes('templates')) setActivePage(path.replace('/', ''));
-  }, [router.pathname]);
+    try {
+      const path = router?.pathname || '';
+      if (path === '/dashboard') setActivePage('dashboard');
+      else if (path === '/pins') setActivePage('pins');
+      else if (path.includes('generator')) setActivePage(path.replace('/', ''));
+      else if (path.includes('templates')) setActivePage(path.replace('/', ''));
+    } catch (error) {
+      console.error('Layout useEffect error:', error);
+    }
+  }, [router?.pathname]);
 
   const handleLogout = () => {
-    logout();
-    router.push('/login');
+    try {
+      logout();
+      router?.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const navigateToPage = (pageId) => {
-    setActivePage(pageId);
-    router.push(`/${pageId}`);
+    try {
+      setActivePage(pageId);
+      router?.push(`/${pageId}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   if (!isAuthenticated) {

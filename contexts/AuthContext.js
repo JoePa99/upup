@@ -53,12 +53,18 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadUserData(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+      try {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await loadUserData(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error);
+        setError(error.message || 'Authentication error');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -66,8 +72,13 @@ export const AuthProvider = ({ children }) => {
 
   const loadUserData = async (authUser) => {
     try {
+      // Safety check
+      if (!authUser || !authUser.id) {
+        setError('Invalid user data');
+        return;
+      }
+
       // Use API endpoint to bypass RLS issues
-      
       const response = await fetch('/api/auth/get-user-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,19 +101,19 @@ export const AuthProvider = ({ children }) => {
         setUser({
           id: directData.id,
           authUserId: authUser.id,
-          email: authUser.email,
+          email: authUser.email || '',
           firstName: authUser.user_metadata?.first_name || directData.first_name || '',
           lastName: authUser.user_metadata?.last_name || directData.last_name || '',
           tenantId: directData.tenant_id,
-          tenantName: directData.tenants.name,
-          role: directData.role
+          tenantName: directData.tenants?.name || '',
+          role: directData.role || 'user'
         });
       } else {
         setError('Account setup incomplete. Please contact support.');
       }
     } catch (error) {
       console.error('❌ Error loading user data:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to load user data');
     }
   };
 
