@@ -20,6 +20,31 @@ export default async function handler(req, res) {
       });
     }
 
+    // Verify the auth user exists before proceeding
+    let authUserExists = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!authUserExists && attempts < maxAttempts) {
+      try {
+        const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(authUserId);
+        if (authUser && !error) {
+          authUserExists = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`Auth user check attempt ${attempts + 1} failed:`, error.message);
+      }
+      
+      // Wait 500ms before trying again
+      await new Promise(resolve => setTimeout(resolve, 500));
+      attempts++;
+    }
+
+    if (!authUserExists) {
+      throw new Error('Auth user not found or not ready. Please try again.');
+    }
+
     // Generate unique subdomain
     let finalSubdomain = subdomain;
     if (!finalSubdomain) {
@@ -75,6 +100,8 @@ export default async function handler(req, res) {
     }
 
     // Create user record using service key (bypasses RLS)
+    console.log('Creating user with auth_user_id:', authUserId, 'tenant_id:', tenantData.id);
+    
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -90,10 +117,21 @@ export default async function handler(req, res) {
       .single();
 
     if (userError) {
-      console.error('User creation error:', userError);
+      console.error('User creation error details:', {
+        error: userError,
+        authUserId,
+        tenantId: tenantData.id,
+        email
+      });
+      
       // Try to clean up tenant if user creation failed
       await supabaseAdmin.from('tenants').delete().eq('id', tenantData.id);
-      throw new Error('Failed to create user: ' + userError.message);
+      
+      if (userError.message.includes('foreign key constraint')) {
+        throw new Error('Auth user reference failed. The user account may not be fully created yet. Please try again in a moment.');
+      } else {
+        throw new Error('Failed to create user: ' + userError.message);
+      }
     }
 
     res.status(200).json({
