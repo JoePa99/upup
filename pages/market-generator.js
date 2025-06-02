@@ -87,8 +87,8 @@ const MarketGenerator = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(data.title || `Market Analysis: ${formData.analysisFocus}`);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Market Analysis: ${formData.analysisFocus}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {

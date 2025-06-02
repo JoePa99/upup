@@ -86,8 +86,8 @@ const CustomerGenerator = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(data.title || `Customer Strategy: ${formData.connectionGoal}`);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Customer Strategy: ${formData.connectionGoal}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {

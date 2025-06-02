@@ -85,8 +85,8 @@ const HRTemplates = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(`${selectedTemplate}: ${formData.field1 || 'HR Document'}`);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `${selectedTemplate}: ${formData.field1 || 'HR Document'}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {

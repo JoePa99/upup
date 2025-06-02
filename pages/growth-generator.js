@@ -86,8 +86,8 @@ const GrowthGenerator = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(`Growth Opportunities: ${formData.growthFocus}`);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Growth Opportunities: ${formData.growthFocus}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {

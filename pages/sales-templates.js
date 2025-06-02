@@ -85,8 +85,8 @@ const SalesTemplates = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(`Sales Document: ${selectedTemplate}`);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Sales Document: ${selectedTemplate}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {

@@ -90,8 +90,8 @@ const LegalTemplates = () => {
 
       const data = await response.json();
       
-      setGeneratedContent(data.content);
-      setContentTitle(`Legal Document: ${selectedTemplate}`);
+      setGeneratedContent(data.data?.content || data.content);
+      setContentTitle(data.data?.title || `Legal Document: ${selectedTemplate}`);
       setShowContent(true);
       setShowPinsSidebar(true);
     } catch (error) {
