@@ -1,50 +1,112 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+let supabase = null;
+if (supabaseUrl && supabaseAnonKey) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+}
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // DEMO MODE: Always authenticated with mock user
-  const [user, setUser] = useState({
-    id: 1,
-    firstName: 'Demo',
-    lastName: 'User',
-    email: 'demo@company.com',
-    tenantName: 'Demo Company',
-    tenantId: 1,
-    role: 'admin'
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // DEMO MODE: Skip auth check, always set demo user
-    console.log('🎯 Demo Mode: Authentication bypassed - showing full AI platform');
-    setLoading(false);
+    if (!supabase) {
+      console.error('Supabase not configured - missing environment variables');
+      setLoading(false);
+      return;
+    }
+
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (session?.user) {
+          await loadUserData(session.user);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadUserData(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const loadUserData = async (authUser) => {
+    try {
+      // Get user data with tenant info from database
+      const { data, error } = await supabase
+        .rpc('get_user_tenant_info');
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const userData = data[0];
+        setUser({
+          id: userData.user_id,
+          authUserId: authUser.id,
+          email: authUser.email,
+          firstName: authUser.user_metadata?.first_name || '',
+          lastName: authUser.user_metadata?.last_name || '',
+          tenantId: userData.tenant_id,
+          tenantName: userData.tenant_name,
+          role: userData.user_role
+        });
+      } else {
+        // User exists in auth but not in users table
+        console.error('User not found in users table');
+        setError('Account setup incomplete. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setError(error.message);
+    }
+  };
+
   const login = async (email, password) => {
+    if (!supabase) {
+      throw new Error('Authentication not configured');
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      // DEMO MODE: Mock successful login
-      const mockUser = {
-        id: 1,
-        firstName: 'Demo',
-        lastName: 'User',
-        email: email,
-        tenantName: 'Demo Company',
-        tenantId: 1,
-        role: 'admin'
-      };
-      
-      localStorage.setItem('token', 'demo-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      
-      setUser(mockUser);
-      return mockUser;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      // User data will be loaded by the auth state change listener
+      return data.user;
     } catch (error) {
-      setError('Login failed');
+      setError(error.message);
       throw error;
     } finally {
       setLoading(false);
@@ -52,60 +114,122 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
+    if (!supabase) {
+      throw new Error('Authentication not configured');
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      // DEMO MODE: Mock successful registration
-      const mockUser = {
-        id: 1,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
+      // Register with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
-        tenantName: userData.tenantName || 'Demo Company',
-        tenantId: 1,
-        role: 'admin'
-      };
-      
-      return mockUser;
+        password: userData.password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Create tenant and user records
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .insert({
+          name: userData.tenantName || `${userData.firstName}'s Company`,
+          subdomain: userData.subdomain || `${userData.firstName.toLowerCase()}-${Date.now()}`,
+          admin_email: userData.email
+        })
+        .select()
+        .single();
+
+      if (tenantError) throw tenantError;
+
+      // Create user record linked to auth user
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          auth_user_id: authData.user.id,
+          tenant_id: tenantData.id,
+          email: userData.email,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: 'admin' // First user in tenant is admin
+        });
+
+      if (userError) throw userError;
+
+      return authData.user;
     } catch (error) {
-      setError('Registration failed');
+      setError(error.message);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    if (!supabase) return;
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      setError(error.message);
+    }
   };
 
   const superAdminLogin = async (email, password) => {
+    if (!supabase) {
+      throw new Error('Authentication not configured');
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      // DEMO MODE: Mock successful super admin login
-      const mockSuperUser = {
-        id: 1,
-        firstName: 'Super',
-        lastName: 'Admin',
+      // Check if user is super admin
+      const { data: superAdminData, error: superAdminError } = await supabase
+        .from('super_admins')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (superAdminError || !superAdminData) {
+        throw new Error('Invalid super admin credentials');
+      }
+
+      // Use regular auth login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      // Set super admin user data
+      setUser({
+        id: superAdminData.id,
+        authUserId: data.user.id,
         email: email,
+        firstName: superAdminData.first_name,
+        lastName: superAdminData.last_name,
+        tenantId: null,
         tenantName: 'UPUP Platform',
-        tenantId: 0,
         role: 'super_admin',
         isSuperAdmin: true
-      };
-      
-      localStorage.setItem('token', 'demo-super-token');
-      localStorage.setItem('user', JSON.stringify(mockSuperUser));
-      
-      setUser(mockSuperUser);
-      return mockSuperUser;
+      });
+
+      return data.user;
     } catch (error) {
-      setError('Login failed');
+      setError(error.message);
       throw error;
     } finally {
       setLoading(false);

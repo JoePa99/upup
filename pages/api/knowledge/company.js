@@ -1,7 +1,9 @@
 import { IncomingForm } from 'formidable';
-import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
+import pdfParse from 'pdf-parse';
+import OpenAI from 'openai';
+import { getUserFromRequest, setTenantContext, supabaseAdmin } from '../../../utils/auth-helpers';
 
 // Disable default body parser to handle FormData
 export const config = {
@@ -10,42 +12,12 @@ export const config = {
   },
 };
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-
-let supabase = null;
-if (supabaseUrl && supabaseServiceKey) {
-  supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+// Initialize OpenAI client
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
   });
-}
-
-// Simple file-based storage when Supabase is not configured
-
-const STORAGE_FILE = path.join(process.cwd(), 'temp-knowledge.json');
-
-function loadTempStorage() {
-  try {
-    if (fs.existsSync(STORAGE_FILE)) {
-      const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading temp storage:', error);
-  }
-  return [];
-}
-
-function saveTempStorage(data) {
-  try {
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Error saving temp storage:', error);
-  }
 }
 
 // Helper function to parse JSON body
@@ -68,35 +40,43 @@ function parseBody(req) {
 // Helper function to extract text from file
 async function extractTextFromFile(filePath, mimeType) {
   try {
-    if (mimeType.includes('text')) {
+    if (mimeType.includes('application/pdf')) {
+      const dataBuffer = fs.readFileSync(filePath);
+      const data = await pdfParse(dataBuffer);
+      return data.text;
+    } else if (mimeType.includes('text/')) {
       return fs.readFileSync(filePath, 'utf8');
+    } else {
+      return `Document: ${path.basename(filePath)} (${mimeType})`;
     }
-    // For PDFs and other formats, we'd need additional libraries like pdf-parse
-    // For now, return filename and basic info
-    return `Document: ${filePath.split('/').pop()}`;
   } catch (error) {
     console.error('Error extracting text:', error);
     return `Document content not readable: ${error.message}`;
   }
 }
 
-// Helper function to create embeddings (mock for now, would use OpenAI API)
-function createEmbeddings(text) {
-  // In a real implementation, this would call OpenAI's embedding API
-  // For demo purposes, return a mock embedding vector
-  return Array.from({length: 1536}, () => Math.random() - 0.5);
-}
+// Helper function to create embeddings using OpenAI
+async function createEmbeddings(text) {
+  if (!openai) {
+    console.warn('OpenAI not configured, using mock embeddings');
+    return Array.from({length: 1536}, () => Math.random() - 0.5);
+  }
 
-// Helper function to get user info from request
-function getUserFromRequest(req) {
-  // In a real implementation, decode JWT token
-  // For demo, return mock user info
-  return {
-    id: 1,
-    tenantId: 1,
-    tenantName: 'Demo Company',
-    email: 'demo@company.com'
-  };
+  try {
+    // Truncate text if too long (OpenAI has token limits)
+    const truncatedText = text.substring(0, 8000);
+    
+    const response = await openai.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: truncatedText
+    });
+
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error('Error creating embeddings:', error);
+    // Fallback to mock embeddings
+    return Array.from({length: 1536}, () => Math.random() - 0.5);
+  }
 }
 
 // Company knowledge API endpoint in Next.js pages/api
