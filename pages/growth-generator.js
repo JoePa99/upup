@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
+import SentenceDisplay from '../components/SentenceDisplay';
 
 const GrowthGenerator = () => {
   const { isAuthenticated } = useAuth();
@@ -219,27 +220,11 @@ const GrowthGenerator = () => {
       {showContent && (
         <div className="content-container show">
           <div className="content-title">{contentTitle}</div>
-          <div className="generated-content">
-            {generatedContent.split(/[.!?]+/).map((sentence, index) => {
-              if (sentence.trim()) {
-                return (
-                  <span 
-                    key={index}
-                    className="sentence" 
-                    id={`sentence-${index}`}
-                  >
-                    {sentence.trim()}.
-                  </span>
-                );
-              }
-              return null;
-            }).filter(Boolean).map((element, index) => (
-              <React.Fragment key={index}>
-                {element}
-                {index < generatedContent.split(/[.!?]+/).filter(s => s.trim()).length - 1 ? ' ' : ''}
-              </React.Fragment>
-            ))}
-          </div>
+          <SentenceDisplay 
+            content={generatedContent} 
+            title={contentTitle} 
+            sourceType="growth-generator" 
+          />
         </div>
       )}
 
