@@ -33,10 +33,20 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
 
   const navigateToPage = (pageId) => {
     try {
+      console.log(`🚀 Attempting to navigate to: /${pageId}`);
       setActivePage(pageId);
-      router?.push(`/${pageId}`);
+      const result = router?.push(`/${pageId}`);
+      console.log('Router push result:', result);
+      
+      // Alternative navigation method if router.push fails
+      if (!result) {
+        console.log('Router push failed, trying window.location');
+        window.location.href = `/${pageId}`;
+      }
     } catch (error) {
       console.error('Navigation error:', error);
+      // Fallback to direct navigation
+      window.location.href = `/${pageId}`;
     }
   };
 

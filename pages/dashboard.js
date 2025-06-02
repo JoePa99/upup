@@ -44,6 +44,24 @@ const Dashboard = () => {
       <div className="page-header">
         <h1 className="page-title">Welcome back! 👋</h1>
         <p className="page-subtitle">Here's what's happening with your AI business partner</p>
+        
+        {/* Debug User Info */}
+        <div style={{ 
+          background: '#f0f0f0', 
+          padding: '10px', 
+          borderRadius: '4px', 
+          marginTop: '10px', 
+          fontSize: '12px',
+          fontFamily: 'monospace'
+        }}>
+          <strong>Debug - Current User Info:</strong><br/>
+          Email: {user?.email || 'Not available'}<br/>
+          Role: {user?.role || 'Not available'}<br/>
+          Is Super Admin: {user?.isSuperAdmin ? 'YES' : 'NO'}<br/>
+          Is Company Admin: {user?.isCompanyAdmin ? 'YES' : 'NO'}<br/>
+          Tenant: {user?.tenantName || 'Not available'}<br/>
+          Tenant ID: {user?.tenantId || 'Not available'}
+        </div>
       </div>
 
       <div className="stats-grid">
