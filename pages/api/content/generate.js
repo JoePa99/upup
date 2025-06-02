@@ -1,24 +1,8 @@
 // Content generation API endpoint in Next.js pages/api
 // Helper function to get company context
 async function getCompanyContext(query) {
-  try {
-    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/knowledge/context`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query })
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.data;
-    }
-  } catch (error) {
-    console.error('Error fetching company context:', error);
-  }
-
-  // Fallback context
+  // Skip the API call and just return fallback context for now
+  // The knowledge context API is causing URL parsing issues
   return {
     tenantInfo: {
       companyName: 'Your Company',
