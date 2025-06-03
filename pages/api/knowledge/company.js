@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         // Create mock user for testing when auth fails
         user = {
           id: 'mock-user-1',
-          tenantId: 'mock-tenant-1',
+          tenantId: 1, // Use integer for tenant_id
           email: 'test@example.com',
           role: 'admin'
         };
@@ -257,7 +257,7 @@ export default async function handler(req, res) {
         console.log('GET: No user found - using mock user');
         user = {
           id: 'mock-user-1',
-          tenantId: 'mock-tenant-1',
+          tenantId: 1, // Use integer for tenant_id
           email: 'test@example.com',
           role: 'admin'
         };
