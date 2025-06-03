@@ -161,7 +161,8 @@ export default async function handler(req, res) {
           await setTenantContext(user.tenantId, user.id);
           
           // Create embeddings for the content
-          const embeddings = createEmbeddings(content);
+          const embeddings = await createEmbeddings(content);
+          console.log('Generated embeddings length:', embeddings?.length);
           
           // Store in Supabase knowledge table
           const { data, error } = await supabaseAdmin
@@ -181,7 +182,8 @@ export default async function handler(req, res) {
             .single();
 
           if (error) {
-            console.error('Supabase insert error:', error);
+            console.error('🚨 SUPABASE INSERT ERROR:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
             // Log detailed info for debugging
             console.log('Insert details:', {
               tenant_id: user.tenantId,
