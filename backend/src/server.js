@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import routes - with error handling
-let tenantRoutes, authRoutes, usageRoutes, contentRoutes, knowledgeRoutes, superAdminRoutes;
+let tenantRoutes, authRoutes, usageRoutes, contentRoutes, knowledgeRoutes, knowledgeRoutesSimple, superAdminRoutes;
 
 try {
   tenantRoutes = require('./routes/tenant-routes');
@@ -42,6 +42,13 @@ try {
   console.log('✅ Knowledge routes loaded');
 } catch (err) {
   console.error('❌ Failed to load knowledge routes:', err.message);
+}
+
+try {
+  knowledgeRoutesSimple = require('./routes/knowledge-routes-simple');
+  console.log('✅ Simplified knowledge routes loaded');
+} catch (err) {
+  console.error('❌ Failed to load simplified knowledge routes:', err.message);
 }
 
 try {
@@ -90,7 +97,30 @@ app.use(express.json()); // Parse JSON bodies
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Service is running' });
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Service is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown'
+  });
+});
+
+// Performance test endpoint
+app.get('/api/ping', (req, res) => {
+  const start = Date.now();
+  // Simulate a very small amount of work
+  let sum = 0;
+  for (let i = 0; i < 1000; i++) {
+    sum += i;
+  }
+  const duration = Date.now() - start;
+  
+  res.status(200).json({ 
+    ping: 'pong', 
+    serverTime: new Date().toISOString(),
+    processingTime: `${duration}ms`,
+    load: process.uptime()
+  });
 });
 
 // Simple inline test endpoint
@@ -179,9 +209,12 @@ try {
     console.log('✅ Content routes registered');
   }
   
-  if (knowledgeRoutes) {
+  if (knowledgeRoutesSimple) {
+    app.use('/api/knowledge', knowledgeRoutesSimple);
+    console.log('✅ Simplified knowledge routes registered (primary)');
+  } else if (knowledgeRoutes) {
     app.use('/api/knowledge', knowledgeRoutes);
-    console.log('✅ Knowledge routes registered');
+    console.log('✅ Standard knowledge routes registered (fallback)');
   }
   
   if (superAdminRoutes) {
