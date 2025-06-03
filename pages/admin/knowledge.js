@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,12 +30,12 @@ const CompanyKnowledgeAdmin = () => {
       return;
     }
     
-    if (!loading && isAuthenticated && user) {
+    if (!loading && isAuthenticated && user && knowledgeList.length === 0) {
       loadCompanyKnowledge();
     }
-  }, [isAuthenticated, user, loading, router]);
+  }, [isAuthenticated, loading, user?.id, user?.role, loadCompanyKnowledge, knowledgeList.length]);
 
-  const loadCompanyKnowledge = async () => {
+  const loadCompanyKnowledge = useCallback(async () => {
     setIsLoading(true);
     try {
       const { apiRequest, apiConfig } = await import('../../utils/api-config');
@@ -76,7 +76,7 @@ const CompanyKnowledgeAdmin = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
