@@ -6,7 +6,7 @@ import { usePins } from '../contexts/PinsContext';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const Dashboard = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const { pinCount } = usePins();
   const { getFormattedStats } = useUsageTracking();
   const router = useRouter();
@@ -26,7 +26,7 @@ const Dashboard = () => {
   }, [getFormattedStats]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!loading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);

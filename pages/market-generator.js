@@ -7,7 +7,7 @@ import SentenceDisplay from '../components/SentenceDisplay';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const MarketGenerator = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { trackContentGenerated } = useUsageTracking();
   const [formData, setFormData] = useState({
@@ -25,10 +25,10 @@ const MarketGenerator = () => {
 
   // Use useEffect for client-side redirects only
   React.useEffect(() => {
-    if (typeof window !== 'undefined' && !isAuthenticated) {
+    if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router]);
 
   // Don't render anything on server if not authenticated
   if (typeof window === 'undefined' && !isAuthenticated) {

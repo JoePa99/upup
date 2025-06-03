@@ -7,7 +7,7 @@ import SentenceDisplay from '../components/SentenceDisplay';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const SalesTemplates = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const { trackTemplateUsed } = useUsageTracking();
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -24,10 +24,10 @@ const SalesTemplates = () => {
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
 
   React.useEffect(() => {
-    if (typeof window !== 'undefined' && !isAuthenticated) {
+    if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router]);
 
   if (typeof window === 'undefined' && !isAuthenticated) {
     return null;

@@ -4,7 +4,7 @@ import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 
 const CompanyKnowledgeAdmin = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const router = useRouter();
   const [knowledgeList, setKnowledgeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,19 +19,21 @@ const CompanyKnowledgeAdmin = () => {
   const [uploadMode, setUploadMode] = useState('text'); // 'text' or 'file'
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isAuthenticated) {
+    if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
       router.push('/login');
       return;
     }
     
     // Check if user has company admin permissions
-    if (isAuthenticated && user && !['admin', 'company_admin'].includes(user.role)) {
+    if (!loading && isAuthenticated && user && !['admin', 'company_admin'].includes(user.role)) {
       router.push('/dashboard');
       return;
     }
     
-    loadCompanyKnowledge();
-  }, [isAuthenticated, user, router]);
+    if (!loading && isAuthenticated && user) {
+      loadCompanyKnowledge();
+    }
+  }, [isAuthenticated, user, loading, router]);
 
   const loadCompanyKnowledge = async () => {
     setIsLoading(true);

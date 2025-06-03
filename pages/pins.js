@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePins } from '../hooks/usePins';
 
 const PinsPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { pinnedSentences, removePin, updatePin, clearPins } = usePins();
   const [showResult, setShowResult] = useState(false);
@@ -18,11 +18,11 @@ const PinsPage = () => {
 
   useEffect(() => {
     // Only handle redirect on client side
-    if (typeof window !== 'undefined' && !isAuthenticated) {
+    if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
       router.push('/login');
       return;
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router]);
 
   const exportPins = () => {
     if (pinnedSentences.length === 0) {
