@@ -8,6 +8,7 @@ const DebugLogin = () => {
   const [fixResult, setFixResult] = useState(null);
   const [cleanupResult, setCleanupResult] = useState(null);
   const [loginTestResult, setLoginTestResult] = useState(null);
+  const [directLoginResult, setDirectLoginResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const runDebug = async () => {
@@ -101,6 +102,30 @@ const DebugLogin = () => {
     } catch (error) {
       console.error('Login test error:', error);
       setLoginTestResult({ error: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const directLogin = async () => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/debug-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      setDirectLoginResult(data);
+    } catch (error) {
+      console.error('Direct login error:', error);
+      setDirectLoginResult({ error: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -204,10 +229,26 @@ const DebugLogin = () => {
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: isLoading ? 'not-allowed' : 'pointer'
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              marginRight: '10px'
             }}
           >
             {isLoading ? 'Testing...' : 'Test Login Process'}
+          </button>
+          
+          <button
+            onClick={directLogin}
+            disabled={isLoading}
+            style={{
+              padding: '10px 20px',
+              background: '#fd7e14',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isLoading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isLoading ? 'Testing...' : 'Direct Supabase Login'}
           </button>
         </div>
 
@@ -287,6 +328,26 @@ const DebugLogin = () => {
               fontSize: '12px'
             }}>
               {JSON.stringify(loginTestResult, null, 2)}
+            </pre>
+          </div>
+        )}
+        
+        {directLoginResult && (
+          <div style={{
+            background: directLoginResult.success ? '#d4edda' : '#f8d7da',
+            padding: '15px',
+            border: `1px solid ${directLoginResult.success ? '#c3e6cb' : '#f5c6cb'}`,
+            borderRadius: '4px',
+            marginBottom: '20px'
+          }}>
+            <h3>Direct Supabase Login Results:</h3>
+            <pre style={{ 
+              background: 'white', 
+              padding: '10px', 
+              overflow: 'auto',
+              fontSize: '12px'
+            }}>
+              {JSON.stringify(directLoginResult, null, 2)}
             </pre>
           </div>
         )}

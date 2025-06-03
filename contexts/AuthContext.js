@@ -2,20 +2,33 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Try both NEXT_PUBLIC_ and regular variables for flexibility
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// For debugging
+console.log('Supabase environment check:', {
+  NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  SUPABASE_URL: !!process.env.SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  url_used: supabaseUrl ? supabaseUrl.substring(0, 15) + '...' : 'undefined'
+});
+
 let supabase = null;
-if (supabaseUrl && supabaseAnonKey) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-  console.log('✅ Supabase client initialized successfully');
-} else {
-  console.error('❌ Supabase environment variables missing:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
-    key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'undefined'
-  });
+try {
+  if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client initialized successfully');
+  } else {
+    console.error('❌ Supabase environment variables missing:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
+      url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
+      key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined'
+    });
+  }
+} catch (error) {
+  console.error('❌ Error initializing Supabase client:', error);
 }
 
 const AuthContext = createContext(null);
@@ -144,7 +157,40 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
+    // Add debugging for login attempts
+    console.log('Login attempt for:', email);
+    
     if (!supabase) {
+      console.error('Supabase client not available. Attempting to initialize on-demand.');
+      
+      // Try to initialize supabase on-demand
+      try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        if (url && key) {
+          const tempSupabase = createClient(url, key);
+          
+          // If successful, use this client for login
+          if (tempSupabase) {
+            console.log('Successfully created on-demand Supabase client');
+            
+            // Attempt login with the temporary client
+            const { data, error } = await tempSupabase.auth.signInWithPassword({
+              email,
+              password
+            });
+            
+            if (error) throw error;
+            return data.user;
+          }
+        }
+      } catch (initError) {
+        console.error('Failed to initialize Supabase on-demand:', initError);
+        throw new Error('Authentication service unavailable. Please try again later.');
+      }
+      
+      // If we get here, initialization failed
       throw new Error('Authentication not configured');
     }
 
@@ -152,16 +198,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      console.log('Attempting supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase auth error:', error);
+        throw error;
+      }
 
+      console.log('Login successful, user:', data.user.email);
       // User data will be loaded by the auth state change listener
       return data.user;
     } catch (error) {
+      console.error('Login error:', error);
       setError(error.message);
       throw error;
     } finally {
