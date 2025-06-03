@@ -34,10 +34,23 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
   const navigateToPage = async (pageId) => {
     try {
       console.log(`🚀 Attempting to navigate to: /${pageId}`);
+      console.log('Current auth state:', { isAuthenticated, user: user?.email });
+      
+      if (!isAuthenticated) {
+        console.log('❌ Not authenticated, redirecting to login');
+        router?.push('/login');
+        return;
+      }
+      
       setActivePage(pageId);
       
       const result = await router?.push(`/${pageId}`);
-      console.log('Navigation completed successfully:', result);
+      console.log('Navigation result:', result);
+      
+      if (result === false) {
+        console.log('Navigation was cancelled, trying direct navigation');
+        window.location.href = `/${pageId}`;
+      }
     } catch (error) {
       console.error('Navigation error:', error);
       // Fallback to direct navigation
