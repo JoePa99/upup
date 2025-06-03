@@ -18,23 +18,6 @@ const CompanyKnowledgeAdmin = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadMode, setUploadMode] = useState('text'); // 'text' or 'file'
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    
-    // Check if user has company admin permissions
-    if (!loading && isAuthenticated && user && !['admin', 'company_admin'].includes(user.role)) {
-      router.push('/dashboard');
-      return;
-    }
-    
-    if (!loading && isAuthenticated && user && knowledgeList.length === 0) {
-      loadCompanyKnowledge();
-    }
-  }, [isAuthenticated, loading, user?.id, user?.role, loadCompanyKnowledge, knowledgeList.length]);
-
   const loadCompanyKnowledge = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -77,6 +60,23 @@ const CompanyKnowledgeAdmin = () => {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    // Check if user has company admin permissions
+    if (!loading && isAuthenticated && user && !['admin', 'company_admin'].includes(user.role)) {
+      router.push('/dashboard');
+      return;
+    }
+    
+    if (!loading && isAuthenticated && user && knowledgeList.length === 0) {
+      loadCompanyKnowledge();
+    }
+  }, [isAuthenticated, loading, user?.id, user?.role, loadCompanyKnowledge, knowledgeList.length]);
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
