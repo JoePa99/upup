@@ -2,8 +2,9 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-// Try both NEXT_PUBLIC_ and regular variables for flexibility
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+// Now we know the environment has SUPABASE_URL but not NEXT_PUBLIC_SUPABASE_URL
+// So we prioritize using what's available
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // For debugging
@@ -165,7 +166,7 @@ export const AuthProvider = ({ children }) => {
       
       // Try to initialize supabase on-demand
       try {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+        const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
         const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
         
         if (url && key) {
