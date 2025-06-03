@@ -57,22 +57,50 @@ export const buildApiUrl = (endpoint) => {
 };
 
 // Helper function for authenticated requests
-export const getAuthHeaders = () => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+export const getAuthHeaders = async () => {
+  if (typeof window === 'undefined') return {};
+  
+  // First try to get token from localStorage (custom JWT)
+  const customToken = localStorage.getItem('token');
+  if (customToken) {
+    return { Authorization: `Bearer ${customToken}` };
+  }
+  
+  // Try to get Supabase session token
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (supabaseUrl && supabaseAnonKey) {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        return { Authorization: `Bearer ${session.access_token}` };
+      }
+    }
+  } catch (error) {
+    console.warn('Could not get Supabase session:', error);
+  }
+  
+  return {};
 };
 
 // API request helper with error handling
 export const apiRequest = async (endpoint, options = {}) => {
   const url = buildApiUrl(endpoint);
   
+  // Get auth headers (now async)
+  const authHeaders = await getAuthHeaders();
+  
   // Handle FormData (for file uploads) vs JSON
   const isFormData = options.body instanceof FormData;
   const defaultHeaders = isFormData 
-    ? getAuthHeaders() // Don't set Content-Type for FormData
+    ? authHeaders // Don't set Content-Type for FormData
     : {
         'Content-Type': 'application/json',
-        ...getAuthHeaders()
+        ...authHeaders
       };
 
   const defaultOptions = {
