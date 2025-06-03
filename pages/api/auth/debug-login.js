@@ -2,6 +2,21 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
+  // Support both GET and POST
+  if (req.method === 'GET') {
+    // For GET requests, just return environment info
+    return res.status(200).json({
+      message: 'Debug login endpoint ready',
+      instructions: 'Send a POST request with email and password to test login',
+      environment: {
+        NEXT_PUBLIC_SUPABASE_URL_SET: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY_SET: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        SUPABASE_URL_SET: !!process.env.SUPABASE_URL,
+        SUPABASE_SERVICE_KEY_SET: !!process.env.SUPABASE_SERVICE_KEY
+      }
+    });
+  }
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
