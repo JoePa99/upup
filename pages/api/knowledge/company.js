@@ -136,13 +136,13 @@ export default async function handler(req, res) {
 
       // Store to Supabase if available, otherwise use temporary storage
       let knowledgeRecord = null;
-      if (supabase) {
+      if (supabaseAdmin) {
         try {
           // Create embeddings for the content
           const embeddings = createEmbeddings(content);
           
           // Store in Supabase knowledge table
-          const { data, error } = await supabase
+          const { data, error } = await supabaseAdmin
             .from('company_knowledge')
             .insert({
               tenant_id: user.tenantId,
@@ -195,11 +195,11 @@ export default async function handler(req, res) {
         success: true,
         data: knowledgeRecord,
         message: `Company knowledge ${fileName ? 'file' : 'content'} uploaded successfully`,
-        storage_type: knowledgeRecord.is_temporary ? 'temporary' : (supabase ? 'supabase' : 'mock'),
-        supabase_configured: !!supabase,
+        storage_type: knowledgeRecord.is_temporary ? 'temporary' : (supabaseAdmin ? 'supabase' : 'mock'),
+        supabase_configured: !!supabaseAdmin,
         debug_info: {
-          supabase_url: !!supabaseUrl,
-          supabase_key: !!supabaseServiceKey,
+          supabase_url: !!process.env.NEXT_PUBLIC_SUPABASE_URL || !!process.env.SUPABASE_URL,
+          supabase_key: !!process.env.SUPABASE_SERVICE_KEY,
           title,
           content_length: content ? content.length : 0,
           file_name: fileName,
@@ -220,9 +220,9 @@ export default async function handler(req, res) {
       const user = getUserFromRequest(req);
       let knowledgeList = [];
 
-      if (supabase) {
+      if (supabaseAdmin) {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await supabaseAdmin
             .from('company_knowledge')
             .select('*')
             .eq('tenant_id', user.tenantId)
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
       }
 
       // If no Supabase data, show sample mock data
-      if (!supabase && knowledgeList.length === 0) {
+      if (!supabaseAdmin && knowledgeList.length === 0) {
         knowledgeList = [
           {
             id: 'mock-1',
@@ -271,8 +271,8 @@ export default async function handler(req, res) {
           total: knowledgeList.length
         },
         debug: {
-          source: supabase ? 'supabase' : 'frontend_only',
-          supabase_available: !!supabase,
+          source: supabaseAdmin ? 'supabase' : 'frontend_only',
+          supabase_available: !!supabaseAdmin,
           user_tenant_id: user.tenantId,
           note: 'Without Supabase, uploads only persist in frontend session'
         }
@@ -300,9 +300,9 @@ export default async function handler(req, res) {
 
       // Delete from Supabase if available
       let deleted = false;
-      if (supabase) {
+      if (supabaseAdmin) {
         try {
-          const { error } = await supabase
+          const { error } = await supabaseAdmin
             .from('company_knowledge')
             .delete()
             .eq('id', id)
