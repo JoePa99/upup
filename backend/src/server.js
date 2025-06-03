@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import routes - with error handling
-let tenantRoutes, authRoutes, usageRoutes, contentRoutes, knowledgeRoutes;
+let tenantRoutes, authRoutes, usageRoutes, contentRoutes, knowledgeRoutes, superAdminRoutes;
 
 try {
   tenantRoutes = require('./routes/tenant-routes');
@@ -42,6 +42,13 @@ try {
   console.log('✅ Knowledge routes loaded');
 } catch (err) {
   console.error('❌ Failed to load knowledge routes:', err.message);
+}
+
+try {
+  superAdminRoutes = require('./routes/super-admin-routes');
+  console.log('✅ Super admin routes loaded');
+} catch (err) {
+  console.error('❌ Failed to load super admin routes:', err.message);
 }
 
 // Add simple test routes
@@ -175,6 +182,11 @@ try {
   if (knowledgeRoutes) {
     app.use('/api/knowledge', knowledgeRoutes);
     console.log('✅ Knowledge routes registered');
+  }
+  
+  if (superAdminRoutes) {
+    app.use('/api/super-admin', superAdminRoutes);
+    console.log('✅ Super admin routes registered');
   }
   
   if (authRoutes) {

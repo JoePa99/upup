@@ -1,47 +1,79 @@
 const { logUsage } = require('../services/usage-service');
-// Temporarily comment out document service to test
-// const documentService = require('../services/document-service');
+const knowledgeService = require('../services/knowledge-service');
+const documentService = require('../services/document-service');
 
 const knowledgeController = {
   // Company Admin: Upload company-wide knowledge (text or file)
   async uploadCompanyKnowledge(req, res) {
     try {
-      const { title, content, documentType, metadata } = req.body;
+      const { title, content, documentType, category, tags, isPublic, metadata } = req.body;
       const tenantId = req.user.tenantId;
       const userId = req.user.id;
       const uploadedFile = req.file;
 
-      // Validate required fields (temporarily only text content)
-      if (!title || !content) {
+      // Validate required fields
+      if (!title || (!content && !uploadedFile)) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: title, content (file upload temporarily disabled)'
+          message: 'Missing required fields: title and either content or file are required'
         });
       }
 
-      const finalContent = content;
-      // File processing temporarily disabled for debugging
+      let finalContent = content || '';
+      let finalMetadata = metadata || {};
 
-      // TODO: Implement database storage for company knowledge
-      // For now, return mock response
-      const mockKnowledge = {
-        id: Date.now(),
-        tenant_id: tenantId,
+      // Process uploaded file if present
+      if (uploadedFile) {
+        try {
+          const processedDocument = await documentService.processDocument(
+            uploadedFile, 
+            tenantId, 
+            userId, 
+            'company'
+          );
+          
+          // Use extracted text content if available
+          if (processedDocument.textContent && !finalContent) {
+            finalContent = processedDocument.textContent;
+          }
+          
+          // Merge file metadata with provided metadata
+          finalMetadata = {
+            ...finalMetadata,
+            ...processedDocument.metadata,
+            fileInfo: processedDocument.fileInfo,
+            hasEmbeddings: !!processedDocument.embeddings
+          };
+        } catch (fileError) {
+          console.error('Error processing uploaded file:', fileError);
+          // Continue with text content only
+          finalMetadata.fileProcessingError = fileError.message;
+        }
+      }
+
+      // Create knowledge document in database
+      const knowledgeData = {
         title,
         content: finalContent,
-        document_type: documentType || 'text',
-        metadata: metadata || {},
-        created_by: userId,
-        created_at: new Date().toISOString(),
-        knowledge_level: 'company'
+        documentType: documentType || 'general',
+        category: category || 'general',
+        tags: tags || [],
+        isPublic: isPublic !== false,
+        metadata: finalMetadata
       };
+
+      const companyKnowledge = await knowledgeService.createCompanyKnowledge(
+        knowledgeData,
+        tenantId,
+        userId
+      );
 
       // Log usage
       await logUsage(tenantId, 'knowledge_uploads', 1);
 
-      res.json({
+      res.status(201).json({
         success: true,
-        data: mockKnowledge,
+        data: companyKnowledge,
         message: 'Company knowledge uploaded successfully'
       });
 
@@ -58,37 +90,86 @@ const knowledgeController = {
   // User: Upload session-specific knowledge
   async uploadSessionKnowledge(req, res) {
     try {
-      const { title, content, documentType, sessionId, metadata } = req.body;
+      const { 
+        title, 
+        content, 
+        documentType, 
+        projectName,
+        sessionId, 
+        tags,
+        isSessionSpecific,
+        expiresAt,
+        metadata 
+      } = req.body;
+      
       const tenantId = req.user.tenantId;
       const userId = req.user.id;
+      const uploadedFile = req.file;
 
-      if (!title || !content) {
+      if (!title || (!content && !uploadedFile)) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: title, content'
+          message: 'Missing required fields: title and either content or file are required'
         });
       }
 
-      // TODO: Implement database storage for session knowledge
-      const mockKnowledge = {
-        id: Date.now(),
-        tenant_id: tenantId,
-        user_id: userId,
-        session_id: sessionId || `session_${Date.now()}`,
+      let finalContent = content || '';
+      let finalMetadata = metadata || {};
+
+      // Process uploaded file if present
+      if (uploadedFile) {
+        try {
+          const processedDocument = await documentService.processDocument(
+            uploadedFile, 
+            tenantId, 
+            userId, 
+            'session'
+          );
+          
+          // Use extracted text content if available
+          if (processedDocument.textContent && !finalContent) {
+            finalContent = processedDocument.textContent;
+          }
+          
+          // Merge file metadata with provided metadata
+          finalMetadata = {
+            ...finalMetadata,
+            ...processedDocument.metadata,
+            fileInfo: processedDocument.fileInfo,
+            hasEmbeddings: !!processedDocument.embeddings
+          };
+        } catch (fileError) {
+          console.error('Error processing uploaded file:', fileError);
+          // Continue with text content only
+          finalMetadata.fileProcessingError = fileError.message;
+        }
+      }
+
+      // Create session knowledge in database
+      const knowledgeData = {
         title,
-        content,
-        document_type: documentType || 'text',
-        metadata: metadata || {},
-        created_at: new Date().toISOString(),
-        knowledge_level: 'session'
+        content: finalContent,
+        documentType: documentType || 'general',
+        projectName,
+        sessionId: sessionId || `session_${Date.now()}`,
+        tags: tags || [],
+        isSessionSpecific: isSessionSpecific !== false,
+        expiresAt: expiresAt || null,
+        metadata: finalMetadata
       };
+
+      const sessionKnowledge = await knowledgeService.createSessionKnowledge(
+        knowledgeData,
+        tenantId,
+        userId
+      );
 
       // Log usage
       await logUsage(tenantId, 'knowledge_uploads', 1);
 
-      res.json({
+      res.status(201).json({
         success: true,
-        data: mockKnowledge,
+        data: sessionKnowledge,
         message: 'Session knowledge uploaded successfully'
       });
 
@@ -106,53 +187,37 @@ const knowledgeController = {
   async getCompanyKnowledge(req, res) {
     try {
       const tenantId = req.user.tenantId;
+      const { 
+        limit = 50, 
+        offset = 0, 
+        category, 
+        documentType, 
+        status = 'active',
+        query 
+      } = req.query;
 
-      // TODO: Implement database query for company knowledge
-      // For now, return mock data
-      const mockCompanyKnowledge = [
-        {
-          id: 1,
-          title: 'Brand Guidelines 2024',
-          document_type: 'brand_guide',
-          created_at: '2024-01-15T10:30:00Z',
-          created_by_name: 'Sarah Johnson',
-          size_kb: 2450,
-          knowledge_level: 'company'
-        },
-        {
-          id: 2,
-          title: 'Company Policies & Procedures',
-          document_type: 'policy',
-          created_at: '2024-01-10T14:20:00Z',
-          created_by_name: 'Mike Chen',
-          size_kb: 1890,
-          knowledge_level: 'company'
-        },
-        {
-          id: 3,
-          title: 'Product Knowledge Base',
-          document_type: 'product_info',
-          created_at: '2024-01-08T09:15:00Z',
-          created_by_name: 'Lisa Rodriguez',
-          size_kb: 3200,
-          knowledge_level: 'company'
-        }
-      ];
+      const options = {
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+        category,
+        documentType,
+        status,
+        query
+      };
+
+      const result = await knowledgeService.getCompanyKnowledge(tenantId, options);
 
       res.json({
         success: true,
-        data: {
-          knowledge: mockCompanyKnowledge,
-          total: mockCompanyKnowledge.length,
-          tenant_id: tenantId
-        }
+        data: result
       });
 
     } catch (error) {
       console.error('Error getting company knowledge:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve company knowledge'
+        message: 'Failed to retrieve company knowledge',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   },
@@ -162,49 +227,37 @@ const knowledgeController = {
     try {
       const tenantId = req.user.tenantId;
       const userId = req.user.id;
-      const { sessionId } = req.query;
+      const { 
+        sessionId,
+        limit = 50, 
+        offset = 0, 
+        projectName, 
+        documentType, 
+        status = 'active' 
+      } = req.query;
 
-      // TODO: Implement database query for session knowledge
-      const mockSessionKnowledge = [
-        {
-          id: 101,
-          title: 'Q4 Campaign Brief',
-          document_type: 'campaign_brief',
-          session_id: 'session_123',
-          created_at: '2024-01-20T11:00:00Z',
-          size_kb: 450,
-          knowledge_level: 'session'
-        },
-        {
-          id: 102,
-          title: 'Market Research Notes',
-          document_type: 'research',
-          session_id: 'session_123',
-          created_at: '2024-01-20T11:30:00Z',
-          size_kb: 780,
-          knowledge_level: 'session'
-        }
-      ];
+      const options = {
+        sessionId,
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+        projectName,
+        documentType,
+        status
+      };
 
-      const filteredKnowledge = sessionId 
-        ? mockSessionKnowledge.filter(k => k.session_id === sessionId)
-        : mockSessionKnowledge;
+      const result = await knowledgeService.getSessionKnowledge(tenantId, userId, options);
 
       res.json({
         success: true,
-        data: {
-          knowledge: filteredKnowledge,
-          total: filteredKnowledge.length,
-          user_id: userId,
-          session_id: sessionId
-        }
+        data: result
       });
 
     } catch (error) {
       console.error('Error getting session knowledge:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve session knowledge'
+        message: 'Failed to retrieve session knowledge',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   },
@@ -214,60 +267,31 @@ const knowledgeController = {
     try {
       const tenantId = req.user.tenantId;
       const userId = req.user.id;
-      const { sessionId, includeContent = false } = req.query;
+      const { 
+        sessionId, 
+        includeContent = false,
+        query = '',
+        limit = 3,
+        knowledge_types
+      } = req.query;
 
-      // TODO: Implement actual knowledge retrieval from database
-      // This would query platform, company, and session knowledge
-      
-      const mockContext = {
-        platform_knowledge: [
-          {
-            id: 'platform_1',
-            title: 'Strategic Planning Framework',
-            relevance_score: 0.85,
-            content: includeContent ? 'Strategic planning involves...' : null
-          },
-          {
-            id: 'platform_2', 
-            title: 'Marketing Best Practices',
-            relevance_score: 0.72,
-            content: includeContent ? 'Effective marketing requires...' : null
-          }
-        ],
-        company_knowledge: [
-          {
-            id: 'company_1',
-            title: 'Brand Guidelines 2024',
-            relevance_score: 0.95,
-            content: includeContent ? 'Our brand voice is...' : null
-          },
-          {
-            id: 'company_2',
-            title: 'Target Audience Personas',
-            relevance_score: 0.88,
-            content: includeContent ? 'Our primary audience...' : null
-          }
-        ],
-        session_knowledge: sessionId ? [
-          {
-            id: 'session_1',
-            title: 'Q4 Campaign Brief',
-            relevance_score: 0.98,
-            content: includeContent ? 'Q4 campaign focuses on...' : null
-          }
-        ] : [],
-        context_summary: {
-          total_sources: 5,
-          platform_sources: 2,
-          company_sources: 2,
-          session_sources: 1,
-          estimated_tokens: 1250
-        }
+      const options = {
+        sessionId,
+        includeContent: includeContent === 'true',
+        query,
+        limit: parseInt(limit, 10),
+        knowledge_types: knowledge_types ? knowledge_types.split(',') : ['platform', 'company', 'session']
       };
+
+      const knowledgeContext = await knowledgeService.getKnowledgeContext(
+        tenantId,
+        userId,
+        options
+      );
 
       res.json({
         success: true,
-        data: mockContext,
+        data: knowledgeContext,
         message: 'Knowledge context retrieved successfully'
       });
 
@@ -275,7 +299,8 @@ const knowledgeController = {
       console.error('Error getting knowledge context:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve knowledge context'
+        message: 'Failed to retrieve knowledge context',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   },
@@ -289,7 +314,7 @@ const knowledgeController = {
       const userId = req.user.id;
       const userRole = req.user.role;
 
-      // Permission check
+      // Permission check for company knowledge
       if (knowledgeType === 'company' && !['admin', 'company_admin'].includes(userRole)) {
         return res.status(403).json({
           success: false,
@@ -297,19 +322,29 @@ const knowledgeController = {
         });
       }
 
-      // TODO: Implement actual deletion from database
-      // For now, return success
-      res.json({
-        success: true,
-        message: `${knowledgeType} knowledge deleted successfully`,
-        deleted_id: id
-      });
+      const success = await knowledgeService.deleteKnowledge(
+        id,
+        knowledgeType,
+        tenantId,
+        userId
+      );
+
+      if (success) {
+        res.json({
+          success: true,
+          message: `${knowledgeType} knowledge deleted successfully`,
+          deleted_id: id
+        });
+      } else {
+        throw new Error('Knowledge deletion failed');
+      }
 
     } catch (error) {
       console.error('Error deleting knowledge:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete knowledge'
+        message: 'Failed to delete knowledge',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   }

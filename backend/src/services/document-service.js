@@ -1,5 +1,8 @@
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
+const embeddingService = require('./embedding-service');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 
 // Configure multer for memory storage (Vercel doesn't have persistent file system)
 const upload = multer({
@@ -79,11 +82,23 @@ const documentService = {
         // Plain text files
         textContent = file.buffer.toString('utf8');
       } else if (mimeType === 'application/pdf') {
-        // PDF extraction (placeholder - would need pdf-parse or similar)
-        textContent = 'PDF content extraction not yet implemented. Please copy and paste content manually.';
+        // PDF extraction with pdf-parse
+        try {
+          const pdfData = await pdfParse(file.buffer);
+          textContent = pdfData.text || '';
+        } catch (pdfError) {
+          console.error('Error extracting PDF content:', pdfError);
+          textContent = 'Error extracting PDF content. Please copy and paste content manually.';
+        }
       } else if (mimeType.includes('word')) {
-        // Word document extraction (placeholder - would need mammoth or similar)
-        textContent = 'Word document extraction not yet implemented. Please copy and paste content manually.';
+        // Word document extraction with mammoth
+        try {
+          const result = await mammoth.extractRawText({ buffer: file.buffer });
+          textContent = result.value || '';
+        } catch (docxError) {
+          console.error('Error extracting Word document content:', docxError);
+          textContent = 'Error extracting Word document content. Please copy and paste content manually.';
+        }
       }
 
       return textContent;
@@ -93,34 +108,40 @@ const documentService = {
     }
   },
 
-  // Generate embeddings for text content (using pgvector)
-  async generateEmbeddings(textContent) {
-    // Placeholder for embedding generation
-    // In a full implementation, this would:
-    // 1. Split text into chunks
-    // 2. Call OpenAI/Anthropic embedding API
-    // 3. Return vector embeddings for storage in pgvector
-    
+  // Generate embeddings for text content (using real embedding API and pgvector)
+  async generateEmbeddings(textContent, title, knowledgeType, knowledgeId, tenantId) {
     if (!textContent || textContent.length < 10) {
       return null;
     }
 
-    // Mock embedding (in reality, this would be a call to OpenAI embeddings API)
-    const mockEmbedding = Array(1536).fill(0).map(() => Math.random() - 0.5);
-    
-    return {
-      embedding: mockEmbedding,
-      chunks: [
-        {
-          text: textContent.substring(0, 500),
-          embedding: mockEmbedding
-        }
-      ]
-    };
+    try {
+      // Generate and store embedding
+      const embeddingData = {
+        knowledgeType,
+        knowledgeId,
+        tenantId,
+        content: textContent,
+        title: title || 'Untitled'
+      };
+
+      const embeddingResult = await embeddingService.storeEmbedding(embeddingData);
+      
+      return {
+        embedding: true,
+        embeddingId: embeddingResult.id,
+        indexed: true
+      };
+    } catch (error) {
+      console.error('Error generating embeddings:', error);
+      return {
+        embedding: false,
+        error: error.message
+      };
+    }
   },
 
   // Process uploaded document and prepare for knowledge storage
-  async processDocument(file, tenantId, userId, knowledgeType = 'company') {
+  async processDocument(file, tenantId, userId, knowledgeType = 'company', documentData = {}) {
     try {
       // Extract text content
       const textContent = await this.extractTextContent(file);
@@ -128,19 +149,18 @@ const documentService = {
       // Upload file to storage
       const fileInfo = await this.uploadToStorage(file, tenantId, userId, knowledgeType);
       
-      // Generate embeddings (if text content is available)
-      const embeddings = textContent.length > 10 ? await this.generateEmbeddings(textContent) : null;
+      // The embedding will be generated after the knowledge record is created
+      // since we need the knowledge ID
       
       return {
         textContent,
         fileInfo,
-        embeddings,
         metadata: {
           originalName: file.originalname,
           mimeType: file.mimetype,
           fileSize: file.size,
           uploadedAt: new Date().toISOString(),
-          hasEmbeddings: !!embeddings
+          extractedSuccessfully: textContent.length > 50 // Basic check if extraction worked
         }
       };
     } catch (error) {

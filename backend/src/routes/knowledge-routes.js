@@ -3,8 +3,7 @@ const router = express.Router();
 const knowledgeController = require('../controllers/knowledge-controller');
 const { auth, requireCompanyAdmin, hasRole } = require('../middleware/auth');
 const tenantContext = require('../middleware/tenant-context');
-// Temporarily comment out document service to test
-// const documentService = require('../services/document-service');
+const documentService = require('../services/document-service');
 
 // Development mode - skip auth if no JWT_SECRET or in development without database
 const isDevelopmentWithoutDB = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
@@ -41,16 +40,18 @@ router.get('/test', (req, res) => {
   });
 });
 
-// Company Knowledge Routes (Company Admin only) - TEMPORARILY WITHOUT FILE UPLOAD
+// Company Knowledge Routes (Company Admin only)
 router.post('/company', 
   requireCompanyAdmin, 
+  documentService.uploadMiddleware,  // Add multer middleware for file uploads
   knowledgeController.uploadCompanyKnowledge
 );
 router.get('/company', knowledgeController.getCompanyKnowledge); // All users can view
 router.delete('/company/:id', requireCompanyAdmin, knowledgeController.deleteKnowledge);
 
-// Session Knowledge Routes (All authenticated users) - TEMPORARILY WITHOUT FILE UPLOAD
+// Session Knowledge Routes (All authenticated users)
 router.post('/session', 
+  documentService.uploadMiddleware,  // Add multer middleware for file uploads
   knowledgeController.uploadSessionKnowledge
 );
 router.get('/session', knowledgeController.getSessionKnowledge);
@@ -59,15 +60,16 @@ router.delete('/session/:id', knowledgeController.deleteKnowledge);
 // Knowledge Context Routes (For AI integration)
 router.get('/context', knowledgeController.getKnowledgeContext);
 
-// Placeholder file upload endpoint
-router.post('/upload', 
-  hasRole(['company_admin', 'admin', 'user']), 
-  async (req, res) => {
-    res.json({
-      success: false,
-      message: 'File upload temporarily disabled for debugging - use text input instead'
-    });
-  }
-);
+// Platform Knowledge Routes (Super Admin only)
+router.get('/platform', (req, res) => {
+  // This will be implemented later as part of Super Admin features
+  res.json({
+    success: true,
+    data: {
+      knowledge: [],
+      message: 'Platform knowledge API not yet implemented'
+    }
+  });
+});
 
 module.exports = router;
