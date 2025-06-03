@@ -10,37 +10,100 @@ const crypto = require('crypto');
 let companyKnowledge = [];
 let sessionKnowledge = [];
 
-// Storage directory for persistence
-const STORAGE_DIR = path.join(__dirname, '..', '..', 'data');
-const COMPANY_FILE = path.join(STORAGE_DIR, 'company-knowledge.json');
-const SESSION_FILE = path.join(STORAGE_DIR, 'session-knowledge.json');
+// Determine storage directory based on environment
+let STORAGE_DIR;
+let COMPANY_FILE;
+let SESSION_FILE;
+
+// In Vercel, we need to use /tmp directory for ephemeral storage
+if (process.env.VERCEL) {
+  STORAGE_DIR = '/tmp'; // Vercel's writable directory
+  console.log('Running in Vercel environment, using /tmp for storage');
+} else {
+  STORAGE_DIR = path.join(__dirname, '..', '..', 'data');
+  console.log('Running in non-Vercel environment, using local data directory');
+}
+
+COMPANY_FILE = path.join(STORAGE_DIR, 'company-knowledge.json');
+SESSION_FILE = path.join(STORAGE_DIR, 'session-knowledge.json');
+
+console.log(`Storage files: ${COMPANY_FILE}, ${SESSION_FILE}`);
 
 // Create storage directory if it doesn't exist
 try {
+  console.log(`Storage directory path: ${STORAGE_DIR}`);
+  
+  // Check if directory exists and create if not
   if (!fs.existsSync(STORAGE_DIR)) {
-    fs.mkdirSync(STORAGE_DIR, { recursive: true });
+    console.log('Storage directory does not exist, creating...');
+    try {
+      fs.mkdirSync(STORAGE_DIR, { recursive: true });
+      console.log('Storage directory created successfully');
+    } catch (mkdirError) {
+      console.error('Error creating storage directory:', mkdirError);
+      // In production environments like Vercel, we might not have write access
+      console.log('Falling back to in-memory storage only');
+    }
+  } else {
+    console.log('Storage directory exists');
   }
   
   // Load existing knowledge if available
   if (fs.existsSync(COMPANY_FILE)) {
-    const data = fs.readFileSync(COMPANY_FILE, 'utf8');
-    companyKnowledge = JSON.parse(data);
+    console.log(`Loading company knowledge from ${COMPANY_FILE}`);
+    try {
+      const data = fs.readFileSync(COMPANY_FILE, 'utf8');
+      companyKnowledge = JSON.parse(data);
+      console.log(`Loaded ${companyKnowledge.length} company knowledge items`);
+    } catch (readError) {
+      console.error('Error reading company knowledge file:', readError);
+    }
+  } else {
+    console.log('No existing company knowledge file found');
   }
   
   if (fs.existsSync(SESSION_FILE)) {
-    const data = fs.readFileSync(SESSION_FILE, 'utf8');
-    sessionKnowledge = JSON.parse(data);
+    console.log(`Loading session knowledge from ${SESSION_FILE}`);
+    try {
+      const data = fs.readFileSync(SESSION_FILE, 'utf8');
+      sessionKnowledge = JSON.parse(data);
+      console.log(`Loaded ${sessionKnowledge.length} session knowledge items`);
+    } catch (readError) {
+      console.error('Error reading session knowledge file:', readError);
+    }
+  } else {
+    console.log('No existing session knowledge file found');
   }
 } catch (error) {
   console.error('Error initializing knowledge storage:', error);
+  console.log('Will continue with in-memory storage only');
 }
 
 // Helper to save knowledge to file
 const saveToFile = (data, filePath) => {
   try {
+    console.log(`Attempting to save data to ${filePath}`);
+    
+    // Check if directory exists
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      console.log(`Directory ${dir} doesn't exist, attempting to create...`);
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`Created directory ${dir}`);
+      } catch (mkdirError) {
+        console.error(`Failed to create directory ${dir}:`, mkdirError);
+        return false; // Cannot save without directory
+      }
+    }
+    
+    // Write file
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    console.log(`Successfully saved data to ${filePath}`);
+    return true;
   } catch (error) {
     console.error(`Error saving to ${filePath}:`, error);
+    return false;
   }
 };
 
@@ -48,15 +111,51 @@ const knowledgeControllerSimple = {
   // Company Admin: Upload company-wide knowledge
   async uploadCompanyKnowledge(req, res) {
     try {
-      const { title, content, documentType, category, tags, isPublic, metadata } = req.body;
+      console.log('Starting company knowledge upload...');
+      // Extract body data, handling both JSON and form data
+      let title, content, documentType, category, tags, isPublic, metadata;
+      
+      // Check if this is a multipart form (file upload)
+      if (req.file) {
+        console.log('File upload detected');
+        title = req.body.title;
+        content = req.body.content || 'File content';
+        documentType = req.body.documentType;
+        category = req.body.category;
+        tags = req.body.tags;
+        isPublic = req.body.isPublic;
+        metadata = {
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
+          mimeType: req.file.mimetype,
+          fileContent: req.file.buffer.toString('base64').substring(0, 100) + '...' // First 100 chars only
+        };
+      } else {
+        // Regular JSON request
+        console.log('JSON upload detected');
+        ({ title, content, documentType, category, tags, isPublic, metadata } = req.body);
+      }
+      
       const tenantId = req.user?.tenantId || 'dev-tenant';
       const userId = req.user?.id || 'dev-user';
       
+      console.log(`User ID: ${userId}, Tenant ID: ${tenantId}`);
+      console.log(`Title: ${title}, Document Type: ${documentType}`);
+      
       // Basic validation
-      if (!title || !content) {
+      if (!title) {
+        console.log('Missing title in request');
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: title and content are required'
+          message: 'Missing required field: title is required'
+        });
+      }
+      
+      if (!content && !req.file) {
+        console.log('Missing content in request');
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required field: content or file is required'
         });
       }
       
@@ -65,10 +164,10 @@ const knowledgeControllerSimple = {
         id: crypto.randomUUID(),
         tenant_id: tenantId,
         title,
-        content,
+        content: content || 'File content not extracted',
         document_type: documentType || 'general',
         category: category || 'general',
-        tags: Array.isArray(tags) ? tags : [],
+        tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : []),
         status: 'active',
         created_by: userId,
         is_public: isPublic !== false,
@@ -77,16 +176,23 @@ const knowledgeControllerSimple = {
         updated_at: new Date().toISOString()
       };
       
+      console.log(`Created knowledge entry with ID: ${knowledge.id}`);
+      
       // Add to in-memory storage
       companyKnowledge.push(knowledge);
+      console.log(`Added to in-memory storage, total items: ${companyKnowledge.length}`);
       
-      // Save to file
-      saveToFile(companyKnowledge, COMPANY_FILE);
+      // Try to save to file, but continue even if it fails (for Vercel)
+      const saved = saveToFile(companyKnowledge, COMPANY_FILE);
+      console.log(`File save ${saved ? 'succeeded' : 'failed'}`);
       
+      // Always return success, even if file save failed
+      console.log('Returning success response');
       res.status(201).json({
         success: true,
         data: knowledge,
-        message: 'Company knowledge uploaded successfully'
+        message: 'Company knowledge uploaded successfully',
+        persistenceStatus: saved ? 'permanent' : 'temporary'
       });
     } catch (error) {
       console.error('Error in simplified company knowledge upload:', error);
@@ -101,26 +207,63 @@ const knowledgeControllerSimple = {
   // User: Upload session-specific knowledge
   async uploadSessionKnowledge(req, res) {
     try {
-      const { 
-        title, 
-        content, 
-        documentType, 
-        projectName,
-        sessionId, 
-        tags,
-        isSessionSpecific,
-        expiresAt,
-        metadata 
-      } = req.body;
+      console.log('Starting session knowledge upload...');
+      // Extract body data, handling both JSON and form data
+      let title, content, documentType, projectName, sessionId, tags, isSessionSpecific, expiresAt, metadata;
+      
+      // Check if this is a multipart form (file upload)
+      if (req.file) {
+        console.log('File upload detected');
+        title = req.body.title;
+        content = req.body.content || 'File content';
+        documentType = req.body.documentType;
+        projectName = req.body.projectName;
+        sessionId = req.body.sessionId;
+        tags = req.body.tags;
+        isSessionSpecific = req.body.isSessionSpecific;
+        expiresAt = req.body.expiresAt;
+        metadata = {
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
+          mimeType: req.file.mimetype,
+          fileContent: req.file.buffer.toString('base64').substring(0, 100) + '...' // First 100 chars only
+        };
+      } else {
+        // Regular JSON request
+        console.log('JSON upload detected');
+        ({ 
+          title, 
+          content, 
+          documentType, 
+          projectName,
+          sessionId, 
+          tags,
+          isSessionSpecific,
+          expiresAt,
+          metadata 
+        } = req.body);
+      }
       
       const tenantId = req.user?.tenantId || 'dev-tenant';
       const userId = req.user?.id || 'dev-user';
       
+      console.log(`User ID: ${userId}, Tenant ID: ${tenantId}`);
+      console.log(`Title: ${title}, Document Type: ${documentType}, Session ID: ${sessionId}`);
+      
       // Basic validation
-      if (!title || !content) {
+      if (!title) {
+        console.log('Missing title in request');
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields: title and content are required'
+          message: 'Missing required field: title is required'
+        });
+      }
+      
+      if (!content && !req.file) {
+        console.log('Missing content in request');
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required field: content or file is required'
         });
       }
       
@@ -130,10 +273,10 @@ const knowledgeControllerSimple = {
         tenant_id: tenantId,
         user_id: userId,
         title,
-        content,
+        content: content || 'File content not extracted',
         document_type: documentType || 'general',
         project_name: projectName || null,
-        tags: Array.isArray(tags) ? tags : [],
+        tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : []),
         status: 'active',
         is_session_specific: isSessionSpecific !== false,
         expires_at: expiresAt || null,
@@ -145,16 +288,23 @@ const knowledgeControllerSimple = {
         updated_at: new Date().toISOString()
       };
       
+      console.log(`Created session knowledge entry with ID: ${knowledge.id}`);
+      
       // Add to in-memory storage
       sessionKnowledge.push(knowledge);
+      console.log(`Added to in-memory storage, total items: ${sessionKnowledge.length}`);
       
-      // Save to file
-      saveToFile(sessionKnowledge, SESSION_FILE);
+      // Try to save to file, but continue even if it fails (for Vercel)
+      const saved = saveToFile(sessionKnowledge, SESSION_FILE);
+      console.log(`File save ${saved ? 'succeeded' : 'failed'}`);
       
+      // Always return success, even if file save failed
+      console.log('Returning success response');
       res.status(201).json({
         success: true,
         data: knowledge,
-        message: 'Session knowledge uploaded successfully'
+        message: 'Session knowledge uploaded successfully',
+        persistenceStatus: saved ? 'permanent' : 'temporary'
       });
     } catch (error) {
       console.error('Error in simplified session knowledge upload:', error);
