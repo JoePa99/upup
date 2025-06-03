@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
 import { PinsProvider } from '../contexts/PinsContext';
 import '../styles/globals.css';
+
+// Make sure NEXT_PUBLIC_SUPABASE_URL is set by copying from SUPABASE_URL if needed
+if (typeof window !== 'undefined' && !window.env_fix_attempted) {
+  window.env_fix_attempted = true;
+  fetch('/api/env-fix')
+    .then(res => res.json())
+    .then(data => {
+      console.log('Environment fix result:', data);
+    })
+    .catch(err => {
+      console.error('Error applying environment fix:', err);
+    });
+}
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

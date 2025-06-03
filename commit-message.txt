@@ -1,0 +1,10 @@
+Fix authentication by dynamically fetching Supabase URL
+
+- Create API endpoint to provide Supabase URL from server environment
+- Update AuthContext to initialize Supabase on-demand with correct URL
+- Use async initialization throughout authentication functions
+- Add fetch in _app.js to ensure environment is set up on page load
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

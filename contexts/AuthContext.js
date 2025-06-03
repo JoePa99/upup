@@ -1,35 +1,56 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-// Now we know the environment has SUPABASE_URL but not NEXT_PUBLIC_SUPABASE_URL
-// So we prioritize using what's available
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+// We'll initialize supabase later after getting the URL from the server
+let supabase = null;
+let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// For debugging
-console.log('Supabase environment check:', {
-  NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_URL: !!process.env.SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  url_used: supabaseUrl ? supabaseUrl.substring(0, 15) + '...' : 'undefined'
-});
-
-let supabase = null;
-try {
+// Try to initialize Supabase with available environment variables
+const initializeSupabase = async () => {
+  // If already initialized, don't do it again
+  if (supabase) return supabase;
+  
+  // If we have the URL and key in environment variables, use them
   if (supabaseUrl && supabaseAnonKey) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('✅ Supabase client initialized successfully');
-  } else {
-    console.error('❌ Supabase environment variables missing:', {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseAnonKey,
-      url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
-      key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 5)}...` : 'undefined'
-    });
+    try {
+      supabase = createClient(supabaseUrl, supabaseAnonKey);
+      console.log('✅ Supabase client initialized from environment variables');
+      return supabase;
+    } catch (error) {
+      console.error('❌ Error initializing Supabase from environment:', error);
+    }
   }
-} catch (error) {
-  console.error('❌ Error initializing Supabase client:', error);
+  
+  // Try to get the URL from the server
+  try {
+    const response = await fetch('/api/env-fix');
+    const data = await response.json();
+    
+    if (data.success && data.supabaseUrl) {
+      supabaseUrl = data.supabaseUrl;
+      
+      if (supabaseUrl && supabaseAnonKey) {
+        supabase = createClient(supabaseUrl, supabaseAnonKey);
+        console.log('✅ Supabase client initialized from server-provided URL');
+        return supabase;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error fetching Supabase URL from server:', error);
+  }
+  
+  console.error('❌ Failed to initialize Supabase client');
+  return null;
+};
+
+// Try to initialize right away
+if (typeof window !== 'undefined') {
+  initializeSupabase().then(client => {
+    if (client) {
+      console.log('Supabase initialized during context creation');
+    }
+  });
 }
 
 const AuthContext = createContext(null);
@@ -40,16 +61,18 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!supabase) {
-      console.error('Supabase not configured - missing environment variables');
-      setLoading(false);
-      return;
-    }
-
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Make sure we have a Supabase client
+        const client = await initializeSupabase();
+        if (!client) {
+          console.error('Could not initialize Supabase client');
+          setLoading(false);
+          return;
+        }
+        
+        const { data: { session }, error } = await client.auth.getSession();
         if (error) throw error;
         
         if (session?.user) {
@@ -57,32 +80,42 @@ export const AuthProvider = ({ children }) => {
         } else {
           setLoading(false);
         }
+        
+        // Listen for auth changes
+        const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
+          try {
+            console.log('Auth state change:', event);
+            if (event === 'SIGNED_IN' && session?.user) {
+              await loadUserData(session.user);
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null);
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error('Auth state change error:', error);
+            setError(error.message || 'Authentication error');
+            setLoading(false);
+          }
+        });
+        
+        // Clean up subscription
+        return () => subscription?.unsubscribe?.();
       } catch (error) {
         console.error('Error getting session:', error);
         setError(error.message);
         setLoading(false);
+        return () => {}; // Return empty cleanup function
       }
     };
 
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      try {
-        if (event === 'SIGNED_IN' && session?.user) {
-          await loadUserData(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Auth state change error:', error);
-        setError(error.message || 'Authentication error');
-        setLoading(false);
+    const unsubscribe = getInitialSession();
+    
+    // Return cleanup function
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
       }
-    });
-
-    return () => subscription.unsubscribe();
+    };
   }, []);
 
   const checkSuperAdminStatus = async (email) => {
@@ -195,76 +228,25 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Try client-side login first if supabase is available
-      if (supabase) {
-        try {
-          console.log('Attempting client-side login...');
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-  
-          if (!error) {
-            console.log('Client-side login successful, user:', data.user.email);
-            // User data will be loaded by the auth state change listener
-            return data.user;
-          }
-          
-          // If client-side fails, we'll fall through to server-side login
-          console.warn('Client-side login failed, trying server-side login:', error.message);
-        } catch (clientError) {
-          console.warn('Client-side login error, trying server-side login:', clientError);
-        }
-      } else {
-        console.log('Supabase client not available, using server-side login');
+      // Make sure we have a Supabase client
+      const client = await initializeSupabase();
+      if (!client) {
+        throw new Error('Could not initialize authentication client');
       }
       
-      // Server-side login as fallback
-      console.log('Attempting server-side login via API...');
-      const response = await fetch('/api/auth/server-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
+      console.log('Attempting login with initialized client...');
+      const { data, error } = await client.auth.signInWithPassword({
+        email,
+        password
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Server login failed:', errorData);
-        throw new Error(errorData.error || 'Login failed');
+
+      if (error) {
+        console.error('Supabase auth error:', error);
+        throw error;
       }
-      
-      const data = await response.json();
-      
-      if (!data.success || !data.session) {
-        throw new Error('Invalid response from server login');
-      }
-      
-      console.log('Server-side login successful');
-      
-      // Manually set the session in Supabase
-      if (supabase) {
-        try {
-          await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token
-          });
-          console.log('Session set in Supabase client');
-        } catch (setSessionError) {
-          console.error('Error setting session:', setSessionError);
-        }
-      } else {
-        console.warn('No supabase client to set session, auth state may not update correctly');
-        
-        // Since we can't set the session in the Supabase client, manually load user data
-        try {
-          await loadUserData(data.user, data.session);
-        } catch (loadError) {
-          console.error('Error loading user data after server login:', loadError);
-        }
-      }
-      
+
+      console.log('Login successful, user:', data.user.email);
+      // User data will be loaded by the auth state change listener
       return data.user;
     } catch (error) {
       console.error('Login error:', error);
@@ -276,16 +258,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    if (!supabase) {
-      throw new Error('Authentication not configured');
-    }
-
     try {
       setLoading(true);
       setError(null);
       
+      // Make sure we have a Supabase client
+      const client = await initializeSupabase();
+      if (!client) {
+        throw new Error('Could not initialize authentication client');
+      }
+      
       // Register with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await client.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
@@ -333,10 +317,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    if (!supabase) return;
-    
     try {
-      const { error } = await supabase.auth.signOut();
+      // Make sure we have a Supabase client
+      const client = await initializeSupabase();
+      if (!client) {
+        console.error('Could not initialize Supabase client for logout');
+        return;
+      }
+      
+      const { error } = await client.auth.signOut();
       if (error) throw error;
       
       setUser(null);
@@ -347,16 +336,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const superAdminLogin = async (email, password) => {
-    if (!supabase) {
-      throw new Error('Authentication not configured');
-    }
-
     try {
       setLoading(true);
       setError(null);
       
+      // Make sure we have a Supabase client
+      const client = await initializeSupabase();
+      if (!client) {
+        throw new Error('Could not initialize authentication client');
+      }
+      
       // Check if user is super admin
-      const { data: superAdminData, error: superAdminError } = await supabase
+      const { data: superAdminData, error: superAdminError } = await client
         .from('super_admins')
         .select('*')
         .eq('email', email)
@@ -367,7 +358,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Use regular auth login
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await client.auth.signInWithPassword({
         email,
         password
       });

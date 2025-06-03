@@ -138,6 +138,9 @@ export default async function handler(req, res) {
       let knowledgeRecord = null;
       if (supabaseAdmin) {
         try {
+          // Set tenant context for RLS
+          await setTenantContext(user.tenantId, user.id);
+          
           // Create embeddings for the content
           const embeddings = createEmbeddings(content);
           
@@ -160,8 +163,17 @@ export default async function handler(req, res) {
 
           if (error) {
             console.error('Supabase insert error:', error);
+            // Log detailed info for debugging
+            console.log('Insert details:', {
+              tenant_id: user.tenantId,
+              user_id: user.id,
+              title: title,
+              content_length: content ? content.length : 0,
+              embeddings_length: embeddings ? embeddings.length : 0
+            });
             // Fall back to temporary storage
           } else {
+            console.log('Knowledge record successfully inserted:', data);
             knowledgeRecord = data;
           }
         } catch (error) {
@@ -190,10 +202,12 @@ export default async function handler(req, res) {
         console.log('Created temporary record:', knowledgeRecord.title, 'ID:', knowledgeRecord.id);
       }
       
-      // Return stored record
+      // Return stored record - ensure consistent format with GET response
       res.status(200).json({
         success: true,
-        data: knowledgeRecord,
+        data: {
+          knowledge: [knowledgeRecord]
+        },
         message: `Company knowledge ${fileName ? 'file' : 'content'} uploaded successfully`,
         storage_type: knowledgeRecord.is_temporary ? 'temporary' : (supabaseAdmin ? 'supabase' : 'mock'),
         supabase_configured: !!supabaseAdmin,
@@ -222,6 +236,9 @@ export default async function handler(req, res) {
 
       if (supabaseAdmin) {
         try {
+          // Set tenant context for RLS
+          await setTenantContext(user.tenantId, user.id);
+          
           const { data, error } = await supabaseAdmin
             .from('company_knowledge')
             .select('*')
@@ -302,6 +319,9 @@ export default async function handler(req, res) {
       let deleted = false;
       if (supabaseAdmin) {
         try {
+          // Set tenant context for RLS
+          await setTenantContext(user.tenantId, user.id);
+          
           const { error } = await supabaseAdmin
             .from('company_knowledge')
             .delete()

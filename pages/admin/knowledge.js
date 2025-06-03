@@ -45,7 +45,10 @@ const CompanyKnowledgeAdmin = () => {
       });
       
       if (response.success) {
-        setKnowledgeList(response.data.knowledge || []);
+        // Check if response.data has a knowledge property or if it's a direct array
+        const knowledgeData = response.data.knowledge || response.data || [];
+        console.log('Knowledge data retrieved:', knowledgeData);
+        setKnowledgeList(knowledgeData);
       } else {
         console.error('Failed to load company knowledge:', response.message);
       }
@@ -128,7 +131,12 @@ const CompanyKnowledgeAdmin = () => {
         
         // Add the uploaded item directly to the list (since Vercel can't persist files)
         if (response.data) {
-          setKnowledgeList(prev => [response.data, ...prev]);
+          console.log('Upload response data:', response.data);
+          // Handle different response formats
+          const newItem = response.data.id ? response.data : (response.data.knowledge && response.data.knowledge[0]);
+          if (newItem) {
+            setKnowledgeList(prev => [newItem, ...prev]);
+          }
         }
         
         setShowUploadForm(false);
