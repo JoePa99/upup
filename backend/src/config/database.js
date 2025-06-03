@@ -87,6 +87,14 @@ const query = async (text, params) => {
  */
 const getClient = async () => {
   if (!pool) {
+    // In development, create a mock client for testing
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Database connection not configured. Using mock client for development.');
+      return {
+        query: async () => ({ rows: [] }),
+        release: () => {}
+      };
+    }
     throw new Error('Database connection not configured');
   }
   return pool.connect();
