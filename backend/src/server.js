@@ -249,12 +249,26 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'UPUP API Server' });
 });
 
-// Error handling middleware
+// Enhanced error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  // Log detailed error information
+  console.error('💥 Server Error:', err.message);
+  console.error('Stack trace:', err.stack);
+  console.error('Request URL:', req.url);
+  console.error('Request method:', req.method);
+  console.error('Request headers:', JSON.stringify(req.headers));
+  
+  // Determine if we're in development mode
+  const isDev = process.env.NODE_ENV !== 'production';
+  
+  // Send appropriate error response
   res.status(500).json({
     status: 'error',
-    message: 'Something went wrong on the server'
+    message: 'Something went wrong on the server',
+    error: isDev ? err.message : undefined,
+    stack: isDev ? err.stack : undefined,
+    path: req.url,
+    timestamp: new Date().toISOString()
   });
 });
 
