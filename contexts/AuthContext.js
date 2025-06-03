@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loadUserData = async (authUser) => {
+  const loadUserData = async (authUser, session = null) => {
     try {
       // Safety check
       if (!authUser || !authUser.id) {
@@ -109,41 +109,71 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Use API endpoint to bypass RLS issues
-      const response = await fetch('/api/auth/get-user-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authUserId: authUser.id })
-      });
+      let userData = null;
+      
+      // First try the standard API endpoint
+      try {
+        console.log('Attempting to load user data via get-user-data API...');
+        const response = await fetch('/api/auth/get-user-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ authUserId: authUser.id })
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data: ' + response.status);
+        if (response.ok) {
+          const directData = await response.json();
+          if (!directData.error && directData.id) {
+            userData = directData;
+            console.log('Successfully loaded user data via standard API');
+          }
+        }
+      } catch (standardApiError) {
+        console.warn('Standard API user data fetch failed:', standardApiError);
+      }
+      
+      // If standard API fails and we have a session, try the session-based API
+      if (!userData && session) {
+        try {
+          console.log('Attempting to load user data via session API...');
+          const sessionResponse = await fetch('/api/auth/get-user-with-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session })
+          });
+          
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            if (sessionData.success && sessionData.user) {
+              console.log('Successfully loaded user data via session API');
+              
+              // Use the complete user object from the session API
+              setUser(sessionData.user);
+              setLoading(false);
+              return; // Exit early as we've already set the user
+            }
+          }
+        } catch (sessionApiError) {
+          console.warn('Session API user data fetch failed:', sessionApiError);
+        }
       }
 
-      const directData = await response.json();
-      const directError = directData.error ? { message: directData.error } : null;
-
-      if (directError) {
-        setError('Account setup incomplete. Please contact support.');
-        return;
-      }
-
-      if (directData && directData.id) {
+      // Proceed with standard user data if available
+      if (userData && userData.id) {
         // Check if user is super admin
         const isSuperAdmin = await checkSuperAdminStatus(authUser.email);
         
         setUser({
-          id: directData.id,
+          id: userData.id,
           authUserId: authUser.id,
           email: authUser.email || '',
-          firstName: authUser.user_metadata?.first_name || directData.first_name || '',
-          lastName: authUser.user_metadata?.last_name || directData.last_name || '',
-          tenantId: directData.tenant_id,
-          tenantName: directData.tenants?.name || '',
-          role: directData.role || 'user',
+          firstName: authUser.user_metadata?.first_name || userData.first_name || '',
+          lastName: authUser.user_metadata?.last_name || userData.last_name || '',
+          tenantId: userData.tenant_id,
+          tenantName: userData.tenants?.name || '',
+          role: userData.role || 'user',
           isSuperAdmin,
-          isCompanyAdmin: directData.role === 'admin',
-          isUser: directData.role === 'user'
+          isCompanyAdmin: userData.role === 'admin',
+          isUser: userData.role === 'user'
         });
         setLoading(false);
       } else {
@@ -161,57 +191,80 @@ export const AuthProvider = ({ children }) => {
     // Add debugging for login attempts
     console.log('Login attempt for:', email);
     
-    if (!supabase) {
-      console.error('Supabase client not available. Attempting to initialize on-demand.');
-      
-      // Try to initialize supabase on-demand
-      try {
-        const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        
-        if (url && key) {
-          const tempSupabase = createClient(url, key);
-          
-          // If successful, use this client for login
-          if (tempSupabase) {
-            console.log('Successfully created on-demand Supabase client');
-            
-            // Attempt login with the temporary client
-            const { data, error } = await tempSupabase.auth.signInWithPassword({
-              email,
-              password
-            });
-            
-            if (error) throw error;
-            return data.user;
-          }
-        }
-      } catch (initError) {
-        console.error('Failed to initialize Supabase on-demand:', initError);
-        throw new Error('Authentication service unavailable. Please try again later.');
-      }
-      
-      // If we get here, initialization failed
-      throw new Error('Authentication not configured');
-    }
-
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Attempting supabase.auth.signInWithPassword...');
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('Supabase auth error:', error);
-        throw error;
+      // Try client-side login first if supabase is available
+      if (supabase) {
+        try {
+          console.log('Attempting client-side login...');
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+  
+          if (!error) {
+            console.log('Client-side login successful, user:', data.user.email);
+            // User data will be loaded by the auth state change listener
+            return data.user;
+          }
+          
+          // If client-side fails, we'll fall through to server-side login
+          console.warn('Client-side login failed, trying server-side login:', error.message);
+        } catch (clientError) {
+          console.warn('Client-side login error, trying server-side login:', clientError);
+        }
+      } else {
+        console.log('Supabase client not available, using server-side login');
       }
-
-      console.log('Login successful, user:', data.user.email);
-      // User data will be loaded by the auth state change listener
+      
+      // Server-side login as fallback
+      console.log('Attempting server-side login via API...');
+      const response = await fetch('/api/auth/server-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server login failed:', errorData);
+        throw new Error(errorData.error || 'Login failed');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success || !data.session) {
+        throw new Error('Invalid response from server login');
+      }
+      
+      console.log('Server-side login successful');
+      
+      // Manually set the session in Supabase
+      if (supabase) {
+        try {
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token
+          });
+          console.log('Session set in Supabase client');
+        } catch (setSessionError) {
+          console.error('Error setting session:', setSessionError);
+        }
+      } else {
+        console.warn('No supabase client to set session, auth state may not update correctly');
+        
+        // Since we can't set the session in the Supabase client, manually load user data
+        try {
+          await loadUserData(data.user, data.session);
+        } catch (loadError) {
+          console.error('Error loading user data after server login:', loadError);
+        }
+      }
+      
       return data.user;
     } catch (error) {
       console.error('Login error:', error);
