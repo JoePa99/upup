@@ -81,6 +81,11 @@ const CompanyKnowledgeAdmin = () => {
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('=== UPLOAD SUBMIT DEBUG ===');
+    console.log('Upload form:', uploadForm);
+    console.log('Upload mode:', uploadMode);
+    console.log('Selected file:', selectedFile);
+    
     // Validate based on upload mode
     if (!uploadForm.title.trim()) {
       alert('Please enter a title');
@@ -99,6 +104,7 @@ const CompanyKnowledgeAdmin = () => {
 
     setIsLoading(true);
     try {
+      console.log('Starting API request...');
       const { apiRequest } = await import('../../utils/api-config');
       
       let response;
@@ -113,17 +119,21 @@ const CompanyKnowledgeAdmin = () => {
           formData.append('content', uploadForm.content); // Optional additional content
         }
         
+        console.log('Making file upload request with FormData...');
         response = await apiRequest('/knowledge/company', {
           method: 'POST',
           body: formData,
           headers: {} // Remove Content-Type to let browser set it for FormData
         });
+        console.log('File upload response:', response);
       } else {
         // Text upload using JSON
+        console.log('Making text upload request with JSON...');
         response = await apiRequest('/knowledge/company', {
           method: 'POST',
           body: JSON.stringify(uploadForm)
         });
+        console.log('Text upload response:', response);
       }
       
       if (response.success) {
