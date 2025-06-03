@@ -154,8 +154,8 @@ const CompanyKnowledgeAdmin = () => {
         setSelectedFile(null);
         setUploadMode('text');
         
-        // Also reload from server in case there are other items
-        loadCompanyKnowledge();
+        // Note: Not reloading from server since Vercel doesn't persist files
+        // The item has been added to the local list above
       } else {
         throw new Error(response.message || 'Upload failed');
       }
