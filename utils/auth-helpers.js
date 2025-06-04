@@ -31,6 +31,11 @@ export async function getUserFromRequest(req) {
     
     if (!supabaseAdmin) {
       console.log('❌ Supabase admin client not configured');
+      console.log('Environment check:', {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+        supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'undefined'
+      });
       throw new Error('Supabase admin client not configured');
     }
 

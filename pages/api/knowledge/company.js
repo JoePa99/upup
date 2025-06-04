@@ -101,15 +101,12 @@ export default async function handler(req, res) {
       }
       
       if (!user) {
-        console.log('🚨 No authenticated user found - using fallback user for upload');
-        // Temporary fallback while we debug auth issues
-        user = {
-          id: 5, // Use your actual user ID
-          tenantId: 6, // Use your actual tenant ID  
-          email: 'jparrish@thevariable.com',
-          role: 'admin'
-        };
-        console.log('Using fallback user for upload:', user);
+        console.log('🚨 No authenticated user found for upload');
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required for knowledge base uploads',
+          error: 'Authentication token verification failed'
+        });
       }
       
       const contentType = req.headers['content-type'] || '';
