@@ -141,6 +141,13 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
           >
             💬 Customer Connection
           </div>
+          <div 
+            className={`nav-item ${activePage === 'free-write' ? 'active' : ''}`}
+            onClick={() => navigateToPage('free-write')}
+            style={{ cursor: 'pointer' }}
+          >
+            ✍️ Free Write
+          </div>
         </div>
 
         <div className="nav-section">

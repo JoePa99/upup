@@ -156,6 +156,11 @@ function buildFormContext(existingFormData, generatorType) {
       if (existingFormData.connectionGoal) contextParts.push(`Goal: ${existingFormData.connectionGoal}`);
       if (existingFormData.customerSegment) contextParts.push(`Segment: ${existingFormData.customerSegment}`);
       break;
+    case 'free-write':
+      if (existingFormData.prompt) contextParts.push(`Prompt: ${existingFormData.prompt}`);
+      if (existingFormData.useKnowledgeBase !== undefined) contextParts.push(`Knowledge Base: ${existingFormData.useKnowledgeBase ? 'Enabled' : 'Disabled'}`);
+      if (existingFormData.creativity) contextParts.push(`Creativity: ${Math.round(existingFormData.creativity * 100)}%`);
+      break;
   }
   
   return contextParts.length > 0 ? contextParts.join(', ') : 'No relevant form context';
@@ -239,6 +244,22 @@ function getFallbackSuggestions(fieldName, fieldType, generatorType) {
         'Consider professional workflow integration',
         'Target educational institution partnerships',
         'Develop influencer and artist relationships'
+      ]
+    },
+    'free-write': {
+      prompt: [
+        'The future of customer relationships in a digital-first world',
+        'What innovation really means in traditional industries',
+        'The psychology behind premium brand loyalty', 
+        'How authentic storytelling changes everything',
+        'Why quality craftsmanship still matters today'
+      ],
+      additionalContext: [
+        'Write in a conversational, approachable tone',
+        'Focus on emotional connection and human insights',
+        'Use storytelling elements and vivid imagery',
+        'Target thought leaders and industry innovators',
+        'Blend practical wisdom with creative thinking'
       ]
     }
   };
