@@ -93,15 +93,12 @@ export default async function handler(req, res) {
       console.log('User from request:', user);
       
       if (!user) {
-        console.log('No user found - creating mock user for testing');
-        // Create mock user for testing when auth fails
-        user = {
-          id: 'mock-user-1',
-          tenantId: 1, // Use integer for tenant_id
-          email: 'test@example.com',
-          role: 'admin'
-        };
-        console.log('Using mock user:', user);
+        console.log('🚨 No authenticated user found for upload - this will likely fail');
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required for knowledge base uploads',
+          error: 'Please log in and try again'
+        });
       }
       
       const contentType = req.headers['content-type'] || '';
@@ -256,13 +253,12 @@ export default async function handler(req, res) {
       console.log('GET: User from request:', user);
       
       if (!user) {
-        console.log('GET: No user found - using mock user');
-        user = {
-          id: 'mock-user-1',
-          tenantId: 1, // Use integer for tenant_id
-          email: 'test@example.com',
-          role: 'admin'
-        };
+        console.log('GET: No user found - authentication required');
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+          error: 'Please log in to access knowledge base'
+        });
       }
       
       let knowledgeList = [];
