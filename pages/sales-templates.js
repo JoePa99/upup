@@ -68,11 +68,11 @@ const SalesTemplates = () => {
     setShowContent(false);
     
     try {
-      const response = await fetch('/api/content/templates/sales', {
+      // Import the API helper to get auth headers
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const data = await apiRequest('/content/templates/sales', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           templateType: formData.templateType,
           clientName: formData.field1,
@@ -80,12 +80,6 @@ const SalesTemplates = () => {
           requirements: formData.field3
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate sales template');
-      }
-
-      const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Sales Document: ${formData.templateType}`);

@@ -68,11 +68,11 @@ const HRTemplates = () => {
     setShowContent(false);
     
     try {
-      const response = await fetch('/api/content/templates/hr', {
+      // Import the API helper to get auth headers
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const data = await apiRequest('/content/templates/hr', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           templateType: formData.templateType,
           jobTitle: formData.field1,
@@ -80,12 +80,6 @@ const HRTemplates = () => {
           responsibilities: formData.field3
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate HR template');
-      }
-
-      const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `${formData.templateType}: ${formData.field1 || 'HR Document'}`);

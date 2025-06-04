@@ -73,11 +73,11 @@ const LegalTemplates = () => {
     setShowContent(false);
     
     try {
-      const response = await fetch('/api/content/templates/legal', {
+      // Import the API helper to get auth headers
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const data = await apiRequest('/content/templates/legal', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           templateType: formData.templateType,
           partyName: formData.field1,
@@ -85,12 +85,6 @@ const LegalTemplates = () => {
           specificTerms: formData.field3
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate legal template');
-      }
-
-      const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Legal Document: ${formData.templateType}`);
