@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { analysisFocus, marketScope, specificCompetitors } = req.body;
+    const { analysisFocus, marketScope, specificCompetitors, additionalContext } = req.body;
 
     if (!analysisFocus || !marketScope) {
       return res.status(400).json({
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const companyContext = await getCompanyContext(analysisFocus, req);
 
     // Generate content with OpenAI
-    const aiContent = await generateMarketContent(analysisFocus, marketScope, specificCompetitors, companyContext);
+    const aiContent = await generateMarketContent(analysisFocus, marketScope, specificCompetitors, companyContext, additionalContext);
 
     return res.status(200).json({
       success: true,
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function generateMarketContent(analysisFocus, marketScope, specificCompetitors, companyContext) {
+async function generateMarketContent(analysisFocus, marketScope, specificCompetitors, companyContext, additionalContext) {
   try {
     const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
     
@@ -64,6 +64,11 @@ async function generateMarketContent(analysisFocus, marketScope, specificCompeti
     // Include company knowledge in the prompt if available
     const knowledgeSection = relevantKnowledge.length > 0 
       ? `\n\nCompany Knowledge Base (use this to inform your analysis):\n${knowledgeContext}`
+      : '';
+      
+    // Include additional context if provided
+    const additionalContextSection = additionalContext 
+      ? `\n\nAdditional Requirements:\n${additionalContext}`
       : '';
     
     // If we have knowledge base content, make the prompt ONLY about that company
@@ -88,7 +93,8 @@ Requirements:
 - Market opportunities and threats
 - Customer behavior patterns and preferences
 - Length: 500-700 words
-- Include specific metrics, percentages, and market data where relevant
+- Include specific metrics, percentages, and market data where relevant${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
 Structure the analysis with clear sections covering:
 1. Market Overview and Current Trends
@@ -97,7 +103,7 @@ Structure the analysis with clear sections covering:
 4. Strategic Opportunities and Recommendations for the knowledge base company
 5. Risk Assessment and Mitigation
 
-Format: Return only the market analysis content, well-structured with clear headings and professional business language.` :
+Format: Return only the market analysis content, well-structured with clear headings and professional business language.${additionalContextSection}` :
       `Generate a comprehensive market analysis report focusing on ${analysisFocus} with a ${marketScope} scope.
 
 Company Context:
@@ -134,9 +140,10 @@ Structure the analysis with clear sections covering:
 2. Competitive Landscape Analysis
 3. Customer Behavior and Preferences
 4. Strategic Opportunities and Recommendations for ${tenantInfo.companyName}
-5. Risk Assessment and Mitigation
+5. Risk Assessment and Mitigation${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
-Format: Return only the market analysis content, well-structured with clear headings and professional business language.`;
+Format: Return only the market analysis content, well-structured with clear headings and professional business language.${additionalContextSection}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

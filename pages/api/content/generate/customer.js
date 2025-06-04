@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { connectionGoal, customerSegment, currentChallenges } = req.body;
+    const { connectionGoal, customerSegment, currentChallenges, additionalContext } = req.body;
 
     if (!connectionGoal || !customerSegment) {
       return res.status(400).json({
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const companyContext = await getCompanyContext(connectionGoal + ' ' + customerSegment, req);
 
     // Generate content with OpenAI
-    const aiContent = await generateCustomerContent(connectionGoal, customerSegment, currentChallenges, companyContext);
+    const aiContent = await generateCustomerContent(connectionGoal, customerSegment, currentChallenges, companyContext, additionalContext);
 
     return res.status(200).json({
       success: true,
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function generateCustomerContent(connectionGoal, customerSegment, currentChallenges, companyContext) {
+async function generateCustomerContent(connectionGoal, customerSegment, currentChallenges, companyContext, additionalContext) {
   try {
     const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
     
@@ -64,6 +64,11 @@ async function generateCustomerContent(connectionGoal, customerSegment, currentC
     // Include company knowledge in the prompt if available
     const knowledgeSection = relevantKnowledge.length > 0 
       ? `\n\nCompany Knowledge Base (use this to inform your strategy):\n${knowledgeContext}`
+      : '';
+      
+    // Include additional context if provided
+    const additionalContextSection = additionalContext 
+      ? `\n\nAdditional Requirements:\n${additionalContext}`
       : '';
     
     // If we have knowledge base content, make the prompt ONLY about that company
@@ -88,7 +93,8 @@ Requirements:
 - Customer engagement tactics and relationship building
 - Retention strategies and loyalty programs
 - Length: 600-800 words
-- Include specific tactics, implementation steps, and measurable outcomes
+- Include specific tactics, implementation steps, and measurable outcomes${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
 Structure should include:
 - Understanding the customer segment and their needs
@@ -96,7 +102,7 @@ Structure should include:
 - Implementation tactics and timeline
 - Success metrics and measurement approaches
 
-Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.` :
+Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.${additionalContextSection}` :
       `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
 
 Company Context:
@@ -132,9 +138,10 @@ Structure should include:
 - Understanding the customer segment and their needs
 - Specific strategies for ${tenantInfo.companyName} to achieve the connection goal
 - Implementation tactics and timeline
-- Success metrics and measurement approaches
+- Success metrics and measurement approaches${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
-Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.`;
+Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.${additionalContextSection}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

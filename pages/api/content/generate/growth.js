@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { growthFocus, timeHorizon, constraints } = req.body;
+    const { growthFocus, timeHorizon, constraints, additionalContext } = req.body;
 
     if (!growthFocus || !timeHorizon) {
       return res.status(400).json({
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const companyContext = await getCompanyContext(growthFocus, req);
 
     // Generate content with OpenAI
-    const aiContent = await generateAIContent(growthFocus, timeHorizon, constraints, companyContext);
+    const aiContent = await generateAIContent(growthFocus, timeHorizon, constraints, companyContext, additionalContext);
 
     return res.status(200).json({
       success: true,
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function generateAIContent(focus, timeframe, constraints, companyContext) {
+async function generateAIContent(focus, timeframe, constraints, companyContext, additionalContext) {
   try {
     const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
     
@@ -64,6 +64,11 @@ async function generateAIContent(focus, timeframe, constraints, companyContext) 
     // Include company knowledge in the prompt if available
     const knowledgeSection = relevantKnowledge.length > 0 
       ? `\n\nCompany Knowledge Base (use this to inform your strategy):\n${knowledgeContext}`
+      : '';
+      
+    // Include additional context if provided
+    const additionalContextSection = additionalContext 
+      ? `\n\nAdditional Requirements:\n${additionalContext}`
       : '';
     
     // If we have knowledge base content, make the prompt ONLY about that company
@@ -85,9 +90,10 @@ Requirements:
 - Use the company knowledge base information to make strategy highly specific and relevant
 - Specific tactics and implementation steps
 - Measurable outcomes and KPIs
-- Length: 400-600 words
+- Length: 400-600 words${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
-Format: Return only the strategy content, well-structured with clear sections.` :
+Format: Return only the strategy content, well-structured with clear sections.${additionalContextSection}` :
       `Generate a comprehensive growth strategy about ${focus} with a ${timeframe} timeline.
     
 Company context:
@@ -103,9 +109,10 @@ Requirements:
 - Actionable strategic recommendations specific to ${tenantInfo.companyName}
 - Specific tactics and implementation steps
 - Measurable outcomes and KPIs
-- Length: 400-600 words
+- Length: 400-600 words${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
-Format: Return only the strategy content, well-structured with clear sections.`;
+Format: Return only the strategy content, well-structured with clear sections.${additionalContextSection}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

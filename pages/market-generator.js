@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import FloatingPinButton from '../components/FloatingPinButton';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const MarketGenerator = () => {
@@ -15,7 +16,8 @@ const MarketGenerator = () => {
     marketScope: 'Current Market',
     specificCompetitors: '',
     otherAnalysisFocus: '',
-    otherMarketScope: ''
+    otherMarketScope: '',
+    additionalContext: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -79,14 +81,15 @@ const MarketGenerator = () => {
         body: JSON.stringify({
           analysisFocus: formData.analysisFocus,
           marketScope: formData.marketScope,
-          specificCompetitors: formData.specificCompetitors || 'general competitors'
+          specificCompetitors: formData.specificCompetitors || 'general competitors',
+          additionalContext: formData.additionalContext
         })
       });
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Market Analysis: ${formData.analysisFocus}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       trackContentGenerated('market-insights', 800);
     } catch (error) {
       console.error('Market insights generation error:', error);
@@ -97,7 +100,7 @@ const MarketGenerator = () => {
       setGeneratedContent(fallbackContent);
       setContentTitle(`Market Analysis: ${formData.analysisFocus}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       trackContentGenerated('market-insights', 0);
       
       alert('Market insights generated using fallback mode. Please check your internet connection or contact support if this persists.');
@@ -206,6 +209,17 @@ const MarketGenerator = () => {
             </div>
           </div>
 
+          <div className="input-field">
+            <label htmlFor="additionalContext">Additional Context & Requirements</label>
+            <textarea 
+              name="additionalContext"
+              value={formData.additionalContext}
+              onChange={handleInputChange}
+              placeholder="Any additional context, market research goals, specific data needs, or analysis requirements..."
+              rows="3"
+            />
+          </div>
+
           <button className="generate-btn" onClick={generateMarketInsights} disabled={isLoading}>
             Generate Insights
           </button>
@@ -231,6 +245,10 @@ const MarketGenerator = () => {
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      <FloatingPinButton 
+        onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
+        showPinboard={showPinsSidebar}
+      />
     </Layout>
   );
 };

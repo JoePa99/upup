@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import FloatingPinButton from '../components/FloatingPinButton';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const CustomerGenerator = () => {
@@ -14,7 +15,8 @@ const CustomerGenerator = () => {
     connectionGoal: 'Improve Retention',
     customerSegment: '',
     currentChallenges: '',
-    otherConnectionGoal: ''
+    otherConnectionGoal: '',
+    additionalContext: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -78,14 +80,15 @@ const CustomerGenerator = () => {
         body: JSON.stringify({
           connectionGoal: formData.connectionGoal,
           customerSegment: formData.customerSegment,
-          currentChallenges: formData.currentChallenges || 'General customer relationship challenges'
+          currentChallenges: formData.currentChallenges || 'General customer relationship challenges',
+          additionalContext: formData.additionalContext
         })
       });
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Customer Strategy: ${formData.connectionGoal}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       trackContentGenerated('customer-connection', 800);
     } catch (error) {
       console.error('Customer connection generation error:', error);
@@ -96,7 +99,7 @@ const CustomerGenerator = () => {
       setGeneratedContent(fallbackContent);
       setContentTitle(`Customer Strategy: ${formData.connectionGoal}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       trackContentGenerated('customer-connection', 0);
       
       alert('Customer strategies generated using fallback mode. Please check your internet connection or contact support if this persists.');
@@ -190,6 +193,17 @@ const CustomerGenerator = () => {
             </div>
           </div>
 
+          <div className="input-field">
+            <label htmlFor="additionalContext">Additional Context & Requirements</label>
+            <textarea 
+              name="additionalContext"
+              value={formData.additionalContext}
+              onChange={handleInputChange}
+              placeholder="Any additional context, customer insights, communication preferences, or strategic requirements..."
+              rows="3"
+            />
+          </div>
+
           <button className="generate-btn" onClick={generateCustomerConnection} disabled={isLoading}>
             Generate Strategies
           </button>
@@ -215,6 +229,10 @@ const CustomerGenerator = () => {
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      <FloatingPinButton 
+        onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
+        showPinboard={showPinsSidebar}
+      />
     </Layout>
   );
 };

@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import FloatingPinButton from '../components/FloatingPinButton';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const GrowthGenerator = () => {
@@ -15,7 +16,8 @@ const GrowthGenerator = () => {
     timeHorizon: 'Next Quarter',
     growthConstraints: '',
     otherGrowthFocus: '',
-    otherTimeHorizon: ''
+    otherTimeHorizon: '',
+    additionalContext: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -79,14 +81,15 @@ const GrowthGenerator = () => {
         body: JSON.stringify({
           growthFocus: formData.growthFocus,
           timeHorizon: formData.timeHorizon,
-          constraints: formData.growthConstraints
+          constraints: formData.growthConstraints,
+          additionalContext: formData.additionalContext
         })
       });
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Growth Opportunities: ${formData.growthFocus}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       trackContentGenerated('growth-opportunities', 800);
     } catch (error) {
       console.error('Error generating growth opportunities:', error);
@@ -95,7 +98,7 @@ const GrowthGenerator = () => {
       setGeneratedContent(fallbackContent);
       setContentTitle(`Growth Opportunities: ${formData.growthFocus}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       trackContentGenerated('growth-opportunities', 0);
     } finally {
       setIsLoading(false);
@@ -202,6 +205,17 @@ const GrowthGenerator = () => {
             </div>
           </div>
 
+          <div className="input-field">
+            <label htmlFor="additionalContext">Additional Context & Requirements</label>
+            <textarea 
+              name="additionalContext"
+              value={formData.additionalContext}
+              onChange={handleInputChange}
+              placeholder="Any additional context, specific requirements, industry factors, or strategic constraints..."
+              rows="3"
+            />
+          </div>
+
           <button className="generate-btn" onClick={generateGrowthOpportunities} disabled={isLoading}>
             Generate Opportunities
           </button>
@@ -227,6 +241,10 @@ const GrowthGenerator = () => {
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      <FloatingPinButton 
+        onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
+        showPinboard={showPinsSidebar}
+      />
     </Layout>
   );
 };

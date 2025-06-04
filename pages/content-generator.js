@@ -15,7 +15,8 @@ const ContentGenerator = () => {
     contentTopic: '',
     contentType: 'Blog Post',
     contentAudience: '',
-    otherContentType: ''
+    otherContentType: '',
+    additionalContext: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -84,7 +85,8 @@ const ContentGenerator = () => {
         body: JSON.stringify({
           contentTopic: formData.contentTopic || 'customer retention',
           contentType: formData.contentType === 'other' ? formData.otherContentType : formData.contentType,
-          contentAudience: formData.contentAudience || 'professional customers'
+          contentAudience: formData.contentAudience || 'professional customers',
+          additionalContext: formData.additionalContext
         })
       });
 
@@ -191,6 +193,17 @@ const ContentGenerator = () => {
                 AI Assist
               </button>
             </div>
+          </div>
+
+          <div className="input-field">
+            <label htmlFor="additionalContext">Additional Context & Requirements</label>
+            <textarea 
+              name="additionalContext"
+              value={formData.additionalContext}
+              onChange={handleInputChange}
+              placeholder="Any additional context, specific requirements, tone preferences, or constraints..."
+              rows="3"
+            />
           </div>
 
           <button className="generate-btn" onClick={generateContent} disabled={isLoading}>
