@@ -2,22 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import { usePins } from '../hooks/usePins';
 
 const SentenceDisplay = ({ content, title, sourceType = 'content' }) => {
-  const { addPin, removePin, isPinned, getPinBySentence } = usePins();
+  const { addPin } = usePins();
   const contentRef = useRef(null);
   const [pinTooltip, setPinTooltip] = useState({ show: false, x: 0, y: 0, selectedText: '' });
-
-  const handleSentenceClick = (sentenceText) => {
-    if (isPinned(sentenceText)) {
-      // Unpin
-      const pin = getPinBySentence(sentenceText);
-      if (pin) {
-        removePin(pin.id);
-      }
-    } else {
-      // Pin
-      addPin(sentenceText, title, sourceType);
-    }
-  };
 
   const handleTextSelection = () => {
     const selection = window.getSelection();
@@ -63,37 +50,60 @@ const SentenceDisplay = ({ content, title, sourceType = 'content' }) => {
     };
   }, []);
 
-  const renderSentences = () => {
+  const renderContent = () => {
     // Safety check for content
     if (!content || typeof content !== 'string') {
       return <div>No content available</div>;
     }
     
-    // Split content into sentences
-    const sentences = content.match(/[^\.!?]+[\.!?]+/g) || [];
-    
-    return sentences.map((sentence, index) => {
-      const cleanSentence = sentence.trim();
-      if (!cleanSentence) return null;
+    // Return content as-is for text selection, but highlight pinned portions
+    return renderContentWithPinnedHighlights(content);
+  };
 
-      const pinned = isPinned(cleanSentence);
+  const renderContentWithPinnedHighlights = (text) => {
+    const { pinnedSentences } = usePins();
+    
+    // If no pins, just return plain text
+    if (!pinnedSentences || pinnedSentences.length === 0) {
+      return text;
+    }
+    
+    // Create a copy of the text to work with
+    let result = text;
+    let elements = [];
+    let lastIndex = 0;
+    
+    // Sort pinned sentences by length (longest first) to avoid partial replacements
+    const sortedPins = [...pinnedSentences].sort((a, b) => b.text.length - a.text.length);
+    
+    // Find all pinned text occurrences
+    sortedPins.forEach(pin => {
+      const pinText = pin.text.trim();
+      const index = result.indexOf(pinText);
       
-      return (
-        <span
-          key={index}
-          className={`sentence ${pinned ? 'pinned' : ''}`}
-          onClick={() => handleSentenceClick(cleanSentence)}
-          title={pinned ? 'Click to unpin' : 'Click to pin'}
-        >
-          {cleanSentence}
-        </span>
-      );
-    }).filter(Boolean).map((element, index, array) => (
-      <React.Fragment key={index}>
-        {element}
-        {index < array.length - 1 ? ' ' : ''}
-      </React.Fragment>
-    ));
+      if (index !== -1) {
+        // Add text before the pinned portion
+        if (index > lastIndex) {
+          elements.push(result.substring(lastIndex, index));
+        }
+        
+        // Add the pinned portion with highlighting
+        elements.push(
+          <span key={pin.id} className="pinned-highlight" title="This text is pinned">
+            {pinText}
+          </span>
+        );
+        
+        lastIndex = index + pinText.length;
+      }
+    });
+    
+    // Add remaining text
+    if (lastIndex < result.length) {
+      elements.push(result.substring(lastIndex));
+    }
+    
+    return elements.length > 0 ? elements : text;
   };
 
   return (
@@ -104,7 +114,7 @@ const SentenceDisplay = ({ content, title, sourceType = 'content' }) => {
         onMouseUp={handleTextSelection}
         onTouchEnd={handleTextSelection}
       >
-        {renderSentences()}
+        {renderContent()}
       </div>
       
       {/* Floating PIN tooltip */}

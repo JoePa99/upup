@@ -88,18 +88,15 @@ const PinsSidebar = ({ show, onClose }) => {
     <div className="pins-sidebar show">
       <div className="pins-header">
         <div className="pins-title">
-          📌 Pinned Sentences
+          📌 Pinned Content
           <span className="pin-count">{pinCount}</span>
         </div>
-        <button className="close-pins" onClick={onClose} style={{background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '18px'}}>
-          ×
-        </button>
       </div>
 
       <div className="pinned-sentences">
         {pinnedSentences.length === 0 ? (
           <div style={{color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '20px'}}>
-            Click on sentences in the generated content to pin your favorites here.
+            Highlight any text in the generated content and click the 📌 icon to pin it here.
           </div>
         ) : (
           pinnedSentences.slice(-10).reverse().map((sentence, index) => {
@@ -182,9 +179,6 @@ const PinsSidebar = ({ show, onClose }) => {
         </button>
         <button className="secondary-btn" onClick={clearPins}>
           Clear All Pins
-        </button>
-        <button className="close-pins" onClick={onClose}>
-          × Close Pinboard
         </button>
       </div>
     </div>
