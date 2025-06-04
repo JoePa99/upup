@@ -104,6 +104,10 @@ export default async function handler(req, res) {
     console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
     console.log('Knowledge context length:', companyContext.companyContext.length);
     console.log('Knowledge preview:', companyContext.companyContext.substring(0, 200) + '...');
+    console.log('Has knowledge base:', hasKnowledgeBase);
+    if (hasKnowledgeBase) {
+      console.log('Knowledge titles:', companyContext.relevantKnowledge.map(k => k.title));
+    }
 
     // Generate content with OpenAI
     const aiContent = await generateAIContent(contentTopic, contentType, contentAudience, pins, companyContext);
@@ -156,28 +160,35 @@ async function generateAIContent(topic, type, audience, pins, companyContext) {
     const hasKnowledgeBase = relevantKnowledge.length > 0;
     const focusCompany = hasKnowledgeBase ? 'the company described in the knowledge base' : tenantInfo.companyName;
     
-    const prompt = `You must create a ${type} about ${topic} for ${audience}.
+    // If we have knowledge base content, make the prompt ONLY about that company
+    const prompt = hasKnowledgeBase ? 
+      `Create a ${type} about ${topic} for ${audience}.
 
-${hasKnowledgeBase ? `PRIMARY FOCUS: Create content about the company described in the knowledge base below, NOT about ${tenantInfo.companyName}.` : ''}
+FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
 
-Account context (for reference only):
-- Account holder: ${tenantInfo.companyName}
-- Industry: ${tenantInfo.industry}  
-- Values: ${tenantInfo.values}${knowledgeSection}
+${knowledgeSection}
 
-CRITICAL REQUIREMENTS:
-1. The content MUST be formatted as a ${type} (follow the exact format and style of this content type)
-2. MANDATORY: ${hasKnowledgeBase ? 'Write about the company in the knowledge base above (NOT about ' + tenantInfo.companyName + ')' : 'Use the account context information'}
-3. Reference specific details, data, products, services, or insights from the ${hasKnowledgeBase ? 'knowledge base' : 'company context'}
-4. Professional and engaging tone appropriate for ${audience}
-5. Industry-specific language and insights
-6. Length: ${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
+MANDATORY INSTRUCTIONS:
+1. Format as a proper ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format with ABAB CDCD EFEF GG rhyme scheme' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
+2. Write ONLY about the company mentioned in the knowledge base above
+3. Use specific details, products, services, or information from the knowledge base
+4. DO NOT mention "${tenantInfo.companyName}" - focus on the knowledge base company
+5. Professional tone for ${audience}
 
-${hasKnowledgeBase ? 'IMPORTANT: The content should be about the company mentioned in the knowledge base, not about ' + tenantInfo.companyName + '.' : ''}
+Return only the ${type} content - no extra text.` :
+      
+      `Create a ${type} about ${topic} for ${audience}.
 
-If the content type is a sonnet, poem, or other literary form, follow that exact format while incorporating the company information.
+Company: ${tenantInfo.companyName}
+Industry: ${tenantInfo.industry}
+Values: ${tenantInfo.values}
 
-Format: Return only the ${type} content with no extra formatting, explanations, or meta-text.`;
+Requirements:
+- Format as ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
+- Professional tone for ${audience}
+- Reference company context above
+
+Return only the ${type} content.`;
 
     console.log('Making OpenAI API call...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
