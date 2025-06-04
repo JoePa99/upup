@@ -191,6 +191,10 @@ Requirements:
 Return only the ${type} content.`;
 
     console.log('Making OpenAI API call...');
+    console.log('OpenAI API Key available:', !!process.env.OPENAI_API_KEY);
+    console.log('Prompt length:', prompt.length);
+    console.log('Prompt preview:', prompt.substring(0, 200) + '...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -238,14 +242,17 @@ Return only the ${type} content.`;
 
 function generateMockContent(topic, type, audience, pins, companyContext) {
   const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
-  const companyName = tenantInfo.companyName;
+  
+  // Use knowledge base company if available, otherwise tenant company
+  const hasKnowledge = relevantKnowledge.length > 0;
+  const companyName = hasKnowledge ? 'the company from your knowledge base' : tenantInfo.companyName;
   
   const pinsContext = pins.length > 0 
     ? `\n\nBased on your pinned content: ${pins.map(p => p.content).join(', ')}`
     : '';
 
-  const knowledgeContextSection = relevantKnowledge.length > 0
-    ? `\n\nBased on ${companyName}'s knowledge base:\n${relevantKnowledge.map(k => `• ${k.title}: ${k.excerpt}`).join('\n')}`
+  const knowledgeContextSection = hasKnowledge
+    ? `\n\nBased on knowledge base content:\n${knowledgeContext}`
     : '';
 
   const contentMap = {
@@ -377,8 +384,29 @@ The ${topic} landscape is rapidly evolving, presenting both opportunities and ch
 
 ## Conclusion
 ${topic} represents a significant opportunity for ${audience} to achieve sustainable competitive advantage.${pinsContext}`
+    },
+    
+    'SONNET': {
+      title: `A Sonnet About ${topic}`,
+      content: `When ${topic} calls to those who seek to grow (A)
+And ${audience} hear its clarion sound (B)
+Through ${companyName} shall success bestow (A)
+Where quality and innovation are found (B)
+
+The season brings what businesses require (C)
+With strategies that spark and then inspire (C)
+Success flows like an ever-growing fire (C)
+To lift your brand and goals ever higher (C)
+
+Let knowledge guide your path to greater heights (D)
+Where expertise meets your specific needs (E)
+Through proven methods and strategic sights (D)
+Your company plants the most successful seeds (E)
+
+So heed this call, let ${topic} ring true (F)
+Success awaits for those who dare pursue (F)${knowledgeContextSection}`
     }
   };
 
-  return contentMap[type] || contentMap['Strategic Content'];
+  return contentMap[type] || contentMap[type.toUpperCase()] || contentMap['Strategic Content'];
 }
