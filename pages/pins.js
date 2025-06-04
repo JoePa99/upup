@@ -10,6 +10,8 @@ const PinsPage = () => {
   const { pinnedSentences, removePin, updatePin, clearPins } = usePins();
   const [showResult, setShowResult] = useState(false);
   const [resultContent, setResultContent] = useState('');
+  const [resultTitle, setResultTitle] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedPins, setSelectedPins] = useState(new Set());
   const [editingPin, setEditingPin] = useState(null);
   const [editText, setEditText] = useState('');
@@ -53,7 +55,7 @@ const PinsPage = () => {
     alert(`Exported ${pinnedSentences.length} pinned insights to text file!`);
   };
 
-  const createFromPinsOnPage = () => {
+  const createFromPinsOnPage = async () => {
     const pinsToUse = selectedPins.size > 0 ? 
       pinnedSentences.filter((_, index) => selectedPins.has(index)) : 
       pinnedSentences;
@@ -69,43 +71,69 @@ const PinsPage = () => {
       return;
     }
 
-    const newContent = `${selectedContentType.toUpperCase()} CREATED FROM ${selectedPins.size > 0 ? 'SELECTED' : 'ALL'} PINNED INSIGHTS
+    // Show loading state
+    setIsLoading(true);
+    setShowResult(false);
 
-Based on your curated collection of ${pinsToUse.length} strategic insights, here's a comprehensive ${selectedContentType.toLowerCase()} that weaves together your most valuable thoughts:
+    try {
+      // Import API helper and call the real content generation API
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const response = await apiRequest('/content/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          contentTopic: 'Strategic insights compilation',
+          contentType: selectedContentType,
+          contentAudience: 'Professional stakeholders',
+          pins: pinsToUse,
+          additionalContext: `Generate comprehensive ${selectedContentType} using the provided pinned content as primary source material. Create strategic analysis that synthesizes the key themes and insights from the pinned content.`
+        })
+      });
+      
+      // Set the real generated content
+      setResultContent(response.data.content);
+      setResultTitle(response.data.title);
+      setShowResult(true);
+      
+    } catch (error) {
+      console.error('Error creating content from pins:', error);
+      
+      // Show fallback content on error
+      const fallbackContent = `${selectedContentType.toUpperCase()} CREATED FROM ${selectedPins.size > 0 ? 'SELECTED' : 'ALL'} PINNED INSIGHTS
+
+Based on your curated collection of ${pinsToUse.length} strategic insights, here's a comprehensive ${selectedContentType.toLowerCase()} that incorporates your most valuable thoughts:
 
 EXECUTIVE SUMMARY
 
-Your pinned insights reveal a consistent theme around building authentic relationships and delivering consistent value. This strategic approach forms the foundation for sustainable business growth and competitive advantage.
+Your pinned insights highlight key strategic themes that can guide business decisions and strategic planning. This content synthesizes those insights into actionable recommendations.
 
-KEY STRATEGIC THEMES
+KEY INSIGHTS FROM YOUR PINS
 
-The patterns in your pinned content highlight several critical business strategies:
+${pinsToUse.map((pin, index) => `${index + 1}. ${pin.content}`).join('\n\n')}
 
-Customer Trust as Foundation: Your insights consistently emphasize that trust isn't built overnight but through consistent actions over time. This principle should guide all customer-facing initiatives.
+STRATEGIC RECOMMENDATIONS
 
-Quality Over Quantity Approach: The recurring theme of precision and reliability suggests that your business strategy should focus on delivering exceptional quality rather than competing on volume or price.
+Based on these curated insights, the following strategic approaches are recommended:
 
-Authentic Communication: Your pinned insights about spotting inauthentic messaging indicate that transparent, honest communication will be crucial for market differentiation.
-
-Long-term Value Creation: The emphasis on building lasting relationships over short-term gains suggests a strategic focus on customer lifetime value rather than transactional thinking.
-
-IMPLEMENTATION RECOMMENDATIONS
-
-Based on these strategic insights, consider implementing:
-
-1. Customer education programs that demonstrate your commitment to quality and precision
-2. Transparent communication strategies that honestly address both strengths and limitations  
-3. Consistency programs that ensure every customer interaction reinforces trust
-4. Value delivery systems that slightly exceed customer expectations
+- Focus on building authentic relationships and delivering consistent value
+- Prioritize quality and reliability over volume-based strategies  
+- Maintain transparent communication and honest messaging
+- Develop long-term customer relationships rather than transactional approaches
 
 CONCLUSION
 
-Your curated insights point toward a strategy focused on authentic relationship building, consistent quality delivery, and transparent communication—a powerful combination for sustainable competitive advantage.
+Your pinned content reveals a consistent strategic philosophy focused on authenticity, quality, and long-term value creation. These principles should guide future business decisions and strategic initiatives.
 
-This content represents the strategic wisdom you've identified as most valuable from your AI-generated insights.`;
+Note: This is fallback content due to API unavailability. Please try again for AI-generated analysis.`;
 
-    setResultContent(newContent);
-    setShowResult(true);
+      setResultContent(fallbackContent);
+      setResultTitle(`${selectedContentType}: Strategic Insights Analysis`);
+      setShowResult(true);
+      
+      alert('Content generation failed. Showing fallback content with your pinned insights.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const exportResult = () => {
@@ -381,10 +409,17 @@ This content represents the strategic wisdom you've identified as most valuable 
         )}
       </div>
 
+      {isLoading && (
+        <div className="loading show">
+          <div className="spinner"></div>
+          <div>Generating content from your pinned insights...</div>
+        </div>
+      )}
+
       {showResult && (
         <div className="create-result show">
           <div className="result-header">
-            <div className="result-title">📄 Created Content from Pinned Insights</div>
+            <div className="result-title">{resultTitle || '📄 Created Content from Pinned Insights'}</div>
             <div className="result-actions">
               <button className="secondary-btn" onClick={editResult}>
                 Edit

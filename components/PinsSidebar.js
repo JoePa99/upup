@@ -8,7 +8,7 @@ const PinsSidebar = ({ show, onClose }) => {
   const [contentType, setContentType] = React.useState('Strategic Content');
   const [otherContentType, setOtherContentType] = React.useState('');
 
-  const createFromPins = () => {
+  const createFromPins = async () => {
     if (pinnedSentences.length === 0) {
       alert('Please pin some sentences first');
       return;
@@ -20,31 +20,108 @@ const PinsSidebar = ({ show, onClose }) => {
       return;
     }
     
-    // Show success message
+    // Clear any existing result
     const existingResult = document.querySelector('.sidebar-result');
     if (existingResult) {
       existingResult.remove();
     }
     
     const sidebarElement = document.querySelector('.pins-sidebar .pin-actions');
-    if (sidebarElement) {
+    if (!sidebarElement) return;
+    
+    // Show loading state
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'sidebar-result';
+    loadingDiv.innerHTML = `
+      <div style="background: #f0f9ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px;">
+        <div style="font-weight: 600; color: #3730a3; margin-bottom: 8px;">⏳ Generating ${selectedContentType}...</div>
+        <div style="color: #4338ca;">Creating content from ${pinnedSentences.length} pinned insights...</div>
+      </div>
+    `;
+    sidebarElement.appendChild(loadingDiv);
+    
+    try {
+      // Import API helper and call the real content generation API
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const response = await apiRequest('/content/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          contentTopic: 'Strategic insights compilation',
+          contentType: selectedContentType,
+          contentAudience: 'Professional stakeholders',
+          pins: pinnedSentences,
+          additionalContext: `Generate comprehensive ${selectedContentType} using the provided pinned content as primary source material.`
+        })
+      });
+      
+      // Remove loading state
+      if (loadingDiv.parentNode) {
+        loadingDiv.remove();
+      }
+      
+      // Show success with real content preview
       const resultDiv = document.createElement('div');
       resultDiv.className = 'sidebar-result';
+      const contentPreview = response.data.content.substring(0, 150) + '...';
       resultDiv.innerHTML = `
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px;">
           <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">✨ ${selectedContentType} Created from ${pinnedSentences.length} Pins</div>
-          <div style="color: #15803d;">${selectedContentType} generated combining your curated insights. Full document available on My Pins page.</div>
+          <div style="color: #15803d; margin-bottom: 8px;">${contentPreview}</div>
+          <div style="color: #059669; font-size: 12px; font-style: italic;">Full content displayed below</div>
         </div>
       `;
       
       sidebarElement.appendChild(resultDiv);
       
-      // Auto-remove after 10 seconds
+      // Also display the full content in a new container on the page
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'content-container show';
+        contentContainer.style.marginTop = '20px';
+        contentContainer.innerHTML = `
+          <div class="content-title">${response.data.title}</div>
+          <div class="generated-content">${response.data.content}</div>
+        `;
+        mainContent.appendChild(contentContainer);
+        
+        // Scroll to the new content
+        contentContainer.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      // Auto-remove sidebar notification after 8 seconds
       setTimeout(() => {
         if (resultDiv.parentNode) {
           resultDiv.remove();
         }
-      }, 10000);
+      }, 8000);
+      
+    } catch (error) {
+      console.error('Error creating content from pins:', error);
+      
+      // Remove loading state
+      if (loadingDiv.parentNode) {
+        loadingDiv.remove();
+      }
+      
+      // Show error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'sidebar-result';
+      errorDiv.innerHTML = `
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 13px;">
+          <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px;">❌ Content Generation Failed</div>
+          <div style="color: #b91c1c;">Please try again or check your connection.</div>
+        </div>
+      `;
+      
+      sidebarElement.appendChild(errorDiv);
+      
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.remove();
+        }
+      }, 5000);
     }
   };
 
