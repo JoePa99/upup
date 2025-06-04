@@ -137,8 +137,8 @@ const CompanyKnowledgeAdmin = () => {
         console.log('Making file upload request with FormData...');
         response = await apiRequest('/knowledge/company', {
           method: 'POST',
-          body: formData,
-          headers: {} // Remove Content-Type to let browser set it for FormData
+          body: formData
+          // Don't override headers - let apiRequest handle auth headers automatically
         });
         console.log('File upload response:', response);
       } else {
