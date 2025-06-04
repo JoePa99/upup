@@ -85,6 +85,17 @@ const CompanyKnowledgeAdmin = () => {
     console.log('Upload form:', uploadForm);
     console.log('Upload mode:', uploadMode);
     console.log('Selected file:', selectedFile);
+    console.log('User authenticated:', isAuthenticated);
+    console.log('User info:', user);
+    
+    // Check authentication before proceeding
+    if (!isAuthenticated || !user) {
+      alert('Please log in before uploading to the knowledge base.');
+      return;
+    }
+    
+    // Small delay to ensure auth is fully processed
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Validate based on upload mode
     if (!uploadForm.title.trim()) {
@@ -105,7 +116,11 @@ const CompanyKnowledgeAdmin = () => {
     setIsLoading(true);
     try {
       console.log('Starting API request...');
-      const { apiRequest } = await import('../../utils/api-config');
+      const { apiRequest, getAuthHeaders } = await import('../../utils/api-config');
+      
+      // Debug: Check what auth headers we have
+      const authHeaders = await getAuthHeaders();
+      console.log('Auth headers:', authHeaders);
       
       let response;
       
