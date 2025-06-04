@@ -149,22 +149,24 @@ async function generateAIContent(topic, type, audience, pins, companyContext) {
       ? `\n\nCompany Knowledge Base (use this to inform your content):\n${knowledgeContext}`
       : '';
     
-    const prompt = `Generate a ${type} about ${topic} for ${audience}.
-    
+    const prompt = `You must create a ${type} about ${topic} for ${audience}.
+
 Company context:
 - Company: ${tenantInfo.companyName}
 - Industry: ${tenantInfo.industry}  
 - Values: ${tenantInfo.values}${knowledgeSection}
 
-Requirements:
-- Professional and engaging tone
-- Actionable insights
-- Industry-specific language
-- IMPORTANT: Use the company knowledge base information above to make content highly specific and relevant to ${tenantInfo.companyName}
-- Reference specific details, products, services, or information from the knowledge base
-- Length: ${type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
+CRITICAL REQUIREMENTS:
+1. The content MUST be formatted as a ${type} (follow the exact format and style of this content type)
+2. MANDATORY: Use the company knowledge base information above - reference specific details, data, products, services, or insights from the knowledge base
+3. Make the content highly specific to ${tenantInfo.companyName} using the provided knowledge
+4. Professional and engaging tone appropriate for ${audience}
+5. Industry-specific language and insights
+6. Length: ${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
 
-Format: Return only the content, no extra formatting or explanations.`;
+If the content type is a sonnet, poem, or other literary form, follow that exact format while incorporating the company knowledge.
+
+Format: Return only the ${type} content with no extra formatting, explanations, or meta-text.`;
 
     console.log('Making OpenAI API call...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

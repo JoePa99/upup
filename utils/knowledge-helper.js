@@ -54,10 +54,10 @@ async function getCompanyContext(query, req) {
         return isRelevant;
       }).slice(0, 3); // Limit to top 3 relevant items
       
-      // If no specific matches found, include all knowledge for general context (limit to 2 items)
+      // If no specific matches found, include all knowledge for general context
       if (relevantKnowledge.length === 0 && knowledge.length > 0) {
-        console.log('No specific knowledge matches found, including general knowledge');
-        relevantKnowledge = knowledge.slice(0, 2);
+        console.log('No specific knowledge matches found, including ALL available knowledge');
+        relevantKnowledge = knowledge; // Include all knowledge items
       }
       
       // Create context string from relevant knowledge

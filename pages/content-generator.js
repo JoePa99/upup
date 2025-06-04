@@ -82,7 +82,7 @@ const ContentGenerator = () => {
         method: 'POST',
         body: JSON.stringify({
           contentTopic: formData.contentTopic || 'customer retention',
-          contentType: formData.contentType,
+          contentType: formData.contentType === 'other' ? formData.otherContentType : formData.contentType,
           contentAudience: formData.contentAudience || 'professional customers'
         })
       });
