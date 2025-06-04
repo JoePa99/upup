@@ -19,6 +19,8 @@ const SuperAdminDashboard = () => {
   const [newCompany, setNewCompany] = useState({ name: '', domain: '', industry: '' });
   const [newUser, setNewUser] = useState({ email: '', name: '', companyId: '', role: 'user' });
   const [knowledgeUpload, setKnowledgeUpload] = useState({ companyId: '', files: null });
+  const [platformKnowledge, setPlatformKnowledge] = useState([]);
+  const [knowledgeType, setKnowledgeType] = useState('company'); // 'company' or 'platform'
 
   // Redirect if not authenticated or not super admin
   useEffect(() => {
@@ -69,6 +71,9 @@ const SuperAdminDashboard = () => {
         case 'knowledge':
           const knowledgeData = await apiRequest('/super-admin/knowledge-bases');
           setKnowledgeBases(knowledgeData.data || []);
+          // Also load platform knowledge
+          const platformData = await apiRequest('/super-admin/platform-knowledge');
+          setPlatformKnowledge(platformData.data || []);
           break;
         case 'analytics':
           const analyticsData = await apiRequest('/super-admin/analytics');
@@ -147,21 +152,35 @@ const SuperAdminDashboard = () => {
 
   const uploadKnowledge = async (e) => {
     e.preventDefault();
-    if (!knowledgeUpload.companyId || !knowledgeUpload.files) {
+    
+    // Validate based on knowledge type
+    if (knowledgeType === 'company' && (!knowledgeUpload.companyId || !knowledgeUpload.files)) {
       alert('Please select a company and files to upload');
+      return;
+    }
+    
+    if (knowledgeType === 'platform' && !knowledgeUpload.files) {
+      alert('Please select files to upload');
       return;
     }
 
     try {
       const { apiRequest } = await import('../utils/api-config');
       const formData = new FormData();
-      formData.append('companyId', knowledgeUpload.companyId);
+      
+      if (knowledgeType === 'company') {
+        formData.append('companyId', knowledgeUpload.companyId);
+      }
       
       Array.from(knowledgeUpload.files).forEach((file, index) => {
         formData.append(`file${index}`, file);
       });
 
-      await apiRequest('/super-admin/knowledge', {
+      const endpoint = knowledgeType === 'platform' 
+        ? '/super-admin/platform-knowledge' 
+        : '/super-admin/knowledge';
+
+      await apiRequest(endpoint, {
         method: 'POST',
         body: formData,
         isFormData: true
@@ -169,24 +188,28 @@ const SuperAdminDashboard = () => {
       
       setKnowledgeUpload({ companyId: '', files: null });
       loadTabData('knowledge');
-      alert('Knowledge uploaded successfully!');
+      alert(`${knowledgeType === 'platform' ? 'Platform' : 'Company'} knowledge uploaded successfully!`);
     } catch (error) {
       console.error('Error uploading knowledge:', error);
       alert('Failed to upload knowledge. Please try again.');
     }
   };
 
-  const deleteKnowledge = async (knowledgeId) => {
-    if (!confirm('Are you sure you want to delete this knowledge base entry?')) return;
+  const deleteKnowledge = async (knowledgeId, type = 'company') => {
+    if (!confirm(`Are you sure you want to delete this ${type} knowledge entry?`)) return;
 
     try {
       const { apiRequest } = await import('../utils/api-config');
-      await apiRequest(`/super-admin/knowledge/${knowledgeId}`, {
+      const endpoint = type === 'platform' 
+        ? `/super-admin/platform-knowledge/${knowledgeId}`
+        : `/super-admin/knowledge/${knowledgeId}`;
+        
+      await apiRequest(endpoint, {
         method: 'DELETE'
       });
       
       loadTabData('knowledge');
-      alert('Knowledge deleted successfully!');
+      alert(`${type === 'platform' ? 'Platform' : 'Company'} knowledge deleted successfully!`);
     } catch (error) {
       console.error('Error deleting knowledge:', error);
       alert('Failed to delete knowledge. Please try again.');
@@ -530,23 +553,69 @@ const SuperAdminDashboard = () => {
               }}>
                 <div>
                   <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Upload Knowledge</h3>
+                  
+                  {/* Knowledge Type Selection */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#1f2937', marginBottom: '8px', display: 'block' }}>
+                      Knowledge Type
+                    </label>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="knowledgeType"
+                          value="company"
+                          checked={knowledgeType === 'company'}
+                          onChange={(e) => setKnowledgeType(e.target.value)}
+                        />
+                        <span style={{ fontSize: '14px' }}>Company-Specific</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="knowledgeType"
+                          value="platform"
+                          checked={knowledgeType === 'platform'}
+                          onChange={(e) => setKnowledgeType(e.target.value)}
+                        />
+                        <span style={{ fontSize: '14px' }}>Platform-Wide</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <form onSubmit={uploadKnowledge} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <select
-                      value={knowledgeUpload.companyId}
-                      onChange={(e) => setKnowledgeUpload(prev => ({ ...prev, companyId: e.target.value }))}
-                      style={{ 
+                    {knowledgeType === 'company' && (
+                      <select
+                        value={knowledgeUpload.companyId}
+                        onChange={(e) => setKnowledgeUpload(prev => ({ ...prev, companyId: e.target.value }))}
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #d1d5db', 
+                          borderRadius: '8px',
+                          fontSize: '14px'
+                        }}
+                        required
+                      >
+                        <option value="">Select Company</option>
+                        {companies.map(company => (
+                          <option key={company.id} value={company.id}>{company.name}</option>
+                        ))}
+                      </select>
+                    )}
+                    
+                    {knowledgeType === 'platform' && (
+                      <div style={{ 
                         padding: '12px', 
-                        border: '1px solid #d1d5db', 
+                        background: '#eff6ff', 
+                        border: '1px solid #3b82f6', 
                         borderRadius: '8px',
-                        fontSize: '14px'
-                      }}
-                      required
-                    >
-                      <option value="">Select Company</option>
-                      {companies.map(company => (
-                        <option key={company.id} value={company.id}>{company.name}</option>
-                      ))}
-                    </select>
+                        fontSize: '14px',
+                        color: '#1e40af'
+                      }}>
+                        📚 Platform-wide knowledge will be available to all companies
+                      </div>
+                    )}
+                    
                     <input
                       type="file"
                       multiple
@@ -563,7 +632,7 @@ const SuperAdminDashboard = () => {
                     <button 
                       type="submit"
                       style={{
-                        background: '#3b82f6',
+                        background: knowledgeType === 'platform' ? '#7c3aed' : '#3b82f6',
                         color: 'white',
                         border: 'none',
                         padding: '12px 20px',
@@ -572,49 +641,118 @@ const SuperAdminDashboard = () => {
                         cursor: 'pointer'
                       }}
                     >
-                      Upload Knowledge
+                      Upload {knowledgeType === 'platform' ? 'Platform' : 'Company'} Knowledge
                     </button>
                   </form>
                 </div>
 
                 <div>
                   <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Knowledge Bases</h3>
-                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    {knowledgeBases.map(kb => (
-                      <div 
-                        key={kb.id} 
-                        style={{ 
-                          padding: '12px', 
-                          border: '1px solid #e5e7eb', 
-                          borderRadius: '8px',
-                          marginBottom: '8px',
-                          background: '#f9fafb'
-                        }}
-                      >
-                        <div style={{ fontWeight: '500', color: '#1f2937' }}>{kb.filename}</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                          Company: {kb.company_name} | Size: {kb.file_size} bytes
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                          Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
-                        </div>
-                        <button
-                          onClick={() => deleteKnowledge(kb.id)}
-                          style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            marginTop: '8px'
+                  
+                  {/* Platform Knowledge Section */}
+                  {platformKnowledge.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h4 style={{ 
+                        marginBottom: '12px', 
+                        color: '#7c3aed', 
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        🌐 Platform-Wide Knowledge
+                      </h4>
+                      <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                        {platformKnowledge.map(kb => (
+                          <div 
+                            key={`platform-${kb.id}`} 
+                            style={{ 
+                              padding: '12px', 
+                              border: '1px solid #c4b5fd', 
+                              borderRadius: '8px',
+                              marginBottom: '8px',
+                              background: '#f3f4f6'
+                            }}
+                          >
+                            <div style={{ fontWeight: '500', color: '#1f2937' }}>{kb.filename || kb.title}</div>
+                            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                              Available to all companies | Size: {kb.file_size || 'N/A'} bytes
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                              Uploaded: {new Date(kb.uploaded_at || kb.created_at).toLocaleDateString()}
+                            </div>
+                            <button
+                              onClick={() => deleteKnowledge(kb.id, 'platform')}
+                              style={{
+                                background: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                marginTop: '8px'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Company-Specific Knowledge Section */}
+                  <div>
+                    <h4 style={{ 
+                      marginBottom: '12px', 
+                      color: '#3b82f6', 
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      🏢 Company-Specific Knowledge
+                    </h4>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {knowledgeBases.map(kb => (
+                        <div 
+                          key={`company-${kb.id}`} 
+                          style={{ 
+                            padding: '12px', 
+                            border: '1px solid #bfdbfe', 
+                            borderRadius: '8px',
+                            marginBottom: '8px',
+                            background: '#f9fafb'
                           }}
                         >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
+                          <div style={{ fontWeight: '500', color: '#1f2937' }}>{kb.filename}</div>
+                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                            Company: {kb.company_name} | Size: {kb.file_size} bytes
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                            Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
+                          </div>
+                          <button
+                            onClick={() => deleteKnowledge(kb.id, 'company')}
+                            style={{
+                              background: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              marginTop: '8px'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
