@@ -49,12 +49,15 @@ async function generateMarketContent(analysisFocus, marketScope, specificCompeti
   try {
     const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
     
+    // Determine which company to focus on - prioritize knowledge base content
+    const hasKnowledgeBase = relevantKnowledge.length > 0;
+    
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('No OpenAI API key found, using fallback content');
       return {
-        title: `${tenantInfo.companyName} Market Analysis: ${analysisFocus}`,
-        content: `Market analysis for ${tenantInfo.companyName} focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
+        title: `${hasKnowledgeBase ? 'Market Analysis' : tenantInfo.companyName + ' Market Analysis'}: ${analysisFocus}`,
+        content: `Market analysis for ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName} focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
       };
     }
     
@@ -63,7 +66,39 @@ async function generateMarketContent(analysisFocus, marketScope, specificCompeti
       ? `\n\nCompany Knowledge Base (use this to inform your analysis):\n${knowledgeContext}`
       : '';
     
-    const prompt = `Generate a comprehensive market analysis report focusing on ${analysisFocus} with a ${marketScope} scope.
+    // If we have knowledge base content, make the prompt ONLY about that company
+    const prompt = hasKnowledgeBase ? 
+      `Generate a comprehensive market analysis report focusing on ${analysisFocus} with a ${marketScope} scope.
+
+FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
+
+${knowledgeSection}
+
+MANDATORY INSTRUCTIONS:
+1. Write analysis ONLY about the company mentioned in the knowledge base above
+2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
+3. Use the specific company details from the knowledge base to create targeted analysis
+
+Requirements:
+- Professional business analysis language specific to the knowledge base company
+- Use the company knowledge base information to make analysis highly specific and relevant
+- Data-driven insights and market trends
+- Competitive landscape analysis
+- Strategic recommendations and actionable insights
+- Market opportunities and threats
+- Customer behavior patterns and preferences
+- Length: 500-700 words
+- Include specific metrics, percentages, and market data where relevant
+
+Structure the analysis with clear sections covering:
+1. Market Overview and Current Trends
+2. Competitive Landscape Analysis
+3. Customer Behavior and Preferences
+4. Strategic Opportunities and Recommendations for the knowledge base company
+5. Risk Assessment and Mitigation
+
+Format: Return only the market analysis content, well-structured with clear headings and professional business language.` :
+      `Generate a comprehensive market analysis report focusing on ${analysisFocus} with a ${marketScope} scope.
 
 Company Context:
 - Company: ${tenantInfo.companyName}
@@ -71,11 +106,21 @@ Company Context:
 - Size: ${tenantInfo.size}
 - Analysis Focus: ${analysisFocus}
 - Market Scope: ${marketScope}
-- Specific Competitors: ${specificCompetitors || 'General market competitors'}${knowledgeSection}
+- Specific Competitors: ${specificCompetitors || 'General market competitors'}
 
 Requirements:
 - Professional business analysis language specific to ${tenantInfo.companyName}
-- Use the company knowledge base information to make analysis more specific and relevant
+- Data-driven insights and market trends
+- Competitive landscape analysis
+- Strategic recommendations and actionable insights
+- Market opportunities and threats
+- Customer behavior patterns and preferences
+- Length: 500-700 words
+- Include specific metrics, percentages, and market data where relevant
+
+Structure the analysis with clear sections covering:
+1. Market Overview and Current Trends
+2. Competitive Landscape Analysis
 - Data-driven insights and market trends
 - Competitive landscape analysis
 - Strategic recommendations and actionable insights
@@ -120,7 +165,7 @@ Format: Return only the market analysis content, well-structured with clear head
     const content = data.choices[0]?.message?.content || 'Failed to generate content';
     
     return {
-      title: `${tenantInfo.companyName} Market Analysis: ${analysisFocus}`,
+      title: `${hasKnowledgeBase ? 'Market Analysis' : tenantInfo.companyName + ' Market Analysis'}: ${analysisFocus}`,
       content: content.trim()
     };
     
@@ -129,8 +174,8 @@ Format: Return only the market analysis content, well-structured with clear head
     const { tenantInfo, companyContext: knowledgeContext } = companyContext;
     // Fallback content
     return {
-      title: `${tenantInfo.companyName} Market Analysis: ${analysisFocus}`,
-      content: `Market analysis for ${tenantInfo.companyName} focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
+      title: `${hasKnowledgeBase ? 'Market Analysis' : tenantInfo.companyName + ' Market Analysis'}: ${analysisFocus}`,
+      content: `Market analysis for ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName} focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
     };
   }
 }

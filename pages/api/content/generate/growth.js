@@ -1,76 +1,4 @@
-// Helper function to get company context
-async function getCompanyContext(query, req) {
-  try {
-    // Import auth helpers
-    const { getUserFromRequest } = require('../../../../utils/auth-helpers');
-    const user = await getUserFromRequest(req);
-    
-    if (!user || !user.tenantId) {
-      console.log('No authenticated user found, using fallback context');
-      return {
-        tenantInfo: {
-          companyName: 'Your Company',
-          industry: 'Professional Services',
-          size: 'Medium Business'
-        },
-        companyContext: '',
-        relevantKnowledge: []
-      };
-    }
-
-    // Call the knowledge API directly to get company knowledge
-    const knowledgeUrl = `${req.headers.origin || 'http://localhost:3000'}/api/knowledge/company`;
-    const knowledgeResponse = await fetch(knowledgeUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': req.headers.authorization || '',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    let relevantKnowledge = [];
-    let companyContext = '';
-    
-    if (knowledgeResponse.ok) {
-      const knowledgeData = await knowledgeResponse.json();
-      const knowledge = knowledgeData.data?.knowledge || [];
-      
-      // Filter knowledge relevant to the query
-      relevantKnowledge = knowledge.filter(item => {
-        const searchText = `${item.title} ${item.content || ''}`.toLowerCase();
-        const queryLower = query.toLowerCase();
-        return searchText.includes(queryLower) || 
-               queryLower.split(' ').some(word => searchText.includes(word));
-      }).slice(0, 3); // Limit to top 3 relevant items
-      
-      // Create context string from relevant knowledge
-      companyContext = relevantKnowledge.map(item => 
-        `${item.title}: ${(item.content || '').substring(0, 300)}...`
-      ).join('\n\n');
-    }
-
-    return {
-      tenantInfo: {
-        companyName: user.tenantName || 'Your Company',
-        industry: 'Professional Services',
-        size: 'Medium Business'
-      },
-      companyContext,
-      relevantKnowledge
-    };
-  } catch (error) {
-    console.error('Error getting company context:', error);
-    return {
-      tenantInfo: {
-        companyName: 'Your Company',
-        industry: 'Professional Services',
-        size: 'Medium Business'
-      },
-      companyContext: '',
-      relevantKnowledge: []
-    };
-  }
-}
+const { getCompanyContext } = require('../../../../utils/knowledge-helper');
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -121,12 +49,15 @@ async function generateAIContent(focus, timeframe, constraints, companyContext) 
   try {
     const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
     
+    // Determine which company to focus on - prioritize knowledge base content
+    const hasKnowledgeBase = relevantKnowledge.length > 0;
+    
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('No OpenAI API key found, using fallback content');
       return {
-        title: `${tenantInfo.companyName} Growth Strategy: ${focus}`,
-        content: `Growth opportunity analysis for ${tenantInfo.companyName} focusing on ${focus} with ${timeframe} timeline. Based on your constraints: ${constraints || 'standard business constraints'}, here are strategic recommendations for business expansion and revenue optimization.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
+        title: `${hasKnowledgeBase ? 'Growth Strategy' : tenantInfo.companyName + ' Growth Strategy'}: ${focus}`,
+        content: `Growth opportunity analysis for ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName} focusing on ${focus} with ${timeframe} timeline. Based on your constraints: ${constraints || 'standard business constraints'}, here are strategic recommendations for business expansion and revenue optimization.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
       };
     }
     
@@ -135,7 +66,29 @@ async function generateAIContent(focus, timeframe, constraints, companyContext) 
       ? `\n\nCompany Knowledge Base (use this to inform your strategy):\n${knowledgeContext}`
       : '';
     
-    const prompt = `Generate a comprehensive growth strategy about ${focus} with a ${timeframe} timeline.
+    // If we have knowledge base content, make the prompt ONLY about that company
+    const prompt = hasKnowledgeBase ? 
+      `Generate a comprehensive growth strategy about ${focus} with a ${timeframe} timeline.
+
+FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
+
+${knowledgeSection}
+
+MANDATORY INSTRUCTIONS:
+1. Write strategy ONLY about the company mentioned in the knowledge base above
+2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
+3. Use the specific company details from the knowledge base to create targeted recommendations
+
+Requirements:
+- Professional business language
+- Actionable strategic recommendations specific to the knowledge base company
+- Use the company knowledge base information to make strategy highly specific and relevant
+- Specific tactics and implementation steps
+- Measurable outcomes and KPIs
+- Length: 400-600 words
+
+Format: Return only the strategy content, well-structured with clear sections.` :
+      `Generate a comprehensive growth strategy about ${focus} with a ${timeframe} timeline.
     
 Company context:
 - Company: ${tenantInfo.companyName}
@@ -143,12 +96,11 @@ Company context:
 - Size: ${tenantInfo.size}
 - Growth Focus: ${focus}
 - Timeline: ${timeframe}
-- Constraints: ${constraints || 'Standard business environment'}${knowledgeSection}
+- Constraints: ${constraints || 'Standard business environment'}
 
 Requirements:
 - Professional business language
 - Actionable strategic recommendations specific to ${tenantInfo.companyName}
-- Use the company knowledge base information to make strategy more specific and relevant
 - Specific tactics and implementation steps
 - Measurable outcomes and KPIs
 - Length: 400-600 words
@@ -182,7 +134,7 @@ Format: Return only the strategy content, well-structured with clear sections.`;
     const content = data.choices[0]?.message?.content || 'Failed to generate content';
     
     return {
-      title: `${tenantInfo.companyName} Growth Strategy: ${focus}`,
+      title: `${hasKnowledgeBase ? 'Growth Strategy' : tenantInfo.companyName + ' Growth Strategy'}: ${focus}`,
       content: content.trim()
     };
     
@@ -191,8 +143,8 @@ Format: Return only the strategy content, well-structured with clear sections.`;
     const { tenantInfo, companyContext: knowledgeContext } = companyContext;
     // Fallback content
     return {
-      title: `${tenantInfo.companyName} Growth Strategy: ${focus}`,
-      content: `Growth opportunity analysis for ${tenantInfo.companyName} focusing on ${focus} with ${timeframe} timeline. Based on your constraints: ${constraints || 'standard business constraints'}, here are strategic recommendations for business expansion and revenue optimization.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
+      title: `${hasKnowledgeBase ? 'Growth Strategy' : tenantInfo.companyName + ' Growth Strategy'}: ${focus}`,
+      content: `Growth opportunity analysis for ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName} focusing on ${focus} with ${timeframe} timeline. Based on your constraints: ${constraints || 'standard business constraints'}, here are strategic recommendations for business expansion and revenue optimization.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
     };
   }
 }

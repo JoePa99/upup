@@ -49,12 +49,15 @@ async function generateCustomerContent(connectionGoal, customerSegment, currentC
   try {
     const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
     
+    // Determine which company to focus on - prioritize knowledge base content
+    const hasKnowledgeBase = relevantKnowledge.length > 0;
+    
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('No OpenAI API key found, using fallback content');
       return {
-        title: `${tenantInfo.companyName} Customer Strategy: ${connectionGoal}`,
-        content: `Customer connection strategy for ${tenantInfo.companyName} focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
+        title: `${hasKnowledgeBase ? 'Customer Strategy' : tenantInfo.companyName + ' Customer Strategy'}: ${connectionGoal}`,
+        content: `Customer connection strategy for ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName} focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
       };
     }
     
@@ -63,7 +66,38 @@ async function generateCustomerContent(connectionGoal, customerSegment, currentC
       ? `\n\nCompany Knowledge Base (use this to inform your strategy):\n${knowledgeContext}`
       : '';
     
-    const prompt = `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
+    // If we have knowledge base content, make the prompt ONLY about that company
+    const prompt = hasKnowledgeBase ? 
+      `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
+
+FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
+
+${knowledgeSection}
+
+MANDATORY INSTRUCTIONS:
+1. Write strategy ONLY about the company mentioned in the knowledge base above
+2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
+3. Use the specific company details from the knowledge base to create targeted customer strategy
+
+Requirements:
+- Professional marketing and business analysis language specific to the knowledge base company
+- Use the company knowledge base information to make strategy highly specific and relevant
+- Customer-centric insights and behavioral patterns
+- Actionable customer intelligence and recommendations
+- Demographic, psychographic, and behavioral analysis
+- Customer engagement tactics and relationship building
+- Retention strategies and loyalty programs
+- Length: 600-800 words
+- Include specific tactics, implementation steps, and measurable outcomes
+
+Structure should include:
+- Understanding the customer segment and their needs
+- Specific strategies for the knowledge base company to achieve the connection goal
+- Implementation tactics and timeline
+- Success metrics and measurement approaches
+
+Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.` :
+      `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
 
 Company Context:
 - Company: ${tenantInfo.companyName}
@@ -71,11 +105,21 @@ Company Context:
 - Size: ${tenantInfo.size}
 - Connection Goal: ${connectionGoal}
 - Customer Segment: ${customerSegment}
-- Current Challenges: ${currentChallenges || 'General customer relationship challenges'}${knowledgeSection}
+- Current Challenges: ${currentChallenges || 'General customer relationship challenges'}
 
 Requirements:
 - Professional marketing and business analysis language specific to ${tenantInfo.companyName}
-- Use the company knowledge base information to make strategy more specific and relevant
+- Customer-centric insights and behavioral patterns
+- Actionable customer intelligence and recommendations
+- Demographic, psychographic, and behavioral analysis
+- Customer engagement tactics and relationship building
+- Retention strategies and loyalty programs
+- Length: 600-800 words
+- Include specific tactics, implementation steps, and measurable outcomes
+
+Structure should include:
+- Understanding the customer segment and their needs
+- Specific strategies for ${tenantInfo.companyName} to achieve the connection goal
 - Customer-centric insights and behavioral patterns
 - Actionable customer intelligence and recommendations
 - Demographic, psychographic, and behavioral analysis
@@ -119,7 +163,7 @@ Format: Return only the customer strategy content, well-structured with clear he
     const content = data.choices[0]?.message?.content || 'Failed to generate content';
     
     return {
-      title: `${tenantInfo.companyName} Customer Strategy: ${connectionGoal}`,
+      title: `${hasKnowledgeBase ? 'Customer Strategy' : tenantInfo.companyName + ' Customer Strategy'}: ${connectionGoal}`,
       content: content.trim()
     };
     
@@ -128,8 +172,8 @@ Format: Return only the customer strategy content, well-structured with clear he
     const { tenantInfo, companyContext: knowledgeContext } = companyContext;
     // Fallback content
     return {
-      title: `${tenantInfo.companyName} Customer Strategy: ${connectionGoal}`,
-      content: `Customer connection strategy for ${tenantInfo.companyName} focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
+      title: `${hasKnowledgeBase ? 'Customer Strategy' : tenantInfo.companyName + ' Customer Strategy'}: ${connectionGoal}`,
+      content: `Customer connection strategy for ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName} focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
     };
   }
 }
