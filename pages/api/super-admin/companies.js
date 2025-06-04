@@ -1,3 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     return getCompanies(req, res);
@@ -10,66 +17,55 @@ export default async function handler(req, res) {
 
 async function getCompanies(req, res) {
   try {
-    // Mock companies data for now
-    // In production, this would query the tenants table with user counts
-    const companies = [
-      {
-        id: 1,
-        name: 'Acme Corporation',
-        subdomain: 'acme',
-        admin_email: 'admin@acme.com',
-        subscription_plan: 'business',
-        status: 'active',
-        user_count: 25,
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-20T14:30:00Z'
-      },
-      {
-        id: 2,
-        name: 'TechStart Inc',
-        subdomain: 'techstart',
-        admin_email: 'founder@techstart.com',
-        subscription_plan: 'professional',
-        status: 'active',
-        user_count: 8,
-        created_at: '2024-01-18T09:15:00Z',
-        updated_at: '2024-01-22T11:45:00Z'
-      },
-      {
-        id: 3,
-        name: 'Design Studio',
-        subdomain: 'designstudio',
-        admin_email: 'hello@designstudio.com',
-        subscription_plan: 'free',
-        status: 'active',
-        user_count: 3,
-        created_at: '2024-01-20T16:20:00Z',
-        updated_at: '2024-01-20T16:20:00Z'
-      },
-      {
-        id: 4,
-        name: 'Global Consulting',
-        subdomain: 'globalconsult',
-        admin_email: 'admin@globalconsult.com',
-        subscription_plan: 'business',
-        status: 'suspended',
-        user_count: 45,
-        created_at: '2024-01-10T08:00:00Z',
-        updated_at: '2024-01-25T13:15:00Z'
-      }
-    ];
+    // Get all companies with basic info
+    const { data: companies, error } = await supabase
+      .from('tenants')
+      .select(`
+        id,
+        company_name,
+        domain,
+        industry,
+        created_at,
+        subscription_plan,
+        status
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching companies:', error);
+      return res.status(500).json({ 
+        message: 'Failed to fetch companies',
+        error: error.message 
+      });
+    }
+
+    // Get user counts for each company
+    const companiesWithCounts = await Promise.all(
+      companies.map(async (company) => {
+        const { count } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', company.id);
+
+        return {
+          ...company,
+          user_count: count || 0,
+          name: company.company_name,
+          subscription_plan: company.subscription_plan || 'free',
+          status: company.status || 'active'
+        };
+      })
+    );
 
     return res.status(200).json({
       success: true,
-      data: companies,
-      total: companies.length
+      data: companiesWithCounts
     });
 
   } catch (error) {
-    console.error('Companies fetch error:', error);
+    console.error('Super admin companies error:', error);
     return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch companies',
+      message: 'Internal server error',
       error: error.message
     });
   }
@@ -77,53 +73,64 @@ async function getCompanies(req, res) {
 
 async function createCompany(req, res) {
   try {
-    const { name, subdomain, adminEmail, subscriptionPlan = 'free' } = req.body;
+    const { name, domain, industry } = req.body;
 
-    if (!name || !subdomain || !adminEmail) {
+    if (!name || !domain) {
       return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: name, subdomain, adminEmail'
+        message: 'Company name and domain are required'
       });
     }
 
-    // Validate subdomain format
-    const subdomainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
-    if (!subdomainRegex.test(subdomain)) {
+    // Check if domain already exists
+    const { data: existingCompany } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('domain', domain)
+      .single();
+
+    if (existingCompany) {
       return res.status(400).json({
-        success: false,
-        message: 'Invalid subdomain format. Use lowercase letters, numbers, and hyphens only.'
+        message: 'Domain already exists'
       });
     }
 
-    // In production, this would:
-    // 1. Check if subdomain is available
-    // 2. Create tenant in database
-    // 3. Send invitation email to admin
-    // 4. Set up initial company structure
+    // Create new company
+    const { data: newCompany, error } = await supabase
+      .from('tenants')
+      .insert([
+        {
+          company_name: name,
+          domain: domain,
+          industry: industry || null,
+          subscription_plan: 'free',
+          status: 'active',
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select()
+      .single();
 
-    const newCompany = {
-      id: Date.now(), // Mock ID
-      name,
-      subdomain,
-      admin_email: adminEmail,
-      subscription_plan: subscriptionPlan,
-      status: 'active',
-      user_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    if (error) {
+      console.error('Error creating company:', error);
+      return res.status(500).json({
+        message: 'Failed to create company',
+        error: error.message
+      });
+    }
 
     return res.status(201).json({
       success: true,
-      data: newCompany,
-      message: 'Company created successfully'
+      data: {
+        ...newCompany,
+        name: newCompany.company_name,
+        user_count: 0
+      }
     });
 
   } catch (error) {
-    console.error('Company creation error:', error);
+    console.error('Super admin create company error:', error);
     return res.status(500).json({
-      success: false,
-      message: 'Failed to create company',
+      message: 'Internal server error',
       error: error.message
     });
   }

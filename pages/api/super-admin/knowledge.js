@@ -1,168 +1,144 @@
+import { createClient } from '@supabase/supabase-js';
+import formidable from 'formidable';
+import fs from 'fs';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    return getPlatformKnowledge(req, res);
-  } else if (req.method === 'POST') {
-    return createPlatformKnowledge(req, res);
+  if (req.method === 'POST') {
+    return uploadKnowledge(req, res);
+  } else if (req.method === 'DELETE') {
+    return deleteKnowledge(req, res);
   } else {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 }
 
-async function getPlatformKnowledge(req, res) {
+async function uploadKnowledge(req, res) {
   try {
-    // Mock platform knowledge data for now
-    // In production, this would query the platform_knowledge table
-    const platformKnowledge = [
-      {
-        id: 1,
-        title: 'HR Compliance Guidelines',
-        category: 'HR',
-        document_type: 'compliance',
-        status: 'active',
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-20T14:30:00Z',
-        usage_count: 45
-      },
-      {
-        id: 2,
-        title: 'Sales Process Best Practices',
-        category: 'Sales',
-        document_type: 'best_practices',
-        status: 'active',
-        created_at: '2024-01-18T09:15:00Z',
-        updated_at: '2024-01-22T11:45:00Z',
-        usage_count: 32
-      },
-      {
-        id: 3,
-        title: 'Legal Document Templates',
-        category: 'Legal',
-        document_type: 'templates',
-        status: 'active',
-        created_at: '2024-01-20T16:20:00Z',
-        updated_at: '2024-01-20T16:20:00Z',
-        usage_count: 28
-      },
-      {
-        id: 4,
-        title: 'Industry Standards: Data Privacy',
-        category: 'General',
-        document_type: 'industry_standards',
-        status: 'active',
-        created_at: '2024-01-10T08:00:00Z',
-        updated_at: '2024-01-25T13:15:00Z',
-        usage_count: 67
-      },
-      {
-        id: 5,
-        title: 'Marketing Campaign Guidelines',
-        category: 'Marketing',
-        document_type: 'best_practices',
-        status: 'active',
-        created_at: '2024-01-12T14:00:00Z',
-        updated_at: '2024-01-23T09:30:00Z',
-        usage_count: 19
+    const form = formidable({ multiples: true });
+    
+    const [fields, files] = await form.parse(req);
+    const companyId = fields.companyId?.[0];
+
+    if (!companyId) {
+      return res.status(400).json({
+        message: 'Company ID is required'
+      });
+    }
+
+    // Verify company exists
+    const { data: company, error: companyError } = await supabase
+      .from('tenants')
+      .select('id, company_name')
+      .eq('id', companyId)
+      .single();
+
+    if (companyError || !company) {
+      return res.status(400).json({
+        message: 'Invalid company ID'
+      });
+    }
+
+    // Process uploaded files
+    const uploadedFiles = [];
+    const fileEntries = Object.entries(files);
+
+    for (const [key, fileArray] of fileEntries) {
+      const file = Array.isArray(fileArray) ? fileArray[0] : fileArray;
+      
+      if (!file) continue;
+
+      // Read file content
+      const fileContent = fs.readFileSync(file.filepath, 'utf8');
+      
+      // Insert into knowledge base
+      const { data: knowledgeEntry, error } = await supabase
+        .from('knowledge_base')
+        .insert([
+          {
+            tenant_id: companyId,
+            filename: file.originalFilename || file.newFilename,
+            file_size: file.size,
+            content_type: file.mimetype,
+            content: fileContent,
+            uploaded_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error inserting knowledge:', error);
+        continue;
       }
-    ];
 
-    // Group by category for statistics
-    const categoryStats = platformKnowledge.reduce((acc, doc) => {
-      acc[doc.category] = (acc[doc.category] || 0) + 1;
-      return acc;
-    }, {});
+      uploadedFiles.push({
+        ...knowledgeEntry,
+        company_name: company.company_name
+      });
 
-    return res.status(200).json({
+      // Clean up temp file
+      fs.unlinkSync(file.filepath);
+    }
+
+    return res.status(201).json({
       success: true,
-      data: platformKnowledge,
-      stats: {
-        total: platformKnowledge.length,
-        by_category: categoryStats,
-        total_usage: platformKnowledge.reduce((sum, doc) => sum + doc.usage_count, 0)
-      }
+      data: uploadedFiles,
+      message: `${uploadedFiles.length} file(s) uploaded successfully`
     });
 
   } catch (error) {
-    console.error('Platform knowledge fetch error:', error);
+    console.error('Super admin knowledge upload error:', error);
     return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch platform knowledge',
+      message: 'Internal server error',
       error: error.message
     });
   }
 }
 
-async function createPlatformKnowledge(req, res) {
+async function deleteKnowledge(req, res) {
   try {
-    const { 
-      title, 
-      content, 
-      category, 
-      document_type, 
-      tags = [],
-      status = 'active' 
-    } = req.body;
+    const { id } = req.query;
 
-    if (!title || !content || !category || !document_type) {
+    if (!id) {
       return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: title, content, category, document_type'
+        message: 'Knowledge base ID is required'
       });
     }
 
-    // Validate document_type
-    const validTypes = ['industry_standards', 'compliance', 'best_practices', 'templates'];
-    if (!validTypes.includes(document_type)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid document_type. Must be one of: ${validTypes.join(', ')}`
+    // Delete the knowledge base entry
+    const { error } = await supabase
+      .from('knowledge_base')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting knowledge:', error);
+      return res.status(500).json({
+        message: 'Failed to delete knowledge',
+        error: error.message
       });
     }
 
-    // Validate category
-    const validCategories = ['HR', 'Legal', 'Sales', 'Marketing', 'General', 'Finance', 'Operations'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid category. Must be one of: ${validCategories.join(', ')}`
-      });
-    }
-
-    // In production, this would:
-    // 1. Insert into platform_knowledge table
-    // 2. Process content for search indexing
-    // 3. Update knowledge search vectors
-    // 4. Notify relevant systems
-
-    const newKnowledge = {
-      id: Date.now(), // Mock ID
-      title,
-      content,
-      category,
-      document_type,
-      tags: Array.isArray(tags) ? tags : [],
-      status,
-      created_by_super_admin: 'admin@upup.ai', // Would come from auth
-      version: 1,
-      metadata: {
-        created_via: 'super_admin_dashboard',
-        content_length: content.length
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      usage_count: 0
-    };
-
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
-      data: newKnowledge,
-      message: 'Platform knowledge created successfully'
+      message: 'Knowledge deleted successfully'
     });
 
   } catch (error) {
-    console.error('Platform knowledge creation error:', error);
+    console.error('Super admin delete knowledge error:', error);
     return res.status(500).json({
-      success: false,
-      message: 'Failed to create platform knowledge',
+      message: 'Internal server error',
       error: error.message
     });
   }

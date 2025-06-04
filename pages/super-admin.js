@@ -4,682 +4,701 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 
 const SuperAdminDashboard = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-
-  // Analytics data
-  const [analytics, setAnalytics] = useState({
-    totalTenants: 0,
-    totalUsers: 0,
-    totalKnowledgeDocs: 0,
-    monthlyRevenue: 0,
-    platformUsage: []
-  });
-
-  // Companies data
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // State for different sections
   const [companies, setCompanies] = useState([]);
-  const [platformKnowledge, setPlatformKnowledge] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [knowledgeBases, setKnowledgeBases] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  
+  // Form states
+  const [newCompany, setNewCompany] = useState({ name: '', domain: '', industry: '' });
+  const [newUser, setNewUser] = useState({ email: '', name: '', companyId: '', role: 'user' });
+  const [knowledgeUpload, setKnowledgeUpload] = useState({ companyId: '', files: null });
 
+  // Redirect if not authenticated or not super admin
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (typeof window !== 'undefined' && !authLoading) {
+      if (!isAuthenticated) {
+        router.push('/login');
+        return;
+      }
+      if (!user?.isSuperAdmin) {
+        router.push('/dashboard');
+        return;
+      }
+    }
+  }, [isAuthenticated, user, authLoading, router]);
+
+  // Load data when tab changes
+  useEffect(() => {
+    if (isAuthenticated && user?.isSuperAdmin) {
+      loadTabData(activeTab);
+    }
+  }, [activeTab, isAuthenticated, user]);
+
+  const loadTabData = async (tab) => {
+    if (!isAuthenticated || !user?.isSuperAdmin) return;
+    
+    setIsLoading(true);
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      
+      switch (tab) {
+        case 'overview':
+          // Load overview data (companies and users for summary)
+          const overviewCompanies = await apiRequest('/super-admin/companies');
+          const overviewUsers = await apiRequest('/super-admin/users');
+          const overviewKnowledge = await apiRequest('/super-admin/knowledge-bases');
+          setCompanies(overviewCompanies.data || []);
+          setUsers(overviewUsers.data || []);
+          setKnowledgeBases(overviewKnowledge.data || []);
+          break;
+        case 'companies':
+          const companiesData = await apiRequest('/super-admin/companies');
+          setCompanies(companiesData.data || []);
+          break;
+        case 'users':
+          const usersData = await apiRequest('/super-admin/users');
+          setUsers(usersData.data || []);
+          break;
+        case 'knowledge':
+          const knowledgeData = await apiRequest('/super-admin/knowledge-bases');
+          setKnowledgeBases(knowledgeData.data || []);
+          break;
+        case 'analytics':
+          const analyticsData = await apiRequest('/super-admin/analytics');
+          setAnalytics(analyticsData.data || null);
+          break;
+      }
+    } catch (error) {
+      console.error(`Error loading ${tab} data:`, error);
+      // Show fallback data for development
+      if (tab === 'overview' || tab === 'companies') {
+        setCompanies([
+          { id: 1, name: 'The Variable', domain: 'the-variable', industry: 'Design Agency', created_at: new Date().toISOString() },
+          { id: 2, name: 'Parrish Tire', domain: 'parrish-tire', industry: 'Automotive', created_at: new Date().toISOString() }
+        ]);
+      }
+      if (tab === 'overview' || tab === 'users') {
+        setUsers([
+          { id: 1, name: 'Joe Parrish', email: 'joe@thevariable.com', role: 'super_admin', company_name: 'The Variable', created_at: new Date().toISOString() }
+        ]);
+      }
+      if (tab === 'overview' || tab === 'knowledge') {
+        setKnowledgeBases([
+          { id: 1, filename: 'company-overview.txt', company_name: 'Parrish Tire', file_size: 2048, uploaded_at: new Date().toISOString() }
+        ]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createCompany = async (e) => {
+    e.preventDefault();
+    if (!newCompany.name || !newCompany.domain) {
+      alert('Please fill in company name and domain');
       return;
     }
 
-    // Check if user is super admin
-    checkSuperAdminAccess();
-  }, [isAuthenticated, router]);
-
-  const checkSuperAdminAccess = async () => {
     try {
-      const response = await fetch('/api/super-admin/verify', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest('/super-admin/companies', {
+        method: 'POST',
+        body: JSON.stringify(newCompany)
+      });
+      
+      setNewCompany({ name: '', domain: '', industry: '' });
+      loadTabData('companies');
+      alert('Company created successfully!');
+    } catch (error) {
+      console.error('Error creating company:', error);
+      alert('Failed to create company. Please try again.');
+    }
+  };
+
+  const createUser = async (e) => {
+    e.preventDefault();
+    if (!newUser.email || !newUser.name || !newUser.companyId) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest('/super-admin/users', {
+        method: 'POST',
+        body: JSON.stringify(newUser)
+      });
+      
+      setNewUser({ email: '', name: '', companyId: '', role: 'user' });
+      loadTabData('users');
+      alert('User created successfully!');
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Failed to create user. Please try again.');
+    }
+  };
+
+  const uploadKnowledge = async (e) => {
+    e.preventDefault();
+    if (!knowledgeUpload.companyId || !knowledgeUpload.files) {
+      alert('Please select a company and files to upload');
+      return;
+    }
+
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      const formData = new FormData();
+      formData.append('companyId', knowledgeUpload.companyId);
+      
+      Array.from(knowledgeUpload.files).forEach((file, index) => {
+        formData.append(`file${index}`, file);
       });
 
-      if (response.ok) {
-        setIsSuperAdmin(true);
-        await loadDashboardData();
-      } else {
-        // Redirect non-super-admins
-        router.push('/dashboard');
-      }
+      await apiRequest('/super-admin/knowledge', {
+        method: 'POST',
+        body: formData,
+        isFormData: true
+      });
+      
+      setKnowledgeUpload({ companyId: '', files: null });
+      loadTabData('knowledge');
+      alert('Knowledge uploaded successfully!');
     } catch (error) {
-      console.error('Error verifying super admin access:', error);
-      router.push('/dashboard');
-    } finally {
-      setLoading(false);
+      console.error('Error uploading knowledge:', error);
+      alert('Failed to upload knowledge. Please try again.');
     }
   };
 
-  const loadDashboardData = async () => {
+  const deleteKnowledge = async (knowledgeId) => {
+    if (!confirm('Are you sure you want to delete this knowledge base entry?')) return;
+
     try {
-      // Load analytics
-      const analyticsResponse = await fetch('/api/super-admin/analytics');
-      if (analyticsResponse.ok) {
-        const analyticsData = await analyticsResponse.json();
-        setAnalytics(analyticsData);
-      }
-
-      // Load companies
-      const companiesResponse = await fetch('/api/super-admin/companies');
-      if (companiesResponse.ok) {
-        const companiesData = await companiesResponse.json();
-        setCompanies(companiesData);
-      }
-
-      // Load platform knowledge
-      const knowledgeResponse = await fetch('/api/super-admin/knowledge');
-      if (knowledgeResponse.ok) {
-        const knowledgeData = await knowledgeResponse.json();
-        setPlatformKnowledge(knowledgeData);
-      }
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest(`/super-admin/knowledge/${knowledgeId}`, {
+        method: 'DELETE'
+      });
+      
+      loadTabData('knowledge');
+      alert('Knowledge deleted successfully!');
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.error('Error deleting knowledge:', error);
+      alert('Failed to delete knowledge. Please try again.');
     }
   };
 
-  if (loading) {
+  // Don't render if not authenticated or not super admin
+  if (typeof window !== 'undefined' && (!isAuthenticated || !user?.isSuperAdmin)) {
+    return null;
+  }
+
+  if (authLoading) {
     return (
-      <Layout title="Loading...">
-        <div className="loading-container">
+      <Layout title="Super Admin | Up, Up, Down, Down">
+        <div style={{ textAlign: 'center', padding: '50px' }}>
           <div className="spinner"></div>
-          <p>Verifying access...</p>
+          <div>Loading...</div>
         </div>
       </Layout>
     );
   }
 
-  if (!isSuperAdmin) {
-    return null; // Will redirect
-  }
-
   return (
-    <Layout title="Super Admin Dashboard">
-      <div className="super-admin-dashboard">
-        <div className="page-header">
-          <h1 className="page-title">🛡️ Super Admin Dashboard</h1>
-          <p className="page-subtitle">Platform management and oversight</p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="tab-navigation">
-          <button 
-            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            📊 Overview
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'companies' ? 'active' : ''}`}
-            onClick={() => setActiveTab('companies')}
-          >
-            🏢 Companies
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'knowledge' ? 'active' : ''}`}
-            onClick={() => setActiveTab('knowledge')}
-          >
-            📚 Platform Knowledge
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            ⚙️ Settings
-          </button>
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <div className="tab-content">
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-value">{analytics.totalTenants}</div>
-                <div className="stat-label">Active Companies</div>
-                <div className="stat-change">Platform tenants</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{analytics.totalUsers}</div>
-                <div className="stat-label">Total Users</div>
-                <div className="stat-change">Across all companies</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{analytics.totalKnowledgeDocs}</div>
-                <div className="stat-label">Knowledge Documents</div>
-                <div className="stat-change">Platform knowledge base</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">${analytics.monthlyRevenue}</div>
-                <div className="stat-label">Monthly Revenue</div>
-                <div className="stat-change">Subscription income</div>
-              </div>
-            </div>
-
-            <div className="recent-activity">
-              <h3>Recent Platform Activity</h3>
-              <div className="activity-list">
-                <div className="activity-item">
-                  <span className="activity-icon">🏢</span>
-                  <span className="activity-text">New company "Acme Corp" registered</span>
-                  <span className="activity-time">2 hours ago</span>
-                </div>
-                <div className="activity-item">
-                  <span className="activity-icon">📊</span>
-                  <span className="activity-text">Platform knowledge updated</span>
-                  <span className="activity-time">1 day ago</span>
-                </div>
-                <div className="activity-item">
-                  <span className="activity-icon">👥</span>
-                  <span className="activity-text">50 new users registered today</span>
-                  <span className="activity-time">Today</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Companies Tab */}
-        {activeTab === 'companies' && (
-          <div className="tab-content">
-            <div className="section-header">
-              <h3>Company Management</h3>
-              <button className="primary-btn">+ Add Company</button>
-            </div>
-            
-            <div className="companies-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Company Name</th>
-                    <th>Subdomain</th>
-                    <th>Plan</th>
-                    <th>Users</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companies.map(company => (
-                    <tr key={company.id}>
-                      <td className="company-name">
-                        <div>
-                          <strong>{company.name}</strong>
-                          <br />
-                          <small>{company.admin_email}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <code>{company.subdomain}.upup.ai</code>
-                      </td>
-                      <td>
-                        <span className={`plan-badge ${company.subscription_plan}`}>
-                          {company.subscription_plan}
-                        </span>
-                      </td>
-                      <td>{company.user_count}</td>
-                      <td>
-                        <span className={`status-badge ${company.status}`}>
-                          {company.status}
-                        </span>
-                      </td>
-                      <td>{new Date(company.created_at).toLocaleDateString()}</td>
-                      <td className="actions">
-                        <button className="action-btn">View</button>
-                        <button className="action-btn">Edit</button>
-                        <button className="action-btn danger">Suspend</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Platform Knowledge Tab */}
-        {activeTab === 'knowledge' && (
-          <div className="tab-content">
-            <div className="section-header">
-              <h3>Platform Knowledge Base</h3>
-              <button className="primary-btn">+ Add Knowledge</button>
-            </div>
-
-            <div className="knowledge-categories">
-              <div className="category-card">
-                <h4>📋 Industry Standards</h4>
-                <p>Best practices and compliance guidelines</p>
-                <div className="category-stats">12 documents</div>
-              </div>
-              <div className="category-card">
-                <h4>⚖️ Legal Templates</h4>
-                <p>Standard legal document templates</p>
-                <div className="category-stats">8 documents</div>
-              </div>
-              <div className="category-card">
-                <h4>👥 HR Guidelines</h4>
-                <p>Human resources best practices</p>
-                <div className="category-stats">15 documents</div>
-              </div>
-              <div className="category-card">
-                <h4>💼 Sales Frameworks</h4>
-                <p>Sales process and methodology guides</p>
-                <div className="category-stats">10 documents</div>
-              </div>
-            </div>
-
-            <div className="knowledge-list">
-              <h4>Recent Knowledge Documents</h4>
-              {platformKnowledge.map(doc => (
-                <div key={doc.id} className="knowledge-item">
-                  <div className="knowledge-info">
-                    <h5>{doc.title}</h5>
-                    <p>{doc.category} • {doc.document_type}</p>
-                  </div>
-                  <div className="knowledge-actions">
-                    <button className="action-btn">Edit</button>
-                    <button className="action-btn">Archive</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <div className="tab-content">
-            <div className="settings-section">
-              <h3>Platform Settings</h3>
-              
-              <div className="setting-group">
-                <h4>Registration Settings</h4>
-                <label className="setting-item">
-                  <input type="checkbox" defaultChecked />
-                  Allow new company registration
-                </label>
-                <label className="setting-item">
-                  <input type="checkbox" />
-                  Require email verification
-                </label>
-              </div>
-
-              <div className="setting-group">
-                <h4>AI Configuration</h4>
-                <div className="setting-item">
-                  <label>OpenAI API Key</label>
-                  <input type="password" value="sk-..." readOnly />
-                </div>
-                <div className="setting-item">
-                  <label>Default Token Limit</label>
-                  <input type="number" defaultValue={1000} />
-                </div>
-              </div>
-
-              <div className="setting-group">
-                <h4>Billing Settings</h4>
-                <div className="setting-item">
-                  <label>Stripe Public Key</label>
-                  <input type="text" value="pk_..." readOnly />
-                </div>
-              </div>
-
-              <button className="primary-btn">Save Settings</button>
-            </div>
-          </div>
-        )}
+    <Layout title="Super Admin Dashboard | Up, Up, Down, Down">
+      <div className="page-header">
+        <h1 className="page-title">🛠️ Super Admin Dashboard</h1>
+        <p className="page-subtitle">Platform management and analytics</p>
       </div>
 
-      <style jsx>{`
-        .super-admin-dashboard {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 20px;
-        }
+      {/* Tab Navigation */}
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '12px', 
+        marginBottom: '24px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          borderBottom: '1px solid #e5e7eb',
+          padding: '0 24px'
+        }}>
+          {[
+            { id: 'overview', label: '📊 Overview', icon: '📊' },
+            { id: 'companies', label: '🏢 Companies', icon: '🏢' },
+            { id: 'users', label: '👥 Users', icon: '👥' },
+            { id: 'knowledge', label: '📚 Knowledge', icon: '📚' },
+            { id: 'analytics', label: '📈 Analytics', icon: '📈' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '16px 20px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: activeTab === tab.id ? '#2563eb' : '#6b7280',
+                borderBottom: activeTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
+                transition: 'all 0.2s'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        .tab-navigation {
-          display: flex;
-          gap: 4px;
-          margin-bottom: 24px;
-          background: white;
-          padding: 4px;
-          border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        <div style={{ padding: '24px' }}>
+          {isLoading && (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <div className="spinner"></div>
+              <div style={{ marginTop: '16px', color: '#6b7280' }}>Loading...</div>
+            </div>
+          )}
 
-        .tab-btn {
-          flex: 1;
-          padding: 12px 24px;
-          border: none;
-          background: transparent;
-          border-radius: 8px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-          color: #64748b;
-        }
+          {/* Overview Tab */}
+          {activeTab === 'overview' && !isLoading && (
+            <div>
+              <h3 style={{ marginBottom: '24px', color: '#1f2937' }}>Platform Overview</h3>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                gap: '20px' 
+              }}>
+                <div style={{ 
+                  background: '#f8fafc', 
+                  padding: '20px', 
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937' }}>
+                    {companies.length}
+                  </div>
+                  <div style={{ color: '#6b7280', fontSize: '14px' }}>Total Companies</div>
+                </div>
+                <div style={{ 
+                  background: '#f8fafc', 
+                  padding: '20px', 
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937' }}>
+                    {users.length}
+                  </div>
+                  <div style={{ color: '#6b7280', fontSize: '14px' }}>Total Users</div>
+                </div>
+                <div style={{ 
+                  background: '#f8fafc', 
+                  padding: '20px', 
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937' }}>
+                    {knowledgeBases.length}
+                  </div>
+                  <div style={{ color: '#6b7280', fontSize: '14px' }}>Knowledge Bases</div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        .tab-btn.active {
-          background: #10b981;
-          color: white;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
+          {/* Companies Tab */}
+          {activeTab === 'companies' && !isLoading && (
+            <div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '32px', 
+                alignItems: 'start' 
+              }}>
+                <div>
+                  <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Create New Company</h3>
+                  <form onSubmit={createCompany} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <input
+                      type="text"
+                      placeholder="Company Name"
+                      value={newCompany.name}
+                      onChange={(e) => setNewCompany(prev => ({ ...prev, name: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Domain (e.g., acme-corp)"
+                      value={newCompany.domain}
+                      onChange={(e) => setNewCompany(prev => ({ ...prev, domain: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Industry (optional)"
+                      value={newCompany.industry}
+                      onChange={(e) => setNewCompany(prev => ({ ...prev, industry: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    />
+                    <button 
+                      type="submit"
+                      style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Create Company
+                    </button>
+                  </form>
+                </div>
 
-        .tab-btn:hover:not(.active) {
-          background: #f1f5f9;
-          color: #374151;
-        }
+                <div>
+                  <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Existing Companies</h3>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {companies.map(company => (
+                      <div 
+                        key={company.id} 
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #e5e7eb', 
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                          background: '#f9fafb'
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', color: '#1f2937' }}>{company.name}</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Domain: {company.domain} | Industry: {company.industry || 'Not specified'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Created: {new Date(company.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        .tab-content {
-          background: white;
-          border-radius: 12px;
-          padding: 24px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+          {/* Users Tab */}
+          {activeTab === 'users' && !isLoading && (
+            <div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '32px', 
+                alignItems: 'start' 
+              }}>
+                <div>
+                  <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Create New User</h3>
+                  <form onSubmit={createUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <input
+                      type="email"
+                      placeholder="Email Address"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    />
+                    <select
+                      value={newUser.companyId}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, companyId: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    >
+                      <option value="">Select Company</option>
+                      {companies.map(company => (
+                        <option key={company.id} value={company.id}>{company.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Company Admin</option>
+                      <option value="super_admin">Super Admin</option>
+                    </select>
+                    <button 
+                      type="submit"
+                      style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Create User
+                    </button>
+                  </form>
+                </div>
 
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 20px;
-          margin-bottom: 32px;
-        }
+                <div>
+                  <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Existing Users</h3>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {users.map(user => (
+                      <div 
+                        key={user.id} 
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #e5e7eb', 
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                          background: '#f9fafb'
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', color: '#1f2937' }}>{user.name}</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Email: {user.email} | Role: {user.role}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Company: {user.company_name} | Joined: {new Date(user.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        .stat-card {
-          background: #f8fafc;
-          padding: 20px;
-          border-radius: 8px;
-          text-align: center;
-        }
+          {/* Knowledge Tab */}
+          {activeTab === 'knowledge' && !isLoading && (
+            <div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '32px', 
+                alignItems: 'start' 
+              }}>
+                <div>
+                  <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Upload Knowledge</h3>
+                  <form onSubmit={uploadKnowledge} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <select
+                      value={knowledgeUpload.companyId}
+                      onChange={(e) => setKnowledgeUpload(prev => ({ ...prev, companyId: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    >
+                      <option value="">Select Company</option>
+                      {companies.map(company => (
+                        <option key={company.id} value={company.id}>{company.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".txt,.pdf,.doc,.docx,.md"
+                      onChange={(e) => setKnowledgeUpload(prev => ({ ...prev, files: e.target.files }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                    />
+                    <button 
+                      type="submit"
+                      style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Upload Knowledge
+                    </button>
+                  </form>
+                </div>
 
-        .stat-value {
-          font-size: 2rem;
-          font-weight: bold;
-          color: #1e293b;
-          margin-bottom: 8px;
-        }
+                <div>
+                  <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Knowledge Bases</h3>
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {knowledgeBases.map(kb => (
+                      <div 
+                        key={kb.id} 
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #e5e7eb', 
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                          background: '#f9fafb'
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', color: '#1f2937' }}>{kb.filename}</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Company: {kb.company_name} | Size: {kb.file_size} bytes
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={() => deleteKnowledge(kb.id)}
+                          style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            marginTop: '8px'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        .stat-label {
-          color: #64748b;
-          font-weight: 500;
-          margin-bottom: 4px;
-        }
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && !isLoading && (
+            <div>
+              <h3 style={{ marginBottom: '24px', color: '#1f2937' }}>Token Usage Analytics</h3>
+              {analytics ? (
+                <div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                    gap: '20px',
+                    marginBottom: '32px'
+                  }}>
+                    <div style={{ 
+                      background: '#f8fafc', 
+                      padding: '20px', 
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937' }}>
+                        {analytics.totalTokens?.toLocaleString() || 0}
+                      </div>
+                      <div style={{ color: '#6b7280', fontSize: '14px' }}>Total Tokens Used</div>
+                    </div>
+                    <div style={{ 
+                      background: '#f8fafc', 
+                      padding: '20px', 
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937' }}>
+                        {analytics.activeUsers || 0}
+                      </div>
+                      <div style={{ color: '#6b7280', fontSize: '14px' }}>Active Users (30d)</div>
+                    </div>
+                    <div style={{ 
+                      background: '#f8fafc', 
+                      padding: '20px', 
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937' }}>
+                        {analytics.contentGenerated || 0}
+                      </div>
+                      <div style={{ color: '#6b7280', fontSize: '14px' }}>Content Generated</div>
+                    </div>
+                  </div>
 
-        .stat-change {
-          color: #10b981;
-          font-size: 0.875rem;
-        }
-
-        .section-header {
-          display: flex;
-          justify-content: between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-
-        .section-header h3 {
-          margin: 0;
-          color: #1e293b;
-        }
-
-        .primary-btn {
-          background: #10b981;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .primary-btn:hover {
-          background: #059669;
-        }
-
-        .companies-table {
-          overflow-x: auto;
-        }
-
-        .companies-table table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .companies-table th,
-        .companies-table td {
-          padding: 12px;
-          text-align: left;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .companies-table th {
-          background: #f8fafc;
-          font-weight: 600;
-          color: #475569;
-        }
-
-        .plan-badge {
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-        }
-
-        .plan-badge.free {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .plan-badge.professional {
-          background: #dbeafe;
-          color: #2563eb;
-        }
-
-        .plan-badge.business {
-          background: #dcfce7;
-          color: #16a34a;
-        }
-
-        .status-badge {
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 0.75rem;
-          font-weight: 600;
-        }
-
-        .status-badge.active {
-          background: #dcfce7;
-          color: #16a34a;
-        }
-
-        .status-badge.suspended {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .action-btn {
-          padding: 6px 12px;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 4px;
-          font-size: 0.75rem;
-          cursor: pointer;
-          margin-right: 8px;
-        }
-
-        .action-btn:hover {
-          background: #f9fafb;
-        }
-
-        .action-btn.danger {
-          border-color: #dc2626;
-          color: #dc2626;
-        }
-
-        .knowledge-categories {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-
-        .category-card {
-          background: #f8fafc;
-          padding: 20px;
-          border-radius: 8px;
-          border-left: 4px solid #10b981;
-        }
-
-        .category-card h4 {
-          margin: 0 0 8px 0;
-          color: #1e293b;
-        }
-
-        .category-card p {
-          margin: 0 0 12px 0;
-          color: #64748b;
-          font-size: 0.875rem;
-        }
-
-        .category-stats {
-          color: #10b981;
-          font-weight: 600;
-          font-size: 0.875rem;
-        }
-
-        .knowledge-list {
-          margin-top: 32px;
-        }
-
-        .knowledge-item {
-          display: flex;
-          justify-content: between;
-          align-items: center;
-          padding: 16px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          margin-bottom: 12px;
-        }
-
-        .knowledge-info h5 {
-          margin: 0 0 4px 0;
-          color: #1e293b;
-        }
-
-        .knowledge-info p {
-          margin: 0;
-          color: #64748b;
-          font-size: 0.875rem;
-        }
-
-        .settings-section {
-          max-width: 600px;
-        }
-
-        .setting-group {
-          margin-bottom: 32px;
-        }
-
-        .setting-group h4 {
-          margin: 0 0 16px 0;
-          color: #1e293b;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .setting-item {
-          display: block;
-          margin-bottom: 16px;
-        }
-
-        .setting-item label {
-          display: block;
-          margin-bottom: 4px;
-          color: #374151;
-          font-weight: 500;
-        }
-
-        .setting-item input[type="text"],
-        .setting-item input[type="password"],
-        .setting-item input[type="number"] {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #d1d5db;
-          border-radius: 4px;
-          font-size: 0.875rem;
-        }
-
-        .setting-item input[type="checkbox"] {
-          margin-right: 8px;
-        }
-
-        .recent-activity {
-          margin-top: 32px;
-        }
-
-        .recent-activity h3 {
-          margin: 0 0 16px 0;
-          color: #1e293b;
-        }
-
-        .activity-list {
-          space-y: 12px;
-        }
-
-        .activity-item {
-          display: flex;
-          align-items: center;
-          padding: 12px;
-          background: #f8fafc;
-          border-radius: 8px;
-          margin-bottom: 8px;
-        }
-
-        .activity-icon {
-          margin-right: 12px;
-          font-size: 1.25rem;
-        }
-
-        .activity-text {
-          flex: 1;
-          color: #374151;
-        }
-
-        .activity-time {
-          color: #64748b;
-          font-size: 0.875rem;
-        }
-
-        .loading-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 400px;
-        }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid #f3f4f6;
-          border-top: 4px solid #10b981;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin-bottom: 16px;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+                  {analytics.companyUsage && (
+                    <div>
+                      <h4 style={{ marginBottom: '16px', color: '#1f2937' }}>Usage by Company</h4>
+                      <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '8px' }}>
+                        {analytics.companyUsage.map(company => (
+                          <div 
+                            key={company.company_id}
+                            style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              padding: '8px 0',
+                              borderBottom: '1px solid #e5e7eb'
+                            }}
+                          >
+                            <span style={{ fontWeight: '500' }}>{company.company_name}</span>
+                            <span>{company.tokens?.toLocaleString() || 0} tokens</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', color: '#6b7280', padding: '40px' }}>
+                  No analytics data available
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </Layout>
   );
 };
