@@ -193,7 +193,7 @@ const CustomerGenerator = () => {
             </div>
           </div>
 
-          <div className="input-field">
+          <div className="input-field full-width">
             <label htmlFor="additionalContext">Additional Context & Requirements</label>
             <textarea 
               name="additionalContext"
@@ -204,9 +204,11 @@ const CustomerGenerator = () => {
             />
           </div>
 
-          <button className="generate-btn" onClick={generateCustomerConnection} disabled={isLoading}>
-            Generate Strategies
-          </button>
+          <div className="input-field button-field">
+            <button className="generate-btn" onClick={generateCustomerConnection} disabled={isLoading}>
+              Generate Strategies
+            </button>
+          </div>
         </div>
       </div>
 

@@ -209,7 +209,7 @@ const MarketGenerator = () => {
             </div>
           </div>
 
-          <div className="input-field">
+          <div className="input-field full-width">
             <label htmlFor="additionalContext">Additional Context & Requirements</label>
             <textarea 
               name="additionalContext"
@@ -220,9 +220,11 @@ const MarketGenerator = () => {
             />
           </div>
 
-          <button className="generate-btn" onClick={generateMarketInsights} disabled={isLoading}>
-            Generate Insights
-          </button>
+          <div className="input-field button-field">
+            <button className="generate-btn" onClick={generateMarketInsights} disabled={isLoading}>
+              Generate Insights
+            </button>
+          </div>
         </div>
       </div>
 

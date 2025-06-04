@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
 import FloatingPinButton from '../components/FloatingPinButton';
+import AISuggestionsPopover from '../components/AISuggestionsPopover';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const GrowthGenerator = () => {
@@ -24,6 +25,15 @@ const GrowthGenerator = () => {
   const [contentTitle, setContentTitle] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
+  const [aiPopover, setAiPopover] = useState({ isOpen: false, fieldName: '', fieldType: '' });
+  
+  // Refs for AI assist buttons
+  const aiAssistRefs = {
+    growthConstraints: useRef(null),
+    additionalContext: useRef(null),
+    otherGrowthFocus: useRef(null),
+    otherTimeHorizon: useRef(null)
+  };
 
   // Use useEffect for client-side redirects only
   React.useEffect(() => {
@@ -205,7 +215,7 @@ const GrowthGenerator = () => {
             </div>
           </div>
 
-          <div className="input-field">
+          <div className="input-field full-width">
             <label htmlFor="additionalContext">Additional Context & Requirements</label>
             <textarea 
               name="additionalContext"
@@ -216,9 +226,11 @@ const GrowthGenerator = () => {
             />
           </div>
 
-          <button className="generate-btn" onClick={generateGrowthOpportunities} disabled={isLoading}>
-            Generate Opportunities
-          </button>
+          <div className="input-field button-field">
+            <button className="generate-btn" onClick={generateGrowthOpportunities} disabled={isLoading}>
+              Generate Opportunities
+            </button>
+          </div>
         </div>
       </div>
 

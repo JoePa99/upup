@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
 import FloatingPinButton from '../components/FloatingPinButton';
+import AISuggestionsPopover from '../components/AISuggestionsPopover';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const ContentGenerator = () => {
@@ -23,6 +24,14 @@ const ContentGenerator = () => {
   const [contentTitle, setContentTitle] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
+  const [aiPopover, setAiPopover] = useState({ isOpen: false, fieldName: '', fieldType: '' });
+  
+  // Refs for AI assist buttons
+  const aiAssistRefs = {
+    contentTopic: useRef(null),
+    contentAudience: useRef(null),
+    additionalContext: useRef(null)
+  };
 
   // Use useEffect for client-side redirects only
   React.useEffect(() => {
@@ -55,21 +64,23 @@ const ContentGenerator = () => {
     }
   };
 
-  const aiAssist = (fieldName) => {
-    const suggestions = {
-      contentTopic: ['customer retention strategies', 'holiday marketing campaigns', 'brand storytelling', 'competitive differentiation', 'product launch strategy'],
-      contentAudience: ['Professional artists and designers', 'Art students and educators', 'Creative agencies and studios', 'Art supply retailers', 'Corporate design teams']
-    };
-    
-    const fieldSuggestions = suggestions[fieldName] || [];
-    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
-    
-    if (randomSuggestion) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: randomSuggestion
-      }));
-    }
+  const aiAssist = (fieldName, fieldType = 'input') => {
+    setAiPopover({
+      isOpen: true,
+      fieldName,
+      fieldType
+    });
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      [aiPopover.fieldName]: suggestion
+    }));
+  };
+
+  const closeAiPopover = () => {
+    setAiPopover({ isOpen: false, fieldName: '', fieldType: '' });
   };
 
   const generateContent = async () => {
@@ -139,8 +150,9 @@ const ContentGenerator = () => {
                 placeholder="e.g., customer retention, holiday marketing"
               />
               <button 
+                ref={aiAssistRefs.contentTopic}
                 className="ai-assist-btn" 
-                onClick={() => aiAssist('contentTopic')}
+                onClick={() => aiAssist('contentTopic', 'input')}
                 type="button"
               >
                 AI Assist
@@ -186,8 +198,9 @@ const ContentGenerator = () => {
                 placeholder="Professional artists, design students..."
               />
               <button 
+                ref={aiAssistRefs.contentAudience}
                 className="ai-assist-btn" 
-                onClick={() => aiAssist('contentAudience')}
+                onClick={() => aiAssist('contentAudience', 'input')}
                 type="button"
               >
                 AI Assist
@@ -195,20 +208,33 @@ const ContentGenerator = () => {
             </div>
           </div>
 
-          <div className="input-field">
+          <div className="input-field full-width">
             <label htmlFor="additionalContext">Additional Context & Requirements</label>
-            <textarea 
-              name="additionalContext"
-              value={formData.additionalContext}
-              onChange={handleInputChange}
-              placeholder="Any additional context, specific requirements, tone preferences, or constraints..."
-              rows="3"
-            />
+            <div className="input-with-ai">
+              <textarea 
+                name="additionalContext"
+                value={formData.additionalContext}
+                onChange={handleInputChange}
+                placeholder="Any additional context, specific requirements, tone preferences, or constraints..."
+                rows="3"
+              />
+              <button 
+                ref={aiAssistRefs.additionalContext}
+                className="ai-assist-btn" 
+                onClick={() => aiAssist('additionalContext', 'textarea')}
+                type="button"
+                style={{ top: '20px' }}
+              >
+                AI Assist
+              </button>
+            </div>
           </div>
 
-          <button className="generate-btn" onClick={generateContent} disabled={isLoading}>
-            Generate Content
-          </button>
+          <div className="input-field button-field">
+            <button className="generate-btn" onClick={generateContent} disabled={isLoading}>
+              Generate Content
+            </button>
+          </div>
         </div>
       </div>
 
@@ -234,6 +260,17 @@ const ContentGenerator = () => {
       <FloatingPinButton 
         onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
         showPinboard={showPinsSidebar}
+      />
+      
+      <AISuggestionsPopover
+        isOpen={aiPopover.isOpen}
+        onClose={closeAiPopover}
+        onSelectSuggestion={handleSuggestionSelect}
+        fieldName={aiPopover.fieldName}
+        fieldType={aiPopover.fieldType}
+        existingFormData={formData}
+        generatorType="content"
+        triggerRef={aiAssistRefs[aiPopover.fieldName]}
       />
     </Layout>
   );
