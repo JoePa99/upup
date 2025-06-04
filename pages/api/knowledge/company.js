@@ -272,11 +272,26 @@ export default async function handler(req, res) {
           // Set tenant context for RLS
           await setTenantContext(user.tenantId, user.id);
           
+          // Debug: Check both tenant IDs to find the data
+          console.log('Checking for knowledge with tenant_id:', user.tenantId);
+          
           const { data, error } = await supabaseAdmin
             .from('company_knowledge')
             .select('*')
             .eq('tenant_id', user.tenantId)
             .order('created_at', { ascending: false });
+            
+          console.log('Query result for tenant', user.tenantId, ':', data?.length || 0, 'items');
+          
+          // Also check tenant ID 1 to see if data is there from upload
+          const { data: dataForTenant1 } = await supabaseAdmin
+            .from('company_knowledge')
+            .select('*')
+            .eq('tenant_id', 1)
+            .order('created_at', { ascending: false });
+            
+          console.log('Query result for tenant 1:', dataForTenant1?.length || 0, 'items');
+          console.log('Tenant 1 titles:', dataForTenant1?.map(k => k.title) || []);
 
           if (error) {
             console.error('Supabase query error:', error);
