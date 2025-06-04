@@ -19,20 +19,34 @@ export async function getUserFromRequest(req) {
   try {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
+    console.log('🔍 Auth header received:', authHeader ? 'Present' : 'Missing');
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new Error('No authorization token provided');
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('🔍 Token extracted, length:', token.length);
+    console.log('🔍 Token preview:', token.substring(0, 50) + '...');
     
     if (!supabaseAdmin) {
+      console.log('❌ Supabase admin client not configured');
       throw new Error('Supabase admin client not configured');
     }
 
+    console.log('🔍 Attempting to verify token with Supabase...');
     // Verify the JWT token and get user
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    
+    console.log('🔍 Supabase auth result:', { 
+      hasUser: !!user, 
+      hasError: !!error,
+      errorMessage: error?.message 
+    });
+    
     if (error || !user) {
-      throw new Error('Invalid token');
+      console.log('❌ Token verification failed:', error);
+      throw new Error(`Token verification failed: ${error?.message || 'Invalid token'}`);
     }
 
     // Get user data with tenant info from database

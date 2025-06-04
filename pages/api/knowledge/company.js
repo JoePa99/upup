@@ -88,9 +88,17 @@ export default async function handler(req, res) {
       console.log('=== KNOWLEDGE UPLOAD DEBUG ===');
       console.log('Auth header:', req.headers.authorization);
       console.log('Content type:', req.headers['content-type']);
+      console.log('All headers:', Object.keys(req.headers));
       
-      let user = await getUserFromRequest(req);
-      console.log('User from request:', user);
+      let user;
+      try {
+        user = await getUserFromRequest(req);
+        console.log('✅ User from request SUCCESS:', user);
+      } catch (error) {
+        console.log('❌ getUserFromRequest ERROR:', error.message);
+        console.log('Error details:', error);
+        user = null;
+      }
       
       if (!user) {
         console.log('🚨 No authenticated user found for upload - this will likely fail');
