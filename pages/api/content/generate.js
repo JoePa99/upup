@@ -104,8 +104,10 @@ export default async function handler(req, res) {
     console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
     console.log('Knowledge context length:', companyContext.companyContext.length);
     console.log('Knowledge preview:', companyContext.companyContext.substring(0, 200) + '...');
-    console.log('Has knowledge base:', hasKnowledgeBase);
-    if (hasKnowledgeBase) {
+    
+    const hasKnowledgeForDebug = companyContext.relevantKnowledge.length > 0;
+    console.log('Has knowledge base:', hasKnowledgeForDebug);
+    if (hasKnowledgeForDebug) {
       console.log('Knowledge titles:', companyContext.relevantKnowledge.map(k => k.title));
     }
 
@@ -387,24 +389,24 @@ ${topic} represents a significant opportunity for ${audience} to achieve sustain
     },
     
     'SONNET': {
-      title: `A Sonnet About ${topic}`,
-      content: `When ${topic} calls to those who seek to grow (A)
-And ${audience} hear its clarion sound (B)
-Through ${companyName} shall success bestow (A)
-Where quality and innovation are found (B)
+      title: `FALLBACK SONNET: ${topic}`,
+      content: `[FALLBACK MODE - API ERROR]
 
-The season brings what businesses require (C)
-With strategies that spark and then inspire (C)
-Success flows like an ever-growing fire (C)
-To lift your brand and goals ever higher (C)
+When ${topic} calls to business minds so bright (A)
+And ${audience} seek the path ahead (B)  
+Through knowledge base shall wisdom bring to light (A)
+The insights that will help your business spread (B)
 
-Let knowledge guide your path to greater heights (D)
-Where expertise meets your specific needs (E)
-Through proven methods and strategic sights (D)
-Your company plants the most successful seeds (E)
+This fallback content serves when systems fail (C)
+But still contains the knowledge you have shared (D)
+Your uploaded data tells a detailed tale (C)
+Of company insights carefully prepared (D)
 
-So heed this call, let ${topic} ring true (F)
-Success awaits for those who dare pursue (F)${knowledgeContextSection}`
+${hasKnowledge ? 'From knowledge base we find these facts so true:' : 'No knowledge base content was found today'} (E)
+${hasKnowledge ? knowledgeContext.substring(0, 100) + '...' : 'Please check your uploads to show the way'} (F)
+
+This sonnet shows when fallback mode runs through (E)
+But real AI generation will serve you (F)${knowledgeContextSection}`
     }
   };
 
