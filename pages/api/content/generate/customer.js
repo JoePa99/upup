@@ -1,3 +1,5 @@
+const { getCompanyContext } = require('../../../../utils/knowledge-helper');
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -12,8 +14,11 @@ export default async function handler(req, res) {
       });
     }
 
+    // Get company context for personalized content
+    const companyContext = await getCompanyContext(connectionGoal + ' ' + customerSegment, req);
+
     // Generate content with OpenAI
-    const aiContent = await generateCustomerContent(connectionGoal, customerSegment, currentChallenges);
+    const aiContent = await generateCustomerContent(connectionGoal, customerSegment, currentChallenges, companyContext);
 
     return res.status(200).json({
       success: true,
@@ -24,7 +29,9 @@ export default async function handler(req, res) {
           generatedAt: new Date().toISOString(),
           connectionGoal,
           customerSegment,
-          challenges: currentChallenges || 'general challenges'
+          challenges: currentChallenges || 'general challenges',
+          companyName: companyContext.tenantInfo.companyName,
+          contextUsed: companyContext.relevantKnowledge.length > 0
         }
       }
     });
@@ -38,26 +45,37 @@ export default async function handler(req, res) {
   }
 }
 
-async function generateCustomerContent(connectionGoal, customerSegment, currentChallenges) {
+async function generateCustomerContent(connectionGoal, customerSegment, currentChallenges, companyContext) {
   try {
+    const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
+    
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('No OpenAI API key found, using fallback content');
       return {
-        title: `Customer Strategy: ${connectionGoal}`,
-        content: `Customer connection strategy focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.`
+        title: `${tenantInfo.companyName} Customer Strategy: ${connectionGoal}`,
+        content: `Customer connection strategy for ${tenantInfo.companyName} focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
       };
     }
     
+    // Include company knowledge in the prompt if available
+    const knowledgeSection = relevantKnowledge.length > 0 
+      ? `\n\nCompany Knowledge Base (use this to inform your strategy):\n${knowledgeContext}`
+      : '';
+    
     const prompt = `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
 
-Customer Strategy Context:
+Company Context:
+- Company: ${tenantInfo.companyName}
+- Industry: ${tenantInfo.industry}
+- Size: ${tenantInfo.size}
 - Connection Goal: ${connectionGoal}
 - Customer Segment: ${customerSegment}
-- Current Challenges: ${currentChallenges || 'General customer relationship challenges'}
+- Current Challenges: ${currentChallenges || 'General customer relationship challenges'}${knowledgeSection}
 
 Requirements:
-- Professional marketing and business analysis language
+- Professional marketing and business analysis language specific to ${tenantInfo.companyName}
+- Use the company knowledge base information to make strategy more specific and relevant
 - Customer-centric insights and behavioral patterns
 - Actionable customer intelligence and recommendations
 - Demographic, psychographic, and behavioral analysis
@@ -68,7 +86,7 @@ Requirements:
 
 Structure should include:
 - Understanding the customer segment and their needs
-- Specific strategies to achieve the connection goal
+- Specific strategies for ${tenantInfo.companyName} to achieve the connection goal
 - Implementation tactics and timeline
 - Success metrics and measurement approaches
 
@@ -101,16 +119,17 @@ Format: Return only the customer strategy content, well-structured with clear he
     const content = data.choices[0]?.message?.content || 'Failed to generate content';
     
     return {
-      title: `Customer Strategy: ${connectionGoal}`,
+      title: `${tenantInfo.companyName} Customer Strategy: ${connectionGoal}`,
       content: content.trim()
     };
     
   } catch (error) {
     console.error('OpenAI API error:', error);
+    const { tenantInfo, companyContext: knowledgeContext } = companyContext;
     // Fallback content
     return {
-      title: `Customer Strategy: ${connectionGoal}`,
-      content: `Customer connection strategy focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.`
+      title: `${tenantInfo.companyName} Customer Strategy: ${connectionGoal}`,
+      content: `Customer connection strategy for ${tenantInfo.companyName} focusing on ${connectionGoal} for ${customerSegment} segment. Current challenges: ${currentChallenges || 'general customer relationship challenges'}. This analysis would provide comprehensive insights into customer engagement and retention strategies.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
     };
   }
 }

@@ -1,3 +1,5 @@
+const { getCompanyContext } = require('../../../../utils/knowledge-helper');
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -12,8 +14,11 @@ export default async function handler(req, res) {
       });
     }
 
+    // Get company context for personalized content
+    const companyContext = await getCompanyContext(analysisFocus, req);
+
     // Generate content with OpenAI
-    const aiContent = await generateMarketContent(analysisFocus, marketScope, specificCompetitors);
+    const aiContent = await generateMarketContent(analysisFocus, marketScope, specificCompetitors, companyContext);
 
     return res.status(200).json({
       success: true,
@@ -24,7 +29,9 @@ export default async function handler(req, res) {
           generatedAt: new Date().toISOString(),
           analysisFocus,
           marketScope,
-          competitors: specificCompetitors || 'general market competitors'
+          competitors: specificCompetitors || 'general market competitors',
+          companyName: companyContext.tenantInfo.companyName,
+          contextUsed: companyContext.relevantKnowledge.length > 0
         }
       }
     });
@@ -38,26 +45,37 @@ export default async function handler(req, res) {
   }
 }
 
-async function generateMarketContent(analysisFocus, marketScope, specificCompetitors) {
+async function generateMarketContent(analysisFocus, marketScope, specificCompetitors, companyContext) {
   try {
+    const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
+    
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('No OpenAI API key found, using fallback content');
       return {
-        title: `Market Analysis: ${analysisFocus} - ${marketScope}`,
-        content: `Market analysis focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.`
+        title: `${tenantInfo.companyName} Market Analysis: ${analysisFocus}`,
+        content: `Market analysis for ${tenantInfo.companyName} focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
       };
     }
     
+    // Include company knowledge in the prompt if available
+    const knowledgeSection = relevantKnowledge.length > 0 
+      ? `\n\nCompany Knowledge Base (use this to inform your analysis):\n${knowledgeContext}`
+      : '';
+    
     const prompt = `Generate a comprehensive market analysis report focusing on ${analysisFocus} with a ${marketScope} scope.
 
-Market Analysis Context:
+Company Context:
+- Company: ${tenantInfo.companyName}
+- Industry: ${tenantInfo.industry}
+- Size: ${tenantInfo.size}
 - Analysis Focus: ${analysisFocus}
 - Market Scope: ${marketScope}
-- Specific Competitors: ${specificCompetitors || 'General market competitors'}
+- Specific Competitors: ${specificCompetitors || 'General market competitors'}${knowledgeSection}
 
 Requirements:
-- Professional business analysis language
+- Professional business analysis language specific to ${tenantInfo.companyName}
+- Use the company knowledge base information to make analysis more specific and relevant
 - Data-driven insights and market trends
 - Competitive landscape analysis
 - Strategic recommendations and actionable insights
@@ -70,7 +88,7 @@ Structure the analysis with clear sections covering:
 1. Market Overview and Current Trends
 2. Competitive Landscape Analysis
 3. Customer Behavior and Preferences
-4. Strategic Opportunities and Recommendations
+4. Strategic Opportunities and Recommendations for ${tenantInfo.companyName}
 5. Risk Assessment and Mitigation
 
 Format: Return only the market analysis content, well-structured with clear headings and professional business language.`;
@@ -102,16 +120,17 @@ Format: Return only the market analysis content, well-structured with clear head
     const content = data.choices[0]?.message?.content || 'Failed to generate content';
     
     return {
-      title: `Market Analysis: ${analysisFocus} - ${marketScope}`,
+      title: `${tenantInfo.companyName} Market Analysis: ${analysisFocus}`,
       content: content.trim()
     };
     
   } catch (error) {
     console.error('OpenAI API error:', error);
+    const { tenantInfo, companyContext: knowledgeContext } = companyContext;
     // Fallback content
     return {
-      title: `Market Analysis: ${analysisFocus} - ${marketScope}`,
-      content: `Market analysis focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.`
+      title: `${tenantInfo.companyName} Market Analysis: ${analysisFocus}`,
+      content: `Market analysis for ${tenantInfo.companyName} focusing on ${analysisFocus} within ${marketScope} scope. Competitors considered: ${specificCompetitors || 'general market competitors'}. This analysis would provide comprehensive insights into market trends, competitive landscape, and strategic opportunities.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
     };
   }
 }

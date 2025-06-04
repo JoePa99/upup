@@ -1,18 +1,83 @@
 // Content generation API endpoint in Next.js pages/api
 // Helper function to get company context
-async function getCompanyContext(query) {
-  // Skip the API call and just return fallback context for now
-  // The knowledge context API is causing URL parsing issues
-  return {
-    tenantInfo: {
-      companyName: 'Your Company',
-      industry: 'Professional Services',
-      size: 'Medium Business',
-      values: 'Quality, Innovation, Customer Success'
-    },
-    companyContext: '',
-    relevantKnowledge: []
-  };
+async function getCompanyContext(query, req) {
+  try {
+    // Import auth helpers
+    const { getUserFromRequest } = require('../../../utils/auth-helpers');
+    const user = await getUserFromRequest(req);
+    
+    if (!user || !user.tenantId) {
+      console.log('No authenticated user found, using fallback context');
+      return {
+        tenantInfo: {
+          companyName: 'Your Company',
+          industry: 'Professional Services',
+          size: 'Medium Business',
+          values: 'Quality, Innovation, Customer Success'
+        },
+        companyContext: '',
+        relevantKnowledge: []
+      };
+    }
+
+    // Call the knowledge API directly to get company knowledge
+    const knowledgeUrl = `${req.headers.origin || 'http://localhost:3000'}/api/knowledge/company`;
+    const knowledgeResponse = await fetch(knowledgeUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': req.headers.authorization || '',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    let relevantKnowledge = [];
+    let companyContext = '';
+    
+    if (knowledgeResponse.ok) {
+      const knowledgeData = await knowledgeResponse.json();
+      const knowledge = knowledgeData.data?.knowledge || [];
+      
+      // Filter knowledge relevant to the query
+      relevantKnowledge = knowledge.filter(item => {
+        const searchText = `${item.title} ${item.content || ''}`.toLowerCase();
+        const queryLower = query.toLowerCase();
+        return searchText.includes(queryLower) || 
+               queryLower.split(' ').some(word => searchText.includes(word));
+      }).slice(0, 3); // Limit to top 3 relevant items
+      
+      // Create context string from relevant knowledge
+      companyContext = relevantKnowledge.map(item => 
+        `${item.title}: ${(item.content || '').substring(0, 300)}...`
+      ).join('\n\n');
+    }
+
+    return {
+      tenantInfo: {
+        companyName: user.tenantName || 'Your Company',
+        industry: 'Professional Services', // Could be enhanced to get from tenant data
+        size: 'Medium Business',
+        values: 'Quality, Innovation, Customer Success'
+      },
+      companyContext,
+      relevantKnowledge: relevantKnowledge.map(item => ({
+        title: item.title,
+        excerpt: (item.content || '').substring(0, 150) + '...'
+      }))
+    };
+  } catch (error) {
+    console.error('Error getting company context:', error);
+    // Fallback to basic context
+    return {
+      tenantInfo: {
+        companyName: 'Your Company',
+        industry: 'Professional Services',
+        size: 'Medium Business',
+        values: 'Quality, Innovation, Customer Success'
+      },
+      companyContext: '',
+      relevantKnowledge: []
+    };
+  }
 }
 
 export default async function handler(req, res) {
@@ -30,7 +95,7 @@ export default async function handler(req, res) {
     }
 
     // Get company context for personalized content
-    const companyContext = await getCompanyContext(contentTopic);
+    const companyContext = await getCompanyContext(contentTopic, req);
 
     // Generate content with OpenAI
     const aiContent = await generateAIContent(contentTopic, contentType, contentAudience, pins, companyContext);
@@ -72,19 +137,25 @@ async function generateAIContent(topic, type, audience, pins, companyContext) {
       return generateMockContent(topic, type, audience, pins, companyContext);
     }
     
-    const { tenantInfo } = companyContext;
+    const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
+    
+    // Include company knowledge in the prompt if available
+    const knowledgeSection = relevantKnowledge.length > 0 
+      ? `\n\nCompany Knowledge Base (use this to inform your content):\n${knowledgeContext}`
+      : '';
     
     const prompt = `Generate a ${type} about ${topic} for ${audience}.
     
 Company context:
 - Company: ${tenantInfo.companyName}
 - Industry: ${tenantInfo.industry}  
-- Values: ${tenantInfo.values}
+- Values: ${tenantInfo.values}${knowledgeSection}
 
 Requirements:
 - Professional and engaging tone
 - Actionable insights
 - Industry-specific language
+- Use the company knowledge base information to make content more specific and relevant
 - Length: ${type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
 
 Format: Return only the content, no extra formatting or explanations.`;
