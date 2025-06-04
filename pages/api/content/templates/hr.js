@@ -1,3 +1,5 @@
+const { getCompanyContext } = require('../../../../utils/knowledge-helper');
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -12,8 +14,11 @@ export default async function handler(req, res) {
       });
     }
 
+    // Get company context for personalized content
+    const companyContext = await getCompanyContext(templateType + ' ' + (jobTitle || ''), req);
+
     // Generate content with OpenAI
-    const aiContent = await generateHRContent(templateType, jobTitle, department, responsibilities);
+    const aiContent = await generateHRContent(templateType, jobTitle, department, responsibilities, companyContext);
 
     return res.status(200).json({
       success: true,
@@ -24,7 +29,9 @@ export default async function handler(req, res) {
           generatedAt: new Date().toISOString(),
           templateType,
           jobTitle: jobTitle || 'Position',
-          department: department || 'General'
+          department: department || 'General',
+          companyName: companyContext.tenantInfo.companyName,
+          contextUsed: companyContext.relevantKnowledge.length > 0
         }
       }
     });
@@ -38,20 +45,64 @@ export default async function handler(req, res) {
   }
 }
 
-async function generateHRContent(templateType, jobTitle, department, responsibilities) {
+async function generateHRContent(templateType, jobTitle, department, responsibilities, companyContext) {
   try {
+    const { tenantInfo, companyContext: knowledgeContext, relevantKnowledge } = companyContext;
+    
+    // Determine which company to focus on - prioritize knowledge base content
+    const hasKnowledgeBase = relevantKnowledge.length > 0;
+    
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('No OpenAI API key found, using fallback content');
       return {
         title: `${templateType}: ${jobTitle || 'HR Document'}`,
-        content: `${templateType} for ${jobTitle || 'Position'} in ${department || 'Department'}. This document would include comprehensive details based on your input: ${responsibilities || 'No additional details provided'}.`
+        content: `${templateType} for ${jobTitle || 'Position'} in ${department || 'Department'} at ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName}. This document would include comprehensive details based on your input: ${responsibilities || 'No additional details provided'}.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
       };
     }
     
-    const prompt = `Generate a professional ${templateType} for a ${jobTitle || 'position'} in the ${department || 'general'} department.
+    // Include company knowledge in the prompt if available
+    const knowledgeSection = relevantKnowledge.length > 0 
+      ? `\n\nCompany Knowledge Base (use this to inform the HR document):\n${knowledgeContext}`
+      : '';
+    
+    // If we have knowledge base content, make the prompt ONLY about that company
+    const prompt = hasKnowledgeBase ? 
+      `Generate a professional ${templateType} for a ${jobTitle || 'position'} in the ${department || 'general'} department.
+
+FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
+
+${knowledgeSection}
+
+MANDATORY INSTRUCTIONS:
+1. Write HR document ONLY for the company mentioned in the knowledge base above
+2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
+3. Use the specific company details from the knowledge base to create targeted HR content
 
 HR context:
+- Document Type: ${templateType}
+- Job Title: ${jobTitle || 'Position'}
+- Department: ${department || 'General'}
+- Key Responsibilities: ${responsibilities || 'Standard job responsibilities'}
+
+Requirements:
+- Professional HR language appropriate for the knowledge base company
+- Use the company knowledge base information to make HR content highly specific and relevant
+- Clear structure with relevant sections for the document type
+- Include appropriate qualifications, skills, and requirements
+- Cover compensation, benefits, and company culture from knowledge base where applicable
+- Length: 500-800 words
+- Use inclusive language and follow HR best practices
+- Include relevant legal compliance considerations
+
+Template-specific requirements:
+${getTemplateSpecificRequirements(templateType)}
+
+Format: Return only the HR document content, well-structured with clear headings and professional formatting.` :
+      `Generate a professional ${templateType} for a ${jobTitle || 'position'} in the ${department || 'general'} department.
+
+HR context:
+- Company: ${tenantInfo.companyName}
 - Document Type: ${templateType}
 - Job Title: ${jobTitle || 'Position'}
 - Department: ${department || 'General'}
@@ -104,10 +155,12 @@ Format: Return only the HR document content, well-structured with clear headings
     
   } catch (error) {
     console.error('OpenAI API error:', error);
+    const { tenantInfo, companyContext: knowledgeContext } = companyContext;
+    const hasKnowledgeBase = relevantKnowledge.length > 0;
     // Fallback content
     return {
       title: `${templateType}: ${jobTitle || 'HR Document'}`,
-      content: `${templateType} for ${jobTitle || 'Position'} in ${department || 'Department'}. This document would include comprehensive details based on your input: ${responsibilities || 'No additional details provided'}.`
+      content: `${templateType} for ${jobTitle || 'Position'} in ${department || 'Department'} at ${hasKnowledgeBase ? 'the company' : tenantInfo.companyName}. This document would include comprehensive details based on your input: ${responsibilities || 'No additional details provided'}.${knowledgeContext ? `\n\nBased on company knowledge:\n${knowledgeContext}` : ''}`
     };
   }
 }
