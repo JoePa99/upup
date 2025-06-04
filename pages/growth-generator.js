@@ -71,23 +71,17 @@ const GrowthGenerator = () => {
     setShowContent(false);
     
     try {
-      const response = await fetch('/api/content/generate/growth', {
+      // Import the API helper to get auth headers
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const data = await apiRequest('/content/generate/growth', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           growthFocus: formData.growthFocus,
           timeHorizon: formData.timeHorizon,
           constraints: formData.growthConstraints
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate growth opportunities');
-      }
-
-      const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Growth Opportunities: ${formData.growthFocus}`);

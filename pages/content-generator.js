@@ -75,11 +75,11 @@ const ContentGenerator = () => {
     setShowContent(false);
     
     try {
-      const response = await fetch('/api/content/generate', {
+      // Import the API helper to get auth headers
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const data = await apiRequest('/content/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           contentTopic: formData.contentTopic || 'customer retention',
           contentType: formData.contentType,
@@ -87,12 +87,7 @@ const ContentGenerator = () => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate content');
-      }
-
-      const data = await response.json();
-      
+      // data is already parsed JSON from apiRequest helper
       setGeneratedContent(data.data.content);
       setContentTitle(data.data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);

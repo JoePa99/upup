@@ -70,23 +70,17 @@ const CustomerGenerator = () => {
     setShowContent(false);
     
     try {
-      const response = await fetch('/api/content/generate/customer', {
+      // Import the API helper to get auth headers
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const data = await apiRequest('/content/generate/customer', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           connectionGoal: formData.connectionGoal,
           customerSegment: formData.customerSegment,
           currentChallenges: formData.currentChallenges || 'General customer relationship challenges'
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate customer connection strategies');
-      }
-
-      const data = await response.json();
       
       setGeneratedContent(data.data?.content || data.content);
       setContentTitle(data.data?.title || `Customer Strategy: ${formData.connectionGoal}`);
