@@ -99,8 +99,11 @@ export default async function handler(req, res) {
     
     console.log('=== CONTENT GENERATION DEBUG ===');
     console.log('Content topic:', contentTopic);
+    console.log('Content type:', contentType);
+    console.log('Tenant company:', companyContext.tenantInfo.companyName);
     console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
     console.log('Knowledge context length:', companyContext.companyContext.length);
+    console.log('Knowledge preview:', companyContext.companyContext.substring(0, 200) + '...');
 
     // Generate content with OpenAI
     const aiContent = await generateAIContent(contentTopic, contentType, contentAudience, pins, companyContext);
@@ -149,22 +152,30 @@ async function generateAIContent(topic, type, audience, pins, companyContext) {
       ? `\n\nCompany Knowledge Base (use this to inform your content):\n${knowledgeContext}`
       : '';
     
+    // Determine which company to focus on - prioritize knowledge base content
+    const hasKnowledgeBase = relevantKnowledge.length > 0;
+    const focusCompany = hasKnowledgeBase ? 'the company described in the knowledge base' : tenantInfo.companyName;
+    
     const prompt = `You must create a ${type} about ${topic} for ${audience}.
 
-Company context:
-- Company: ${tenantInfo.companyName}
+${hasKnowledgeBase ? `PRIMARY FOCUS: Create content about the company described in the knowledge base below, NOT about ${tenantInfo.companyName}.` : ''}
+
+Account context (for reference only):
+- Account holder: ${tenantInfo.companyName}
 - Industry: ${tenantInfo.industry}  
 - Values: ${tenantInfo.values}${knowledgeSection}
 
 CRITICAL REQUIREMENTS:
 1. The content MUST be formatted as a ${type} (follow the exact format and style of this content type)
-2. MANDATORY: Use the company knowledge base information above - reference specific details, data, products, services, or insights from the knowledge base
-3. Make the content highly specific to ${tenantInfo.companyName} using the provided knowledge
+2. MANDATORY: ${hasKnowledgeBase ? 'Write about the company in the knowledge base above (NOT about ' + tenantInfo.companyName + ')' : 'Use the account context information'}
+3. Reference specific details, data, products, services, or insights from the ${hasKnowledgeBase ? 'knowledge base' : 'company context'}
 4. Professional and engaging tone appropriate for ${audience}
 5. Industry-specific language and insights
 6. Length: ${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
 
-If the content type is a sonnet, poem, or other literary form, follow that exact format while incorporating the company knowledge.
+${hasKnowledgeBase ? 'IMPORTANT: The content should be about the company mentioned in the knowledge base, not about ' + tenantInfo.companyName + '.' : ''}
+
+If the content type is a sonnet, poem, or other literary form, follow that exact format while incorporating the company information.
 
 Format: Return only the ${type} content with no extra formatting, explanations, or meta-text.`;
 
