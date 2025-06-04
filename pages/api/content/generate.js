@@ -96,6 +96,11 @@ export default async function handler(req, res) {
 
     // Get company context for personalized content
     const companyContext = await getCompanyContext(contentTopic, req);
+    
+    console.log('=== CONTENT GENERATION DEBUG ===');
+    console.log('Content topic:', contentTopic);
+    console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
+    console.log('Knowledge context length:', companyContext.companyContext.length);
 
     // Generate content with OpenAI
     const aiContent = await generateAIContent(contentTopic, contentType, contentAudience, pins, companyContext);
@@ -155,7 +160,8 @@ Requirements:
 - Professional and engaging tone
 - Actionable insights
 - Industry-specific language
-- Use the company knowledge base information to make content more specific and relevant
+- IMPORTANT: Use the company knowledge base information above to make content highly specific and relevant to ${tenantInfo.companyName}
+- Reference specific details, products, services, or information from the knowledge base
 - Length: ${type === 'Social Media Post' ? '150-200 words' : '300-500 words'}
 
 Format: Return only the content, no extra formatting or explanations.`;
