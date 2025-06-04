@@ -681,3 +681,135 @@ body {
     min-width: auto;
   }
 }
+
+/* Enhanced PIN Features */
+
+/* Floating PIN tooltip for text selection */
+.pin-tooltip {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.pin-selection-btn {
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.pin-selection-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+}
+
+.pin-selection-btn:active {
+  transform: translateY(0);
+}
+
+/* Floating PIN button */
+.floating-pin-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+}
+
+.floating-pin-button:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+.floating-pin-button:active {
+  transform: translateY(0);
+}
+
+.floating-pin-button .pin-icon {
+  position: relative;
+}
+
+.floating-pin-button .pin-counter {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+/* Enhanced text selection styling */
+.generated-content {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+.generated-content::selection {
+  background: #bfdbfe;
+  color: #1e40af;
+}
+
+.generated-content::-moz-selection {
+  background: #bfdbfe;
+  color: #1e40af;
+}
+
+/* Mobile responsiveness for floating elements */
+@media (max-width: 768px) {
+  .floating-pin-button {
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    font-size: 18px;
+  }
+  
+  .floating-pin-button .pin-counter {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    top: -6px;
+    right: -6px;
+  }
+  
+  .pin-tooltip {
+    padding: 6px;
+  }
+  
+  .pin-selection-btn {
+    padding: 10px 14px;
+    font-size: 18px;
+  }
+}

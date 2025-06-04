@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import FloatingPinButton from '../components/FloatingPinButton';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const ContentGenerator = () => {
@@ -91,7 +92,7 @@ const ContentGenerator = () => {
       setGeneratedContent(data.data.content);
       setContentTitle(data.data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       
       // Track successful content generation
       trackContentGenerated('content', 800); // Estimate 800 tokens for content generation
@@ -104,7 +105,7 @@ const ContentGenerator = () => {
       setGeneratedContent(fallbackContent);
       setContentTitle(`Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);
-      setShowPinsSidebar(true);
+      // Don't auto-open pinboard - user can now use floating button
       
       // Track fallback content generation (no tokens used)
       trackContentGenerated('content', 0);
@@ -217,6 +218,10 @@ const ContentGenerator = () => {
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      <FloatingPinButton 
+        onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
+        showPinboard={showPinsSidebar}
+      />
     </Layout>
   );
 };
