@@ -1,4 +1,4 @@
-const { getCompanyContext } = require('../../../../utils/knowledge-helper');
+import { getCompanyContext } from '../../../../utils/knowledge-helper.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

@@ -2,7 +2,7 @@
 async function getCompanyContext(query, req) {
   try {
     // Import auth helpers
-    const { getUserFromRequest } = require('./auth-helpers');
+    const { getUserFromRequest } = await import('./auth-helpers.js');
     const user = await getUserFromRequest(req);
     
     if (!user || !user.tenantId) {
@@ -100,6 +100,4 @@ async function getCompanyContext(query, req) {
   }
 }
 
-module.exports = {
-  getCompanyContext
-};
+export { getCompanyContext };
