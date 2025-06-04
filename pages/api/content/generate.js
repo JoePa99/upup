@@ -103,12 +103,16 @@ export default async function handler(req, res) {
     console.log('Tenant company:', companyContext.tenantInfo.companyName);
     console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
     console.log('Knowledge context length:', companyContext.companyContext.length);
-    console.log('Knowledge preview:', companyContext.companyContext.substring(0, 200) + '...');
+    console.log('Full knowledge context:', companyContext.companyContext);
     
     const hasKnowledgeForDebug = companyContext.relevantKnowledge.length > 0;
     console.log('Has knowledge base:', hasKnowledgeForDebug);
-    if (hasKnowledgeForDebug) {
-      console.log('Knowledge titles:', companyContext.relevantKnowledge.map(k => k.title));
+    console.log('Full relevant knowledge array:', JSON.stringify(companyContext.relevantKnowledge, null, 2));
+    
+    if (!hasKnowledgeForDebug) {
+      console.log('🚨 NO KNOWLEDGE BASE CONTENT FOUND! This is why it uses tenant company.');
+    } else {
+      console.log('✅ Knowledge base content found - should use this instead of tenant company');
     }
 
     // Generate content with OpenAI

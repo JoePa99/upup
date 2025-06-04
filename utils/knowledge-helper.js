@@ -34,9 +34,12 @@ async function getCompanyContext(query, req) {
     
     if (knowledgeResponse.ok) {
       const knowledgeData = await knowledgeResponse.json();
+      console.log('Raw knowledge response:', JSON.stringify(knowledgeData, null, 2));
+      
       const knowledge = knowledgeData.data?.knowledge || [];
       
       console.log(`Knowledge retrieval: Found ${knowledge.length} knowledge items for query: "${query}"`);
+      console.log('Knowledge items details:', knowledge.map(k => ({ title: k.title, contentLength: k.content?.length || 0 })));
       
       // Filter knowledge relevant to the query
       relevantKnowledge = knowledge.filter(item => {
