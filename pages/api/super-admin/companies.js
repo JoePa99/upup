@@ -6,17 +6,28 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    return getCompanies(req, res);
-  } else if (req.method === 'POST') {
-    return createCompany(req, res);
-  } else {
-    return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    // For now, we'll skip authentication to test functionality
+    // In production, you would verify super admin status here
+    console.log('Super admin companies endpoint accessed');
+    
+    if (req.method === 'GET') {
+      return getCompanies(req, res);
+    } else if (req.method === 'POST') {
+      return createCompany(req, res);
+    } else {
+      return res.status(405).json({ message: 'Method not allowed' });
+    }
+  } catch (error) {
+    console.error('Super admin companies handler error:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 }
 
 async function getCompanies(req, res) {
   try {
+    console.log('Fetching companies from database...');
+    
     // Get all companies with basic info
     const { data: companies, error } = await supabase
       .from('tenants')
@@ -31,11 +42,21 @@ async function getCompanies(req, res) {
       `)
       .order('created_at', { ascending: false });
 
+    console.log('Companies query result:', { companies: companies?.length, error });
+
     if (error) {
       console.error('Error fetching companies:', error);
       return res.status(500).json({ 
         message: 'Failed to fetch companies',
         error: error.message 
+      });
+    }
+
+    if (!companies || companies.length === 0) {
+      console.log('No companies found, returning empty array');
+      return res.status(200).json({
+        success: true,
+        data: []
       });
     }
 
@@ -57,6 +78,8 @@ async function getCompanies(req, res) {
       })
     );
 
+    console.log('Returning companies with counts:', companiesWithCounts.length);
+
     return res.status(200).json({
       success: true,
       data: companiesWithCounts
@@ -73,26 +96,42 @@ async function getCompanies(req, res) {
 
 async function createCompany(req, res) {
   try {
+    console.log('Creating company with data:', req.body);
+    
     const { name, domain, industry } = req.body;
 
     if (!name || !domain) {
+      console.log('Missing required fields:', { name, domain });
       return res.status(400).json({
         message: 'Company name and domain are required'
       });
     }
 
+    console.log('Checking if domain exists:', domain);
+
     // Check if domain already exists
-    const { data: existingCompany } = await supabase
+    const { data: existingCompany, error: checkError } = await supabase
       .from('tenants')
       .select('id')
       .eq('domain', domain)
       .single();
 
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" which is what we want
+      console.error('Error checking existing domain:', checkError);
+      return res.status(500).json({
+        message: 'Error checking domain availability',
+        error: checkError.message
+      });
+    }
+
     if (existingCompany) {
+      console.log('Domain already exists:', existingCompany);
       return res.status(400).json({
         message: 'Domain already exists'
       });
     }
+
+    console.log('Creating new company...');
 
     // Create new company
     const { data: newCompany, error } = await supabase
@@ -117,6 +156,8 @@ async function createCompany(req, res) {
         error: error.message
       });
     }
+
+    console.log('Company created successfully:', newCompany);
 
     return res.status(201).json({
       success: true,

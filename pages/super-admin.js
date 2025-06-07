@@ -44,15 +44,21 @@ const SuperAdminDashboard = () => {
   }, [activeTab, isAuthenticated, user]);
 
   const loadTabData = async (tab) => {
-    if (!isAuthenticated || !user?.isSuperAdmin) return;
+    if (!isAuthenticated || !user?.isSuperAdmin) {
+      console.log('Access denied - not authenticated or not super admin:', { isAuthenticated, isSuperAdmin: user?.isSuperAdmin, userEmail: user?.email });
+      return;
+    }
     
     setIsLoading(true);
     try {
       const { apiRequest } = await import('../utils/api-config');
       
+      console.log(`Loading ${tab} data...`);
+      
       switch (tab) {
         case 'overview':
           // Load overview data (companies and users for summary)
+          console.log('Loading overview data...');
           const overviewCompanies = await apiRequest('/super-admin/companies');
           const overviewUsers = await apiRequest('/super-admin/users');
           const overviewKnowledge = await apiRequest('/super-admin/knowledge-bases');
@@ -61,14 +67,18 @@ const SuperAdminDashboard = () => {
           setKnowledgeBases(overviewKnowledge.data || []);
           break;
         case 'companies':
+          console.log('Loading companies data...');
           const companiesData = await apiRequest('/super-admin/companies');
+          console.log('Companies response:', companiesData);
           setCompanies(companiesData.data || []);
           break;
         case 'users':
+          console.log('Loading users data...');
           const usersData = await apiRequest('/super-admin/users');
           setUsers(usersData.data || []);
           break;
         case 'knowledge':
+          console.log('Loading knowledge data...');
           const knowledgeData = await apiRequest('/super-admin/knowledge-bases');
           setKnowledgeBases(knowledgeData.data || []);
           // Also load platform knowledge
@@ -76,6 +86,7 @@ const SuperAdminDashboard = () => {
           setPlatformKnowledge(platformData.data || []);
           break;
         case 'analytics':
+          console.log('Loading analytics data...');
           const analyticsData = await apiRequest('/super-admin/analytics');
           setAnalytics(analyticsData.data || null);
           break;
@@ -111,19 +122,24 @@ const SuperAdminDashboard = () => {
       return;
     }
 
+    console.log('Creating company:', newCompany);
+    console.log('User super admin status:', user?.isSuperAdmin);
+
     try {
       const { apiRequest } = await import('../utils/api-config');
-      await apiRequest('/super-admin/companies', {
+      const result = await apiRequest('/super-admin/companies', {
         method: 'POST',
         body: JSON.stringify(newCompany)
       });
+      
+      console.log('Company creation result:', result);
       
       setNewCompany({ name: '', domain: '', industry: '' });
       loadTabData('companies');
       alert('Company created successfully!');
     } catch (error) {
       console.error('Error creating company:', error);
-      alert('Failed to create company. Please try again.');
+      alert(`Failed to create company: ${error.message}`);
     }
   };
 
@@ -153,6 +169,8 @@ const SuperAdminDashboard = () => {
   const uploadKnowledge = async (e) => {
     e.preventDefault();
     
+    console.log('Upload knowledge triggered:', { knowledgeType, knowledgeUpload });
+    
     // Validate based on knowledge type
     if (knowledgeType === 'company' && (!knowledgeUpload.companyId || !knowledgeUpload.files)) {
       alert('Please select a company and files to upload');
@@ -180,18 +198,22 @@ const SuperAdminDashboard = () => {
         ? '/super-admin/platform-knowledge' 
         : '/super-admin/knowledge';
 
-      await apiRequest(endpoint, {
+      console.log('Uploading to endpoint:', endpoint);
+
+      const result = await apiRequest(endpoint, {
         method: 'POST',
         body: formData,
         isFormData: true
       });
+      
+      console.log('Upload result:', result);
       
       setKnowledgeUpload({ companyId: '', files: null });
       loadTabData('knowledge');
       alert(`${knowledgeType === 'platform' ? 'Platform' : 'Company'} knowledge uploaded successfully!`);
     } catch (error) {
       console.error('Error uploading knowledge:', error);
-      alert('Failed to upload knowledge. Please try again.');
+      alert(`Failed to upload knowledge: ${error.message}`);
     }
   };
 
