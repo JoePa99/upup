@@ -65,7 +65,7 @@ const SuperAdminDashboard = () => {
           // Load overview data (companies and users for summary)
           console.log('Loading overview data...');
           const overviewCompanies = await apiRequest('/super-admin/companies');
-          const overviewUsers = await apiRequest('/super-admin/users');
+          const overviewUsers = await apiRequest('/super-admin/user-management');
           const overviewKnowledge = await apiRequest('/super-admin/knowledge-bases');
           setCompanies(overviewCompanies.data || []);
           setUsers(overviewUsers.data || []);
@@ -79,7 +79,7 @@ const SuperAdminDashboard = () => {
           break;
         case 'users':
           console.log('Loading users data...');
-          const usersData = await apiRequest('/super-admin/users');
+          const usersData = await apiRequest('/super-admin/user-management');
           setUsers(usersData.data || []);
           break;
         case 'knowledge':
@@ -157,7 +157,7 @@ const SuperAdminDashboard = () => {
 
     try {
       const { apiRequest } = await import('../utils/api-config');
-      await apiRequest('/super-admin/users', {
+      await apiRequest('/super-admin/user-management', {
         method: 'POST',
         body: JSON.stringify(newUser)
       });
@@ -313,7 +313,7 @@ const SuperAdminDashboard = () => {
 
     try {
       const { apiRequest } = await import('../utils/api-config');
-      await apiRequest('/super-admin/users', {
+      await apiRequest('/super-admin/user-management', {
         method: 'PUT',
         body: JSON.stringify(editingUser)
       });
@@ -332,7 +332,7 @@ const SuperAdminDashboard = () => {
 
     try {
       const { apiRequest } = await import('../utils/api-config');
-      await apiRequest(`/super-admin/users?id=${userId}`, {
+      await apiRequest(`/super-admin/user-management?id=${userId}`, {
         method: 'DELETE'
       });
       
