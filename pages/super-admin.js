@@ -34,14 +34,14 @@ const SuperAdminDashboard = () => {
         return;
       }
     }
-  }, [isAuthenticated, user, authLoading, router]);
+  }, [isAuthenticated, user?.isSuperAdmin, authLoading, router]);
 
   // Load data when tab changes
   useEffect(() => {
     if (isAuthenticated && user?.isSuperAdmin) {
       loadTabData(activeTab);
     }
-  }, [activeTab, isAuthenticated, user]);
+  }, [activeTab, isAuthenticated, user?.isSuperAdmin]);
 
   const loadTabData = async (tab) => {
     if (!isAuthenticated || !user?.isSuperAdmin) {
