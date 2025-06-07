@@ -6,16 +6,24 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    return getUsers(req, res);
-  } else if (req.method === 'POST') {
-    return createUser(req, res);
-  } else if (req.method === 'PUT') {
-    return updateUser(req, res);
-  } else if (req.method === 'DELETE') {
-    return deleteUser(req, res);
-  } else {
-    return res.status(405).json({ message: 'Method not allowed' });
+  console.log('Super admin users endpoint accessed:', req.method);
+  
+  try {
+    if (req.method === 'GET') {
+      return getUsers(req, res);
+    } else if (req.method === 'POST') {
+      return createUser(req, res);
+    } else if (req.method === 'PUT') {
+      return updateUser(req, res);
+    } else if (req.method === 'DELETE') {
+      return deleteUser(req, res);
+    } else {
+      console.log('Method not allowed:', req.method);
+      return res.status(405).json({ message: 'Method not allowed', method: req.method });
+    }
+  } catch (error) {
+    console.error('Super admin users handler error:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 }
 
@@ -72,9 +80,12 @@ async function getUsers(req, res) {
 
 async function createUser(req, res) {
   try {
+    console.log('Creating user with data:', req.body);
+    
     const { email, name, companyId, role = 'user' } = req.body;
 
     if (!email || !name || !companyId) {
+      console.log('Missing required fields:', { email: !!email, name: !!name, companyId: !!companyId });
       return res.status(400).json({
         message: 'Email, name, and company are required'
       });
