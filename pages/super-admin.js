@@ -21,6 +21,11 @@ const SuperAdminDashboard = () => {
   const [knowledgeUpload, setKnowledgeUpload] = useState({ companyId: '', files: null });
   const [platformKnowledge, setPlatformKnowledge] = useState([]);
   const [knowledgeType, setKnowledgeType] = useState('company'); // 'company' or 'platform'
+  
+  // Edit states
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   // Redirect if not authenticated or not super admin
   useEffect(() => {
@@ -238,6 +243,107 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  // Company CRUD operations
+  const editCompany = (company) => {
+    setEditingCompany({
+      id: company.id,
+      name: company.name,
+      domain: company.domain,
+      industry: company.industry || ''
+    });
+  };
+
+  const updateCompany = async (e) => {
+    e.preventDefault();
+    if (!editingCompany?.name || !editingCompany?.domain) {
+      alert('Please fill in company name and domain');
+      return;
+    }
+
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest('/super-admin/companies', {
+        method: 'PUT',
+        body: JSON.stringify(editingCompany)
+      });
+      
+      setEditingCompany(null);
+      loadTabData('companies');
+      alert('Company updated successfully!');
+    } catch (error) {
+      console.error('Error updating company:', error);
+      alert(`Failed to update company: ${error.message}`);
+    }
+  };
+
+  const deleteCompany = async (companyId, companyName) => {
+    if (!confirm(`Are you sure you want to delete "${companyName}"? This action cannot be undone.`)) return;
+
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest(`/super-admin/companies?id=${companyId}`, {
+        method: 'DELETE'
+      });
+      
+      loadTabData('companies');
+      alert('Company deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      alert(`Failed to delete company: ${error.message}`);
+    }
+  };
+
+  // User CRUD operations
+  const editUser = (user) => {
+    setEditingUser({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      companyId: user.tenant_id,
+      role: user.role
+    });
+  };
+
+  const updateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser?.email || !editingUser?.name || !editingUser?.companyId) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest('/super-admin/users', {
+        method: 'PUT',
+        body: JSON.stringify(editingUser)
+      });
+      
+      setEditingUser(null);
+      loadTabData('users');
+      alert('User updated successfully!');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert(`Failed to update user: ${error.message}`);
+    }
+  };
+
+  const deleteUser = async (userId, userName) => {
+    if (!confirm(`Are you sure you want to delete "${userName}"? This action cannot be undone.`)) return;
+
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      await apiRequest(`/super-admin/users?id=${userId}`, {
+        method: 'DELETE'
+      });
+      
+      loadTabData('users');
+      alert('User deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(`Failed to delete user: ${error.message}`);
+    }
+  };
+
   // Don't render if not authenticated or not super admin
   if (typeof window !== 'undefined' && (!isAuthenticated || !user?.isSuperAdmin)) {
     return null;
@@ -442,10 +548,137 @@ const SuperAdminDashboard = () => {
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>
                           Created: {new Date(company.created_at).toLocaleDateString()}
                         </div>
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => editCompany(company)}
+                            style={{
+                              background: '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteCompany(company.id, company.name)}
+                            style={{
+                              background: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Company Edit Modal */}
+          {editingCompany && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}>
+              <div style={{
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                width: '500px',
+                maxWidth: '90vw'
+              }}>
+                <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Edit Company</h3>
+                <form onSubmit={updateCompany} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <input
+                    type="text"
+                    placeholder="Company Name"
+                    value={editingCompany.name}
+                    onChange={(e) => setEditingCompany(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Domain (e.g., acme-corp)"
+                    value={editingCompany.domain}
+                    onChange={(e) => setEditingCompany(prev => ({ ...prev, domain: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Industry (optional)"
+                    value={editingCompany.industry}
+                    onChange={(e) => setEditingCompany(prev => ({ ...prev, industry: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCompany(null)}
+                      style={{
+                        background: '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Update Company
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -556,10 +789,155 @@ const SuperAdminDashboard = () => {
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>
                           Company: {user.company_name} | Joined: {new Date(user.created_at).toLocaleDateString()}
                         </div>
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => editUser(user)}
+                            style={{
+                              background: '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteUser(user.id, user.name)}
+                            style={{
+                              background: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* User Edit Modal */}
+          {editingUser && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}>
+              <div style={{
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                width: '500px',
+                maxWidth: '90vw'
+              }}>
+                <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Edit User</h3>
+                <form onSubmit={updateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={editingUser.email}
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, email: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                  <select
+                    value={editingUser.companyId}
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, companyId: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                    required
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>{company.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, role: e.target.value }))}
+                    style={{ 
+                      padding: '12px', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Company Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser(null)}
+                      style={{
+                        background: '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Update User
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
