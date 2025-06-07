@@ -167,7 +167,7 @@ const SuperAdminDashboard = () => {
       alert('User created successfully!');
     } catch (error) {
       console.error('Error creating user:', error);
-      alert('Failed to create user. Please try again.');
+      alert(`Failed to create user: ${error.message}`);
     }
   };
 

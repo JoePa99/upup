@@ -21,32 +21,57 @@ export default async function handler(req, res) {
       }
 
       // Check if user already exists
-      const { data: existingUser } = await supabase
+      console.log('Checking for existing user with email:', email);
+      const { data: existingUser, error: userCheckError } = await supabase
         .from('users')
         .select('id')
         .eq('email', email)
         .single();
 
+      console.log('User check result:', { existingUser, userCheckError });
+
+      if (userCheckError && userCheckError.code !== 'PGRST116') {
+        console.error('Error checking existing user:', userCheckError);
+        return res.status(500).json({
+          message: 'Error checking existing user',
+          error: userCheckError.message
+        });
+      }
+
       if (existingUser) {
+        console.log('User already exists');
         return res.status(400).json({
           message: 'User with this email already exists'
         });
       }
 
       // Verify company exists
+      console.log('Checking for company with ID:', companyId);
       const { data: company, error: companyError } = await supabase
         .from('tenants')
         .select('id, company_name')
         .eq('id', companyId)
         .single();
 
-      if (companyError || !company) {
+      console.log('Company check result:', { company, companyError });
+
+      if (companyError) {
+        console.error('Error checking company:', companyError);
         return res.status(400).json({
-          message: 'Invalid company ID'
+          message: 'Error checking company',
+          error: companyError.message
+        });
+      }
+
+      if (!company) {
+        console.log('Company not found');
+        return res.status(400).json({
+          message: 'Company not found with the provided ID'
         });
       }
 
       // Create new user
+      console.log('Creating user with data:', { email, name, tenant_id: companyId, role });
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([
@@ -61,11 +86,14 @@ export default async function handler(req, res) {
         .select()
         .single();
 
+      console.log('User creation result:', { newUser, error });
+
       if (error) {
         console.error('Error creating user:', error);
         return res.status(500).json({
           message: 'Failed to create user',
-          error: error.message
+          error: error.message,
+          details: error
         });
       }
 
