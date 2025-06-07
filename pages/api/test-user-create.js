@@ -8,6 +8,9 @@ const supabase = createClient(
 export default async function handler(req, res) {
   console.log('Test user create endpoint accessed:', req.method, req.url);
   
+  // Auth bypass for development/testing - same pattern as knowledge API
+  // In production, you would verify super admin status here
+  
   if (req.method === 'POST') {
     console.log('POST request received with body:', req.body);
     
