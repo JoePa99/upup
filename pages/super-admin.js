@@ -65,7 +65,7 @@ const SuperAdminDashboard = () => {
           // Load overview data (companies and users for summary)
           console.log('Loading overview data...');
           const overviewCompanies = await apiRequest('/super-admin/companies');
-          const overviewUsers = await apiRequest('/super-admin/user-management');
+          const overviewUsers = await apiRequest('/get-users');
           const overviewKnowledge = await apiRequest('/super-admin/knowledge-bases');
           setCompanies(overviewCompanies.data || []);
           setUsers(overviewUsers.data || []);
@@ -79,7 +79,7 @@ const SuperAdminDashboard = () => {
           break;
         case 'users':
           console.log('Loading users data...');
-          const usersData = await apiRequest('/super-admin/user-management');
+          const usersData = await apiRequest('/get-users');
           setUsers(usersData.data || []);
           break;
         case 'knowledge':
