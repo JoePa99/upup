@@ -157,7 +157,7 @@ const SuperAdminDashboard = () => {
 
     try {
       const { apiRequest } = await import('../utils/api-config');
-      await apiRequest('/super-admin/user-management', {
+      await apiRequest('/super-admin/create-user', {
         method: 'POST',
         body: JSON.stringify(newUser)
       });
