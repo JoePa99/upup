@@ -1116,42 +1116,84 @@ const SuperAdminDashboard = () => {
                     }}>
                       🏢 Company-Specific Knowledge
                     </h4>
-                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                      {knowledgeBases.map(kb => (
-                        <div 
-                          key={`company-${kb.id}`} 
-                          style={{ 
-                            padding: '12px', 
-                            border: '1px solid #bfdbfe', 
-                            borderRadius: '8px',
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      {/* Group knowledge by company */}
+                      {Object.entries(
+                        knowledgeBases.reduce((groups, kb) => {
+                          const company = kb.company_name || 'Unknown Company';
+                          if (!groups[company]) groups[company] = [];
+                          groups[company].push(kb);
+                          return groups;
+                        }, {})
+                      ).map(([companyName, companyKnowledge]) => (
+                        <div key={`company-group-${companyName}`} style={{ marginBottom: '20px' }}>
+                          {/* Company Header */}
+                          <div style={{
+                            background: '#dbeafe',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
                             marginBottom: '8px',
-                            background: '#f9fafb'
-                          }}
-                        >
-                          <div style={{ fontWeight: '500', color: '#1f2937' }}>{kb.filename}</div>
-                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                            Company: {kb.company_name} | Size: {kb.file_size} bytes
+                            fontWeight: '600',
+                            color: '#1e40af',
+                            fontSize: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            🏢 {companyName} ({companyKnowledge.length} document{companyKnowledge.length !== 1 ? 's' : ''})
                           </div>
-                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                            Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
+                          
+                          {/* Company Documents */}
+                          <div style={{ marginLeft: '16px' }}>
+                            {companyKnowledge.map(kb => (
+                              <div 
+                                key={`company-${kb.id}`} 
+                                style={{ 
+                                  padding: '10px', 
+                                  border: '1px solid #e5e7eb', 
+                                  borderRadius: '6px',
+                                  marginBottom: '6px',
+                                  background: '#ffffff',
+                                  borderLeft: '3px solid #3b82f6'
+                                }}
+                              >
+                                <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '4px' }}>
+                                  📄 {kb.filename}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                  Size: {kb.file_size} bytes | Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
+                                </div>
+                                <button
+                                  onClick={() => deleteKnowledge(kb.id, 'company')}
+                                  style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                    marginTop: '6px'
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                          <button
-                            onClick={() => deleteKnowledge(kb.id, 'company')}
-                            style={{
-                              background: '#ef4444',
-                              color: 'white',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              marginTop: '8px'
-                            }}
-                          >
-                            Delete
-                          </button>
                         </div>
                       ))}
+                      
+                      {knowledgeBases.length === 0 && (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          color: '#6b7280', 
+                          padding: '40px', 
+                          fontStyle: 'italic' 
+                        }}>
+                          No company knowledge uploaded yet
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
