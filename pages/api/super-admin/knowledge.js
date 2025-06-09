@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import formidable from 'formidable';
 import fs from 'fs';
+import pdfParse from 'pdf-parse';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -58,8 +59,26 @@ async function uploadKnowledge(req, res) {
       
       if (!file) continue;
 
-      // Read file content
-      const fileContent = fs.readFileSync(file.filepath, 'utf8');
+      // Read and extract file content based on type
+      let fileContent;
+      try {
+        if (file.mimetype === 'application/pdf') {
+          console.log('Extracting PDF content from:', file.originalFilename);
+          const dataBuffer = fs.readFileSync(file.filepath);
+          const pdfData = await pdfParse(dataBuffer);
+          fileContent = pdfData.text;
+          console.log('PDF text extracted, length:', fileContent.length);
+          console.log('PDF text preview:', fileContent.substring(0, 200));
+        } else if (file.mimetype?.includes('text/') || file.originalFilename?.endsWith('.txt') || file.originalFilename?.endsWith('.md')) {
+          fileContent = fs.readFileSync(file.filepath, 'utf8');
+        } else {
+          // For other file types, store filename and basic info
+          fileContent = `Document: ${file.originalFilename} (${file.mimetype || 'unknown type'})`;
+        }
+      } catch (error) {
+        console.error('Error extracting file content:', error);
+        fileContent = `Document: ${file.originalFilename} (content extraction failed: ${error.message})`;
+      }
       
       // Insert into company knowledge
       console.log('Inserting knowledge:', {
