@@ -9,8 +9,5 @@
     "pages/api/super-admin/platform-knowledge.js": {
       "maxDuration": 60
     }
-  },
-  "limits": {
-    "duration": 60000
   }
 }
