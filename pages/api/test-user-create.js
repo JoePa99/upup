@@ -97,6 +97,7 @@ export default async function handler(req, res) {
             last_name: lastName,
             tenant_id: companyId,
             role,
+            password_hash: 'auth_managed',
             created_at: new Date().toISOString()
           }
         ])
