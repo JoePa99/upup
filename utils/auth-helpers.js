@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
 // Initialize Supabase client for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -14,7 +15,7 @@ if (supabaseUrl && supabaseServiceKey) {
   });
 }
 
-// Get user context from request (JWT token)
+// Get user context from request (supports both custom JWT and Supabase tokens)
 export async function getUserFromRequest(req) {
   try {
     // Extract token from Authorization header
@@ -31,16 +32,55 @@ export async function getUserFromRequest(req) {
     
     if (!supabaseAdmin) {
       console.log('❌ Supabase admin client not configured');
-      console.log('Environment check:', {
-        hasSupabaseUrl: !!supabaseUrl,
-        hasServiceKey: !!supabaseServiceKey,
-        supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'undefined'
-      });
       throw new Error('Supabase admin client not configured');
     }
 
+    // Try custom JWT first
+    try {
+      console.log('🔍 Attempting to verify custom JWT...');
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+      const decoded = jwt.verify(token, jwtSecret);
+      
+      console.log('✅ Custom JWT verified, userId:', decoded.userId);
+      
+      // Get user data from database using the custom user ID
+      const { data: userData, error: dbError } = await supabaseAdmin
+        .from('users')
+        .select(`
+          id,
+          tenant_id,
+          email,
+          first_name,
+          last_name,
+          role,
+          tenants!inner (
+            id,
+            name,
+            subdomain
+          )
+        `)
+        .eq('id', decoded.userId)
+        .single();
+
+      if (!dbError && userData) {
+        console.log('✅ Custom JWT user found:', userData.email);
+        return {
+          id: userData.id,
+          authUserId: userData.id, // Use same ID for compatibility
+          tenantId: userData.tenant_id,
+          tenantName: userData.tenants.name,
+          email: userData.email,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          role: userData.role
+        };
+      }
+    } catch (jwtError) {
+      console.log('🔍 Custom JWT verification failed, trying Supabase auth...');
+    }
+
+    // Fallback to Supabase Auth verification
     console.log('🔍 Attempting to verify token with Supabase...');
-    // Verify the JWT token and get user
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     
     console.log('🔍 Supabase auth result:', { 
@@ -50,11 +90,11 @@ export async function getUserFromRequest(req) {
     });
     
     if (error || !user) {
-      console.log('❌ Token verification failed:', error);
+      console.log('❌ Both token verification methods failed');
       throw new Error(`Token verification failed: ${error?.message || 'Invalid token'}`);
     }
 
-    // Get user data with tenant info from database
+    // Get user data with tenant info from database for Supabase auth
     const { data: userData, error: dbError } = await supabaseAdmin
       .from('users')
       .select(`
@@ -77,6 +117,7 @@ export async function getUserFromRequest(req) {
       throw new Error('User not found in database');
     }
 
+    console.log('✅ Supabase auth user found:', userData.email);
     return {
       id: userData.id,
       authUserId: user.id,
@@ -92,7 +133,6 @@ export async function getUserFromRequest(req) {
     console.error('Error getting user from request:', error);
     
     // For development/testing, return null instead of throwing
-    // In production, you might want to throw the error
     return null;
   }
 }

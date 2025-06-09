@@ -61,7 +61,7 @@ export const getAuthHeaders = async () => {
   if (typeof window === 'undefined') return {};
   
   // First try to get token from localStorage (custom JWT)
-  const customToken = localStorage.getItem('token');
+  const customToken = localStorage.getItem('authToken');
   if (customToken) {
     return { Authorization: `Bearer ${customToken}` };
   }
