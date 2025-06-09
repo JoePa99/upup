@@ -48,6 +48,13 @@ async function getCompanyContext(query, req) {
       const knowledgeData = await companyKnowledge.json();
       companyKnowledgeData = knowledgeData.data?.knowledge || [];
       console.log(`Company knowledge: Found ${companyKnowledgeData.length} items`);
+      console.log('Company knowledge sample:', companyKnowledgeData.slice(0, 1).map(item => ({
+        title: item.title,
+        contentLength: item.content?.length || 0,
+        contentPreview: item.content?.substring(0, 100) || 'No content'
+      })));
+    } else {
+      console.log('Company knowledge fetch failed:', companyKnowledge.status, companyKnowledge.statusText);
     }
     
     // Process platform knowledge
@@ -101,7 +108,7 @@ async function getCompanyContext(query, req) {
       // Create context string from relevant knowledge
       companyContext = relevantKnowledge.map(item => {
         const prefix = item.type === 'platform' ? '[Platform] ' : '[Company] ';
-        return `${prefix}${item.title}: ${(item.content || '').substring(0, 300)}...`;
+        return `${prefix}${item.title}: ${(item.content || '').substring(0, 1500)}...`;
       }).join('\n\n');
       
       console.log(`Final knowledge context length: ${companyContext.length} characters`);
