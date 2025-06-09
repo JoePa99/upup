@@ -17,19 +17,20 @@ async function getKnowledgeBases(req, res) {
   try {
     // Get all knowledge base entries with company information
     const { data: knowledgeEntries, error } = await supabase
-      .from('knowledge_base')
+      .from('company_knowledge')
       .select(`
         id,
-        filename,
-        file_size,
-        content_type,
+        title,
+        content,
+        document_type,
+        category,
         tenant_id,
-        uploaded_at,
+        created_at,
         tenants (
-          company_name
+          name
         )
       `)
-      .order('uploaded_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching knowledge bases:', error);
@@ -42,12 +43,12 @@ async function getKnowledgeBases(req, res) {
     // Format the data for frontend consumption
     const formattedKnowledge = knowledgeEntries.map(kb => ({
       id: kb.id,
-      filename: kb.filename,
-      file_size: kb.file_size,
-      content_type: kb.content_type,
+      filename: kb.title,
+      file_size: (kb.content?.length || 0), 
+      content_type: kb.document_type,
       tenant_id: kb.tenant_id,
-      company_name: kb.tenants?.company_name || 'Unknown Company',
-      uploaded_at: kb.uploaded_at
+      company_name: kb.tenants?.name || 'Unknown Company',
+      uploaded_at: kb.created_at
     }));
 
     return res.status(200).json({

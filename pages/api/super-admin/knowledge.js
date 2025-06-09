@@ -39,7 +39,7 @@ async function uploadKnowledge(req, res) {
     // Verify company exists
     const { data: company, error: companyError } = await supabase
       .from('tenants')
-      .select('id, company_name')
+      .select('id, name')
       .eq('id', companyId)
       .single();
 
@@ -61,17 +61,18 @@ async function uploadKnowledge(req, res) {
       // Read file content
       const fileContent = fs.readFileSync(file.filepath, 'utf8');
       
-      // Insert into knowledge base
+      // Insert into company knowledge
       const { data: knowledgeEntry, error } = await supabase
-        .from('knowledge_base')
+        .from('company_knowledge')
         .insert([
           {
             tenant_id: companyId,
-            filename: file.originalFilename || file.newFilename,
-            file_size: file.size,
-            content_type: file.mimetype,
+            title: file.originalFilename || file.newFilename,
             content: fileContent,
-            uploaded_at: new Date().toISOString()
+            document_type: file.mimetype || 'document',
+            category: 'General',
+            status: 'active',
+            created_at: new Date().toISOString()
           }
         ])
         .select()
@@ -84,7 +85,7 @@ async function uploadKnowledge(req, res) {
 
       uploadedFiles.push({
         ...knowledgeEntry,
-        company_name: company.company_name
+        company_name: company.name
       });
 
       // Clean up temp file
