@@ -21,6 +21,7 @@ const SuperAdminDashboard = () => {
   const [knowledgeUpload, setKnowledgeUpload] = useState({ companyId: '', files: null });
   const [platformKnowledge, setPlatformKnowledge] = useState([]);
   const [knowledgeType, setKnowledgeType] = useState('company'); // 'company' or 'platform'
+  const [selectedKnowledgeCompany, setSelectedKnowledgeCompany] = useState(''); // specific company name
   
   // Edit states
   const [editingCompany, setEditingCompany] = useState(null);
@@ -187,6 +188,15 @@ const SuperAdminDashboard = () => {
       return;
     }
 
+    // Check file sizes (Vercel has ~4.5MB limit)
+    const maxFileSize = 3 * 1024 * 1024; // 3MB to be safe
+    const oversizedFiles = Array.from(knowledgeUpload.files).filter(file => file.size > maxFileSize);
+    
+    if (oversizedFiles.length > 0) {
+      alert(`The following files are too large (max 3MB each):\n${oversizedFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join('\n')}`);
+      return;
+    }
+
     try {
       const { apiRequest } = await import('../utils/api-config');
       const formData = new FormData();
@@ -218,7 +228,13 @@ const SuperAdminDashboard = () => {
       alert(`${knowledgeType === 'platform' ? 'Platform' : 'Company'} knowledge uploaded successfully!`);
     } catch (error) {
       console.error('Error uploading knowledge:', error);
-      alert(`Failed to upload knowledge: ${error.message}`);
+      if (error.message.includes('413')) {
+        alert('File too large. Please try with smaller files (max 3MB each) or contact support.');
+      } else if (error.message.includes('400')) {
+        alert('Invalid file format or missing company selection. Please check your inputs.');
+      } else {
+        alert(`Failed to upload knowledge: ${error.message}`);
+      }
     }
   };
 
@@ -1016,19 +1032,30 @@ const SuperAdminDashboard = () => {
                       </div>
                     )}
                     
-                    <input
-                      type="file"
-                      multiple
-                      accept=".txt,.pdf,.doc,.docx,.md"
-                      onChange={(e) => setKnowledgeUpload(prev => ({ ...prev, files: e.target.files }))}
-                      style={{ 
-                        padding: '12px', 
-                        border: '1px solid #d1d5db', 
-                        borderRadius: '8px',
-                        fontSize: '14px'
-                      }}
-                      required
-                    />
+                    <div>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".txt,.pdf,.doc,.docx,.md"
+                        onChange={(e) => setKnowledgeUpload(prev => ({ ...prev, files: e.target.files }))}
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #d1d5db', 
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          width: '100%'
+                        }}
+                        required
+                      />
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#6b7280', 
+                        marginTop: '4px',
+                        fontStyle: 'italic'
+                      }}>
+                        📎 Max file size: 3MB each | Supported: .txt, .pdf, .doc, .docx, .md
+                      </div>
+                    </div>
                     <button 
                       type="submit"
                       style={{
@@ -1116,84 +1143,120 @@ const SuperAdminDashboard = () => {
                     }}>
                       🏢 Company-Specific Knowledge
                     </h4>
-                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      {/* Group knowledge by company */}
-                      {Object.entries(
-                        knowledgeBases.reduce((groups, kb) => {
+                    <div>
+                      {(() => {
+                        // Group knowledge by company
+                        const companiesWithKnowledge = knowledgeBases.reduce((groups, kb) => {
                           const company = kb.company_name || 'Unknown Company';
                           if (!groups[company]) groups[company] = [];
                           groups[company].push(kb);
                           return groups;
-                        }, {})
-                      ).map(([companyName, companyKnowledge]) => (
-                        <div key={`company-group-${companyName}`} style={{ marginBottom: '20px' }}>
-                          {/* Company Header */}
-                          <div style={{
-                            background: '#dbeafe',
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            marginBottom: '8px',
-                            fontWeight: '600',
-                            color: '#1e40af',
-                            fontSize: '14px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                          }}>
-                            🏢 {companyName} ({companyKnowledge.length} document{companyKnowledge.length !== 1 ? 's' : ''})
-                          </div>
-                          
-                          {/* Company Documents */}
-                          <div style={{ marginLeft: '16px' }}>
-                            {companyKnowledge.map(kb => (
-                              <div 
-                                key={`company-${kb.id}`} 
-                                style={{ 
-                                  padding: '10px', 
-                                  border: '1px solid #e5e7eb', 
-                                  borderRadius: '6px',
-                                  marginBottom: '6px',
-                                  background: '#ffffff',
-                                  borderLeft: '3px solid #3b82f6'
-                                }}
-                              >
-                                <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '4px' }}>
-                                  📄 {kb.filename}
-                                </div>
-                                <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                                  Size: {kb.file_size} bytes | Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
-                                </div>
+                        }, {});
+                        
+                        const companyNames = Object.keys(companiesWithKnowledge);
+                        
+                        return (
+                          <>
+                            {/* Company Tabs */}
+                            <div style={{ 
+                              display: 'flex', 
+                              flexWrap: 'wrap',
+                              gap: '8px',
+                              marginBottom: '16px',
+                              borderBottom: '1px solid #e5e7eb',
+                              paddingBottom: '12px'
+                            }}>
+                              {companyNames.map(companyName => (
                                 <button
-                                  onClick={() => deleteKnowledge(kb.id, 'company')}
+                                  key={companyName}
+                                  onClick={() => setSelectedKnowledgeCompany(companyName)}
                                   style={{
-                                    background: '#ef4444',
-                                    color: 'white',
+                                    padding: '6px 12px',
                                     border: 'none',
-                                    padding: '4px 8px',
-                                    borderRadius: '4px',
-                                    fontSize: '11px',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
                                     cursor: 'pointer',
-                                    marginTop: '6px'
+                                    background: selectedKnowledgeCompany === companyName ? '#3b82f6' : '#f3f4f6',
+                                    color: selectedKnowledgeCompany === companyName ? 'white' : '#374151',
+                                    fontWeight: selectedKnowledgeCompany === companyName ? '600' : '400'
                                   }}
                                 >
-                                  Delete
+                                  🏢 {companyName} ({companiesWithKnowledge[companyName].length})
                                 </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {knowledgeBases.length === 0 && (
-                        <div style={{ 
-                          textAlign: 'center', 
-                          color: '#6b7280', 
-                          padding: '40px', 
-                          fontStyle: 'italic' 
-                        }}>
-                          No company knowledge uploaded yet
-                        </div>
-                      )}
+                              ))}
+                            </div>
+                            
+                            {/* Company Knowledge Content */}
+                            <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                              {(() => {
+                                let documentsToShow = [];
+                                
+                                // Set default company if none selected and companies exist
+                                if (!selectedKnowledgeCompany && companyNames.length > 0) {
+                                  setSelectedKnowledgeCompany(companyNames[0]);
+                                  return null;
+                                }
+                                
+                                if (selectedKnowledgeCompany && companiesWithKnowledge[selectedKnowledgeCompany]) {
+                                  documentsToShow = companiesWithKnowledge[selectedKnowledgeCompany];
+                                }
+                                
+                                if (documentsToShow.length === 0) {
+                                  return (
+                                    <div style={{ 
+                                      textAlign: 'center', 
+                                      color: '#6b7280', 
+                                      padding: '40px', 
+                                      fontStyle: 'italic' 
+                                    }}>
+                                      {selectedKnowledgeCompany 
+                                        ? `No documents for ${selectedKnowledgeCompany}`
+                                        : 'No company knowledge uploaded yet'
+                                      }
+                                    </div>
+                                  );
+                                }
+                                
+                                return documentsToShow.map(kb => (
+                                  <div 
+                                    key={`company-${kb.id}`} 
+                                    style={{ 
+                                      padding: '12px', 
+                                      border: '1px solid #e5e7eb', 
+                                      borderRadius: '8px',
+                                      marginBottom: '8px',
+                                      background: '#ffffff',
+                                      borderLeft: '3px solid #3b82f6'
+                                    }}
+                                  >
+                                    <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '4px' }}>
+                                      📄 {kb.filename}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                                      Size: {kb.file_size} bytes | Uploaded: {new Date(kb.uploaded_at).toLocaleDateString()}
+                                    </div>
+                                    <button
+                                      onClick={() => deleteKnowledge(kb.id, 'company')}
+                                      style={{
+                                        background: '#ef4444',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        fontSize: '11px',
+                                        cursor: 'pointer',
+                                        marginTop: '4px'
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
