@@ -19,7 +19,8 @@ export default async function handler(req, res) {
       .select(`
         id,
         email,
-        name,
+        first_name,
+        last_name,
         role,
         tenant_id,
         created_at,
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
     // Format the data for frontend consumption
     const formattedUsers = users.map(user => ({
       id: user.id,
-      name: user.name,
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
       email: user.email,
       role: user.role,
       tenant_id: user.tenant_id,

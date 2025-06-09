@@ -81,14 +81,20 @@ export default async function handler(req, res) {
         });
       }
 
+      // Split name into first and last name for database
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       // Create new user
-      console.log('Creating user with data:', { email, name, tenant_id: companyId, role });
+      console.log('Creating user with data:', { email, firstName, lastName, tenant_id: companyId, role });
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([
           {
             email,
-            name,
+            first_name: firstName,
+            last_name: lastName,
             tenant_id: companyId,
             role,
             created_at: new Date().toISOString()
