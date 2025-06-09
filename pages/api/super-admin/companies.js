@@ -303,7 +303,7 @@ async function deleteCompany(req, res) {
     // Check if company exists
     const { data: existingCompany, error: checkError } = await supabase
       .from('tenants')
-      .select('id, company_name')
+      .select('id, name')
       .eq('id', id)
       .single();
 
@@ -349,11 +349,11 @@ async function deleteCompany(req, res) {
       });
     }
 
-    console.log('Company deleted successfully:', existingCompany.company_name);
+    console.log('Company deleted successfully:', existingCompany.name);
 
     return res.status(200).json({
       success: true,
-      message: `Company "${existingCompany.company_name}" deleted successfully`
+      message: `Company "${existingCompany.name}" deleted successfully`
     });
 
   } catch (error) {

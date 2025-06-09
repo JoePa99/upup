@@ -35,12 +35,13 @@ async function getUsers(req, res) {
       .select(`
         id,
         email,
-        name,
+        first_name,
+        last_name,
         role,
         tenant_id,
         created_at,
         tenants (
-          company_name
+          name
         )
       `)
       .order('created_at', { ascending: false });
@@ -56,11 +57,11 @@ async function getUsers(req, res) {
     // Format the data for frontend consumption
     const formattedUsers = users.map(user => ({
       id: user.id,
-      name: user.name,
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
       email: user.email,
       role: user.role,
       tenant_id: user.tenant_id,
-      company_name: user.tenants?.company_name || 'Unknown Company',
+      company_name: user.tenants?.name || 'Unknown Company',
       created_at: user.created_at
     }));
 
@@ -275,7 +276,7 @@ async function deleteUser(req, res) {
     // Check if user exists
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
-      .select('id, name, email')
+      .select('id, first_name, last_name, email')
       .eq('id', id)
       .single();
 
@@ -301,7 +302,7 @@ async function deleteUser(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: `User "${existingUser.name}" deleted successfully`
+      message: `User "${(existingUser.first_name + ' ' + existingUser.last_name).trim()}" deleted successfully`
     });
 
   } catch (error) {
