@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         tenant_id,
         created_at,
         tenants (
-          company_name
+          name
         )
       `)
       .order('created_at', { ascending: false });
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       email: user.email,
       role: user.role,
       tenant_id: user.tenant_id,
-      company_name: user.tenants?.company_name || 'Unknown Company',
+      company_name: user.tenants?.name || 'Unknown Company',
       created_at: user.created_at
     }));
 
