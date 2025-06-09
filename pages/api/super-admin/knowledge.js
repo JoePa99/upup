@@ -77,9 +77,7 @@ async function uploadKnowledge(req, res) {
             title: file.originalFilename || file.newFilename,
             content: fileContent,
             document_type: file.mimetype || 'document',
-            category: 'General',
-            status: 'active',
-            created_at: new Date().toISOString()
+            category: 'General'
           }
         ])
         .select()
