@@ -188,12 +188,12 @@ const SuperAdminDashboard = () => {
       return;
     }
 
-    // Check file sizes (Vercel has ~4.5MB limit)
-    const maxFileSize = 3 * 1024 * 1024; // 3MB to be safe
+    // Check file sizes (Vercel has ~4.5MB limit for serverless functions)
+    const maxFileSize = 4 * 1024 * 1024; // 4MB (leaving 0.5MB for overhead)
     const oversizedFiles = Array.from(knowledgeUpload.files).filter(file => file.size > maxFileSize);
     
     if (oversizedFiles.length > 0) {
-      alert(`The following files are too large (max 3MB each):\n${oversizedFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join('\n')}`);
+      alert(`The following files are too large (max 4MB each):\n${oversizedFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join('\n')}`);
       return;
     }
 
@@ -229,7 +229,7 @@ const SuperAdminDashboard = () => {
     } catch (error) {
       console.error('Error uploading knowledge:', error);
       if (error.message.includes('413')) {
-        alert('File too large. Please try with smaller files (max 3MB each) or contact support.');
+        alert('File too large. Please try with smaller files (max 4MB each) or contact support.');
       } else if (error.message.includes('400')) {
         alert('Invalid file format or missing company selection. Please check your inputs.');
       } else {
@@ -1053,7 +1053,7 @@ const SuperAdminDashboard = () => {
                         marginTop: '4px',
                         fontStyle: 'italic'
                       }}>
-                        📎 Max file size: 3MB each | Supported: .txt, .pdf, .doc, .docx, .md
+                        📎 Max file size: 4MB each | Supported: .txt, .pdf, .doc, .docx, .md
                       </div>
                     </div>
                     <button 
