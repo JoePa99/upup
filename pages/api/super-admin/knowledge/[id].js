@@ -23,9 +23,9 @@ async function deleteKnowledge(req, res) {
       });
     }
 
-    // Delete the knowledge base entry
+    // Delete the company knowledge entry
     const { error } = await supabase
-      .from('knowledge_base')
+      .from('company_knowledge')
       .delete()
       .eq('id', id);
 
