@@ -56,11 +56,11 @@ export default async function handler(req, res) {
         });
       }
 
-      // Verify company exists
+      // Verify company exists - simplified query to avoid column issues
       console.log('Checking for company with ID:', companyId);
       const { data: company, error: companyError } = await supabase
         .from('tenants')
-        .select('id, company_name')
+        .select('id')
         .eq('id', companyId)
         .single();
 
@@ -112,10 +112,7 @@ export default async function handler(req, res) {
 
       return res.status(201).json({
         success: true,
-        data: {
-          ...newUser,
-          company_name: company.company_name
-        }
+        data: newUser
       });
 
     } catch (error) {
