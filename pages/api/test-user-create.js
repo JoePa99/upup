@@ -15,6 +15,19 @@ export default async function handler(req, res) {
     console.log('POST request received with body:', req.body);
     console.log('Request headers:', req.headers);
     
+    // Debug: Return the received data for troubleshooting
+    return res.status(200).json({
+      success: true,
+      debug: true,
+      received: {
+        body: req.body,
+        headers: {
+          contentType: req.headers['content-type'],
+          authorization: req.headers.authorization ? 'present' : 'missing'
+        }
+      }
+    });
+    
     try {
       const { email, name, companyId, role = 'user' } = req.body;
 
