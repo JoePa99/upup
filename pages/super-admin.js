@@ -17,7 +17,7 @@ const SuperAdminDashboard = () => {
   
   // Form states
   const [newCompany, setNewCompany] = useState({ name: '', domain: '', industry: '' });
-  const [newUser, setNewUser] = useState({ email: '', name: '', companyId: '', role: 'user' });
+  const [newUser, setNewUser] = useState({ email: '', name: '', companyId: '', role: 'user', password: '' });
   const [knowledgeUpload, setKnowledgeUpload] = useState({ companyId: '', files: null });
   const [platformKnowledge, setPlatformKnowledge] = useState([]);
   const [knowledgeType, setKnowledgeType] = useState('company'); // 'company' or 'platform'
@@ -26,6 +26,7 @@ const SuperAdminDashboard = () => {
   // Edit states
   const [editingCompany, setEditingCompany] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [showPasswordField, setShowPasswordField] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   // Redirect if not authenticated or not super admin
@@ -151,8 +152,13 @@ const SuperAdminDashboard = () => {
 
   const createUser = async (e) => {
     e.preventDefault();
-    if (!newUser.email || !newUser.name || !newUser.companyId) {
-      alert('Please fill in all required fields');
+    if (!newUser.email || !newUser.name || !newUser.companyId || !newUser.password) {
+      alert('Please fill in all required fields including password');
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      alert('Password must be at least 6 characters long');
       return;
     }
 
@@ -163,7 +169,7 @@ const SuperAdminDashboard = () => {
         body: JSON.stringify(newUser)
       });
       
-      setNewUser({ email: '', name: '', companyId: '', role: 'user' });
+      setNewUser({ email: '', name: '', companyId: '', role: 'user', password: '' });
       loadTabData('users');
       alert('User created successfully!');
     } catch (error) {
@@ -316,14 +322,21 @@ const SuperAdminDashboard = () => {
       email: user.email,
       name: user.name,
       companyId: user.tenant_id,
-      role: user.role
+      role: user.role,
+      password: ''
     });
+    setShowPasswordField(false);
   };
 
   const updateUser = async (e) => {
     e.preventDefault();
     if (!editingUser?.email || !editingUser?.name || !editingUser?.companyId) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    if (showPasswordField && editingUser.password && editingUser.password.length < 6) {
+      alert('Password must be at least 6 characters long');
       return;
     }
 
@@ -335,6 +348,7 @@ const SuperAdminDashboard = () => {
       });
       
       setEditingUser(null);
+      setShowPasswordField(false);
       loadTabData('users');
       alert('User updated successfully!');
     } catch (error) {
@@ -737,6 +751,20 @@ const SuperAdminDashboard = () => {
                       }}
                       required
                     />
+                    <input
+                      type="password"
+                      placeholder="Password (min 6 characters)"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                      style={{ 
+                        padding: '12px', 
+                        border: '1px solid #d1d5db', 
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      }}
+                      required
+                      minLength={6}
+                    />
                     <select
                       value={newUser.companyId}
                       onChange={(e) => setNewUser(prev => ({ ...prev, companyId: e.target.value }))}
@@ -892,6 +920,35 @@ const SuperAdminDashboard = () => {
                     }}
                     required
                   />
+                  
+                  {/* Password Update Section */}
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={showPasswordField}
+                        onChange={(e) => setShowPasswordField(e.target.checked)}
+                      />
+                      <span style={{ fontSize: '14px', color: '#374151' }}>Update password</span>
+                    </label>
+                    {showPasswordField && (
+                      <input
+                        type="password"
+                        placeholder="New password (min 6 characters)"
+                        value={editingUser.password}
+                        onChange={(e) => setEditingUser(prev => ({ ...prev, password: e.target.value }))}
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #d1d5db', 
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          width: '100%'
+                        }}
+                        minLength={6}
+                      />
+                    )}
+                  </div>
+                  
                   <select
                     value={editingUser.companyId}
                     onChange={(e) => setEditingUser(prev => ({ ...prev, companyId: e.target.value }))}
@@ -925,7 +982,10 @@ const SuperAdminDashboard = () => {
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setEditingUser(null)}
+                      onClick={() => {
+                        setEditingUser(null);
+                        setShowPasswordField(false);
+                      }}
                       style={{
                         background: '#6b7280',
                         color: 'white',

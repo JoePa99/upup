@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,18 +17,25 @@ export default async function handler(req, res) {
     console.log('Request headers:', req.headers);
     
     try {
-      const { email, name, companyId, role = 'user' } = req.body;
+      const { email, name, companyId, role = 'user', password } = req.body;
 
-      if (!email || !name || !companyId) {
-        console.log('Validation failed:', { email, name, companyId, role });
+      if (!email || !name || !companyId || !password) {
+        console.log('Validation failed:', { email, name, companyId, role, hasPassword: !!password });
         return res.status(400).json({
-          message: 'Email, name, and company are required',
-          received: { email, name, companyId, role },
+          message: 'Email, name, company, and password are required',
+          received: { email, name, companyId, role, hasPassword: !!password },
           missing: {
             email: !email,
             name: !name,
-            companyId: !companyId
+            companyId: !companyId,
+            password: !password
           }
+        });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({
+          message: 'Password must be at least 6 characters long'
         });
       }
 
@@ -86,6 +94,11 @@ export default async function handler(req, res) {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      // Hash the password
+      console.log('Hashing password...');
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
       // Create new user
       console.log('Creating user with data:', { email, firstName, lastName, tenant_id: companyId, role });
       const { data: newUser, error } = await supabase
@@ -97,7 +110,7 @@ export default async function handler(req, res) {
             last_name: lastName,
             tenant_id: companyId,
             role,
-            password_hash: 'auth_managed',
+            password_hash: hashedPassword,
             created_at: new Date().toISOString()
           }
         ])

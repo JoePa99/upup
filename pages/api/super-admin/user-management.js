@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -160,7 +161,7 @@ async function createUser(req, res) {
 
 async function updateUser(req, res) {
   try {
-    const { id, email, name, companyId, role } = req.body;
+    const { id, email, name, companyId, role, password } = req.body;
 
     if (!id) {
       return res.status(400).json({
@@ -171,6 +172,12 @@ async function updateUser(req, res) {
     if (!email || !name || !companyId) {
       return res.status(400).json({
         message: 'Email, name, and company are required'
+      });
+    }
+
+    if (password && password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters long'
       });
     }
 
@@ -206,7 +213,7 @@ async function updateUser(req, res) {
     // Verify company exists
     const { data: company, error: companyError } = await supabase
       .from('tenants')
-      .select('id, company_name')
+      .select('id, name')
       .eq('id', companyId)
       .single();
 
@@ -216,21 +223,39 @@ async function updateUser(req, res) {
       });
     }
 
+    // Split name into first and last name for database
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Prepare update data
+    const updateData = {
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      tenant_id: companyId,
+      role: role || 'user',
+      updated_at: new Date().toISOString()
+    };
+
+    // Add password hash if password is provided
+    if (password) {
+      console.log('Hashing new password...');
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      updateData.password_hash = hashedPassword;
+    }
+
     // Update user
     const { data: updatedUser, error } = await supabase
       .from('users')
-      .update({
-        email,
-        name,
-        tenant_id: companyId,
-        role: role || 'user',
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select(`
         id,
         email,
-        name,
+        first_name,
+        last_name,
         role,
         tenant_id,
         created_at,
@@ -250,7 +275,8 @@ async function updateUser(req, res) {
       success: true,
       data: {
         ...updatedUser,
-        company_name: company.company_name
+        name: `${updatedUser.first_name || ''} ${updatedUser.last_name || ''}`.trim(),
+        company_name: company.name
       }
     });
 
