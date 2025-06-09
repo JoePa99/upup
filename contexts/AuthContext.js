@@ -64,7 +64,47 @@ export const AuthProvider = ({ children }) => {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        // Make sure we have a Supabase client
+        // Check for custom token first
+        const customToken = localStorage.getItem('authToken');
+        if (customToken) {
+          try {
+            // Verify custom token by making a request
+            const response = await fetch('/api/auth/verify-token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${customToken}`
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.user) {
+                console.log('Restored session from custom token');
+                setUser({
+                  id: data.user.id,
+                  authUserId: data.user.id,
+                  email: data.user.email,
+                  firstName: data.user.name.split(' ')[0] || '',
+                  lastName: data.user.name.split(' ').slice(1).join(' ') || '',
+                  tenantId: data.user.tenant_id,
+                  tenantName: data.user.company_name,
+                  role: data.user.role,
+                  isSuperAdmin: data.user.isSuperAdmin,
+                  isCompanyAdmin: data.user.role === 'admin',
+                  isUser: data.user.role === 'user'
+                });
+                setLoading(false);
+                return;
+              }
+            }
+          } catch (tokenError) {
+            console.warn('Custom token verification failed:', tokenError);
+            localStorage.removeItem('authToken');
+          }
+        }
+        
+        // Fallback to Supabase session
         const client = await initializeSupabase();
         if (!client) {
           console.error('Could not initialize Supabase client');
@@ -228,29 +268,74 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Make sure we have a Supabase client
-      const client = await initializeSupabase();
-      if (!client) {
-        throw new Error('Could not initialize authentication client');
+      // Try our custom login endpoint first
+      console.log('Attempting custom login...');
+      const response = await fetch('/api/auth/custom-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
       
-      console.log('Attempting login with initialized client...');
-      const { data, error } = await client.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('Supabase auth error:', error);
-        throw error;
+      if (data.success && data.user) {
+        console.log('Custom login successful, user:', data.user.email);
+        
+        // Store token in localStorage for future requests
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+        }
+        
+        // Set user data directly
+        setUser({
+          id: data.user.id,
+          authUserId: data.user.id, // Use same ID for compatibility
+          email: data.user.email,
+          firstName: data.user.name.split(' ')[0] || '',
+          lastName: data.user.name.split(' ').slice(1).join(' ') || '',
+          tenantId: data.user.tenant_id,
+          tenantName: data.user.company_name,
+          role: data.user.role,
+          isSuperAdmin: data.user.isSuperAdmin,
+          isCompanyAdmin: data.user.role === 'admin',
+          isUser: data.user.role === 'user'
+        });
+        
+        setLoading(false);
+        return data.user;
       }
-
-      console.log('Login successful, user:', data.user.email);
-      // User data will be loaded by the auth state change listener
-      return data.user;
+      
+      throw new Error('Invalid response from login');
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message);
+      
+      // Fallback to Supabase Auth for existing users
+      try {
+        console.log('Trying fallback Supabase auth...');
+        const client = await initializeSupabase();
+        if (client) {
+          const { data: supabaseData, error: supabaseError } = await client.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (!supabaseError && supabaseData.user) {
+            console.log('Fallback Supabase login successful');
+            // User data will be loaded by the auth state change listener
+            return supabaseData.user;
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback auth also failed:', fallbackError);
+      }
+      
       throw error;
     } finally {
       setLoading(false);
@@ -318,15 +403,17 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Make sure we have a Supabase client
-      const client = await initializeSupabase();
-      if (!client) {
-        console.error('Could not initialize Supabase client for logout');
-        return;
-      }
+      // Clear custom token
+      localStorage.removeItem('authToken');
       
-      const { error } = await client.auth.signOut();
-      if (error) throw error;
+      // Also try to sign out from Supabase Auth if available
+      const client = await initializeSupabase();
+      if (client) {
+        const { error } = await client.auth.signOut();
+        if (error) {
+          console.warn('Supabase signout error (non-critical):', error);
+        }
+      }
       
       setUser(null);
     } catch (error) {
