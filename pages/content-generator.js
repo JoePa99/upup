@@ -105,7 +105,23 @@ const ContentGenerator = () => {
       setGeneratedContent(data.data.content);
       setContentTitle(data.data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
       setShowContent(true);
-      // Don't auto-open pinboard - user can now use floating button
+      
+      // Debug: Log knowledge base information
+      if (data.debug) {
+        console.log('=== KNOWLEDGE DEBUG INFO ===');
+        console.log('Knowledge found:', data.debug.knowledgeFound);
+        console.log('Knowledge context length:', data.debug.knowledgeContextLength);
+        console.log('Has knowledge base:', data.debug.hasKnowledgeBase);
+        console.log('Knowledge context:', data.debug.knowledgeContext);
+        console.log('Relevant knowledge:', data.debug.relevantKnowledge);
+        
+        // Show alert with debug info for easy viewing
+        if (!data.debug.hasKnowledgeBase) {
+          alert(`🚨 NO KNOWLEDGE BASE FOUND!\n\nCompany: ${data.debug.tenantInfo?.companyName}\nKnowledge items: ${data.debug.knowledgeFound}\n\nThis is why the content uses generic placeholders instead of specific company information.`);
+        } else {
+          alert(`✅ Knowledge base found!\n\nCompany: ${data.debug.tenantInfo?.companyName}\nKnowledge items: ${data.debug.knowledgeFound}\nContext length: ${data.debug.knowledgeContextLength} characters\n\nCheck browser console for full details.`);
+        }
+      }
       
       // Track successful content generation
       trackContentGenerated('content', 800); // Estimate 800 tokens for content generation

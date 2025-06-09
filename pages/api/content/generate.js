@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     
     if (!hasKnowledgeForDebug) {
       console.log('🚨 NO KNOWLEDGE BASE CONTENT FOUND! This is why it uses tenant company.');
+      console.log('🔍 Debug info will be included in response...');
     } else {
       console.log('✅ Knowledge base content found - should use this instead of tenant company');
     }
@@ -53,6 +54,14 @@ export default async function handler(req, res) {
           contextUsed: companyContext.relevantKnowledge.length > 0,
           wordCount: aiContent.content.split(' ').length
         }
+      },
+      debug: {
+        knowledgeFound: companyContext.relevantKnowledge.length,
+        knowledgeContextLength: companyContext.companyContext.length,
+        knowledgeContext: companyContext.companyContext,
+        relevantKnowledge: companyContext.relevantKnowledge,
+        tenantInfo: companyContext.tenantInfo,
+        hasKnowledgeBase: companyContext.relevantKnowledge.length > 0
       }
     });
 
