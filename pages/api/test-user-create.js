@@ -13,13 +13,21 @@ export default async function handler(req, res) {
   
   if (req.method === 'POST') {
     console.log('POST request received with body:', req.body);
+    console.log('Request headers:', req.headers);
     
     try {
       const { email, name, companyId, role = 'user' } = req.body;
 
       if (!email || !name || !companyId) {
+        console.log('Validation failed:', { email, name, companyId, role });
         return res.status(400).json({
-          message: 'Email, name, and company are required'
+          message: 'Email, name, and company are required',
+          received: { email, name, companyId, role },
+          missing: {
+            email: !email,
+            name: !name,
+            companyId: !companyId
+          }
         });
       }
 
