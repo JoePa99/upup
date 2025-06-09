@@ -37,9 +37,9 @@ async function getCompanies(req, res) {
       .from('tenants')
       .select(`
         id,
-        company_name,
-        domain,
-        industry,
+        name,
+        subdomain,
+        admin_email,
         created_at,
         subscription_plan,
         status
@@ -75,7 +75,8 @@ async function getCompanies(req, res) {
         return {
           ...company,
           user_count: count || 0,
-          name: company.company_name,
+          company_name: company.name,
+          domain: company.subdomain,
           subscription_plan: company.subscription_plan || 'free',
           status: company.status || 'active'
         };
@@ -113,11 +114,11 @@ async function createCompany(req, res) {
 
     console.log('Checking if domain exists:', domain);
 
-    // Check if domain already exists
+    // Check if subdomain already exists
     const { data: existingCompany, error: checkError } = await supabase
       .from('tenants')
       .select('id')
-      .eq('domain', domain)
+      .eq('subdomain', domain)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" which is what we want
@@ -142,9 +143,9 @@ async function createCompany(req, res) {
       .from('tenants')
       .insert([
         {
-          company_name: name,
-          domain: domain,
-          industry: industry || null,
+          name: name,
+          subdomain: domain,
+          admin_email: 'admin@' + domain + '.com',
           subscription_plan: 'free',
           status: 'active',
           created_at: new Date().toISOString()
