@@ -62,6 +62,13 @@ async function uploadKnowledge(req, res) {
       const fileContent = fs.readFileSync(file.filepath, 'utf8');
       
       // Insert into company knowledge
+      console.log('Inserting knowledge:', {
+        tenant_id: companyId,
+        title: file.originalFilename || file.newFilename,
+        content_length: fileContent.length,
+        document_type: file.mimetype || 'document'
+      });
+      
       const { data: knowledgeEntry, error } = await supabase
         .from('company_knowledge')
         .insert([
@@ -77,6 +84,8 @@ async function uploadKnowledge(req, res) {
         ])
         .select()
         .single();
+        
+      console.log('Insert result:', { knowledgeEntry, error });
 
       if (error) {
         console.error('Error inserting knowledge:', error);

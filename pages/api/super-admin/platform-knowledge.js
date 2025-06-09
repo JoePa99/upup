@@ -33,9 +33,7 @@ async function getPlatformKnowledge(req, res) {
       .select(`
         id,
         title,
-        filename,
-        file_size,
-        content_type,
+        content,
         category,
         document_type,
         status,
@@ -99,17 +97,14 @@ async function uploadPlatformKnowledge(req, res) {
         .from('platform_knowledge')
         .insert([
           {
-            title: filename.replace(/\.[^/.]+$/, ""), // Remove file extension
-            filename: filename,
-            file_size: file.size,
-            content_type: file.mimetype,
+            title: filename,
             content: fileContent,
             category: category,
             document_type: documentType,
             status: 'active',
+            created_by_super_admin: 'admin',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            usage_count: 0
+            updated_at: new Date().toISOString()
           }
         ])
         .select()
