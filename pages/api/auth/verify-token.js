@@ -46,6 +46,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid token or user not found' });
     }
     
+    // Check super admin status (both role and email-based)
+    const SUPER_ADMIN_EMAILS = [
+      'admin@upup.ai',
+      'joe@upup.ai', 
+      'super@upup.ai',
+      process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL
+    ].filter(Boolean);
+    
+    const isSuperAdmin = user.role === 'super_admin' || SUPER_ADMIN_EMAILS.includes(user.email);
+    
     // Return user data
     res.status(200).json({
       success: true,
@@ -56,7 +66,7 @@ export default async function handler(req, res) {
         role: user.role,
         tenant_id: user.tenant_id,
         company_name: user.tenants?.name || 'Unknown Company',
-        isSuperAdmin: user.role === 'super_admin'
+        isSuperAdmin
       }
     });
   } catch (error) {
