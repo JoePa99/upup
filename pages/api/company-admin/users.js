@@ -1,38 +1,57 @@
 // Helper function to verify company admin auth
 async function requireCompanyAdminAuth(req, res) {
   try {
+    console.log('🔍 Company admin auth check started');
+    console.log('🔍 Request method:', req.method);
+    console.log('🔍 Auth header present:', !!req.headers.authorization);
+    
     // Import the auth helper that works with our authentication system
     const { getUserFromRequest } = await import('../../../utils/auth-helpers.js');
     
     const user = await getUserFromRequest(req);
+    console.log('🔍 User from auth helper:', user ? { id: user.id, email: user.email, role: user.role, tenant_id: user.tenant_id } : 'null');
     
     if (!user) {
+      console.log('❌ No user found, returning 401');
       res.status(401).json({ success: false, message: 'Authentication required' });
       return false;
     }
     
     // Check if user is company admin or admin
     const isCompanyAdmin = user.role === 'company_admin' || user.role === 'admin';
+    console.log('🔍 User role check:', { role: user.role, isCompanyAdmin });
+    
     if (!isCompanyAdmin) {
+      console.log('❌ User not company admin, returning 403');
       res.status(403).json({ success: false, message: 'Company admin access required' });
       return false;
     }
 
+    console.log('✅ Authentication successful');
     req.user = user;
     return true;
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(401).json({ success: false, message: 'Authentication failed' });
+    console.error('❌ Auth error:', error);
+    res.status(401).json({ success: false, message: 'Authentication failed', error: error.message });
     return false;
   }
 }
 
 async function handler(req, res) {
+  console.log('🔍 Company admin users API called');
+  console.log('🔍 Method:', req.method);
+  console.log('🔍 Environment check:', {
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasJwtSecret: !!process.env.JWT_SECRET
+  });
+  
   // Only allow company admins and above
   const authResult = await requireCompanyAdminAuth(req, res);
   if (!authResult) return;
 
   const { user } = req;
+  console.log('🔍 Authenticated user:', { id: user.id, tenant_id: user.tenant_id, role: user.role });
   
   try {
     const { createClient } = await import('@supabase/supabase-js');
@@ -40,6 +59,8 @@ async function handler(req, res) {
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
+    
+    console.log('🔍 Supabase client created successfully');
 
     switch (req.method) {
       case 'GET':
