@@ -81,11 +81,19 @@ ${knowledgeSection}
 - Project/Relationship: ${projectDetails || 'Business relationship'}
 - Specific Terms: ${specificTerms || 'Standard legal terms'}
 
-⚖️ REQUIREMENTS:
+⚖️ FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections (1., 2., 3., etc.)
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "1. SCOPE OF WORK", "2. PAYMENT TERMS", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points or numbered lists within sections where appropriate
+
+⚖️ CONTENT REQUIREMENTS:
 - Base the legal document on the company described in the knowledge base above
 - Use specific company details, values, and context from the knowledge base
 - Make references to the company's actual business, services, or values where appropriate
-- Professional legal language with numbered sections
+- Professional legal language but well-structured and readable
 - Include appropriate disclaimers and legal protections
 - Cover key areas like scope, responsibilities, termination, and governing law
 - Length: 600-1000 words
@@ -95,7 +103,18 @@ ${knowledgeSection}
 - Tailor legal terms to match the company's business model
 - Include company-specific considerations based on the knowledge provided
 
-Include at the beginning: "📚 This document incorporates specific information from your company knowledge base."
+STRUCTURE EXAMPLE:
+📚 This document incorporates specific information from your company knowledge base.
+
+# [DOCUMENT TITLE]
+
+## 1. SCOPE OF WORK
+[Paragraph about scope]
+
+## 2. PAYMENT TERMS
+[Paragraph about payment]
+
+[Continue with proper sections...]
 
 CRITICAL: Always include this disclaimer at the end:
 "IMPORTANT: This template is for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before using this agreement."
@@ -103,20 +122,38 @@ CRITICAL: Always include this disclaimer at the end:
 Format: Return only the legal document content, well-structured with clear sections and professional legal formatting.` :
       `Generate a professional ${templateType} legal document between ${tenantInfo.companyName} and "${partyName || 'the other party'}" for ${projectDetails || 'a business relationship'}.
 
-Legal context:
+📋 DOCUMENT DETAILS:
 - Document Type: ${templateType}
 - Our Company: ${tenantInfo.companyName}
 - Other Party: ${partyName || 'Other Party'}
 - Project/Relationship: ${projectDetails || 'Business relationship'}
 - Specific Terms: ${specificTerms || 'Standard legal terms'}
 
-Requirements:
-- Professional legal language appropriate for business agreements
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections (1., 2., 3., etc.)
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "1. SCOPE OF WORK", "2. PAYMENT TERMS", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points or numbered lists within sections where appropriate
+
+⚖️ CONTENT REQUIREMENTS:
+- Professional legal language but well-structured and readable
 - Standard legal document structure with numbered sections
 - Include appropriate disclaimers and legal protections
 - Cover key areas like scope, responsibilities, termination, and governing law
 - Length: 600-1000 words
-- Include mandatory legal disclaimer about consulting qualified attorney
+
+STRUCTURE EXAMPLE:
+# [DOCUMENT TITLE]
+
+## 1. SCOPE OF WORK
+[Clear paragraph about scope]
+
+## 2. PAYMENT TERMS
+[Clear paragraph about payment]
+
+[Continue with proper sections...]
 
 CRITICAL: Always include this disclaimer at the end:
 "IMPORTANT: This template is for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before using this agreement."

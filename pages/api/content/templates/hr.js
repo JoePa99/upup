@@ -81,7 +81,15 @@ ${knowledgeSection}
 - Department: ${department || 'General'}
 - Key Responsibilities: ${responsibilities || 'Standard job responsibilities'}
 
-📝 REQUIREMENTS:
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered/bulleted sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers appropriate to the HR document type
+- Make each paragraph focused on one main topic
+- Use bullet points or numbered lists for qualifications, responsibilities, etc.
+
+📝 CONTENT REQUIREMENTS:
 - Base the HR document on the company described in the knowledge base above
 - Use specific company culture, values, and policies from the knowledge base
 - Reference the company's actual business, mission, or values where appropriate
@@ -98,19 +106,43 @@ ${knowledgeSection}
 Template-specific requirements:
 ${getTemplateSpecificRequirements(templateType)}
 
-Include at the beginning: "📚 This document incorporates specific information from your company knowledge base."
+STRUCTURE EXAMPLE:
+📚 This document incorporates specific information from your company knowledge base.
+
+# [DOCUMENT TITLE]
+
+## Overview
+[Clear paragraph about the role/document purpose]
+
+## Key Responsibilities
+• [Responsibility 1]
+• [Responsibility 2]
+• [Responsibility 3]
+
+## Qualifications
+[Paragraph about qualifications]
+
+[Continue with appropriate sections...]
 
 Format: Return only the HR document content, well-structured with clear headings and professional formatting.` :
       `Generate a professional ${templateType} for a ${jobTitle || 'position'} in the ${department || 'general'} department.
 
-HR context:
+📋 HR DOCUMENT DETAILS:
 - Company: ${tenantInfo.companyName}
 - Document Type: ${templateType}
 - Job Title: ${jobTitle || 'Position'}
 - Department: ${department || 'General'}
 - Key Responsibilities: ${responsibilities || 'Standard job responsibilities'}
 
-Requirements:
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered/bulleted sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers appropriate to the HR document type
+- Make each paragraph focused on one main topic
+- Use bullet points or numbered lists for qualifications, responsibilities, etc.
+
+📝 CONTENT REQUIREMENTS:
 - Professional HR language appropriate for business documents
 - Clear structure with relevant sections for the document type
 - Include appropriate qualifications, skills, and requirements
@@ -121,6 +153,22 @@ Requirements:
 
 Template-specific requirements:
 ${getTemplateSpecificRequirements(templateType)}
+
+STRUCTURE EXAMPLE:
+# [DOCUMENT TITLE]
+
+## Overview
+[Clear paragraph about the role/document purpose]
+
+## Key Responsibilities
+• [Responsibility 1]
+• [Responsibility 2]
+• [Responsibility 3]
+
+## Qualifications
+[Paragraph about qualifications]
+
+[Continue with appropriate sections...]
 
 Format: Return only the HR document content, well-structured with clear headings and professional formatting.`;
 

@@ -93,7 +93,32 @@ Requirements:
 - Length: 400-600 words${additionalContext ? `
 - Follow these additional requirements: ${additionalContext}` : ''}
 
-Format: Return only the strategy content, well-structured with clear sections.${additionalContextSection}` :
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "Executive Summary", "Analysis", "Strategy", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points for recommendations, tactics, and metrics
+
+STRUCTURE EXAMPLE:
+# [DOCUMENT TITLE]
+
+## Executive Summary
+[Clear paragraph about the overview]
+
+## Analysis
+[Paragraph about analysis]
+
+## Key Recommendations
+• [Recommendation 1]
+• [Recommendation 2]
+• [Recommendation 3]
+
+## Implementation Plan
+[Clear paragraphs with actionable steps]
+
+Format: Return only the strategy content, well-structured with clear sections and proper formatting.${additionalContextSection}` :
       `Generate a comprehensive growth strategy about ${focus} with a ${timeframe} timeline.
     
 Company context:
@@ -112,7 +137,32 @@ Requirements:
 - Length: 400-600 words${additionalContext ? `
 - Follow these additional requirements: ${additionalContext}` : ''}
 
-Format: Return only the strategy content, well-structured with clear sections.${additionalContextSection}`;
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "Executive Summary", "Analysis", "Strategy", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points for recommendations, tactics, and metrics
+
+STRUCTURE EXAMPLE:
+# [DOCUMENT TITLE]
+
+## Executive Summary
+[Clear paragraph about the overview]
+
+## Analysis
+[Paragraph about analysis]
+
+## Key Recommendations
+• [Recommendation 1]
+• [Recommendation 2]
+• [Recommendation 3]
+
+## Implementation Plan
+[Clear paragraphs with actionable steps]
+
+Format: Return only the strategy content, well-structured with clear sections and proper formatting.${additionalContextSection}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

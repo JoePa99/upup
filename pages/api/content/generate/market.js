@@ -96,6 +96,31 @@ Requirements:
 - Include specific metrics, percentages, and market data where relevant${additionalContext ? `
 - Follow these additional requirements: ${additionalContext}` : ''}
 
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "Executive Summary", "Analysis", "Strategy", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points for recommendations, tactics, and metrics
+
+STRUCTURE EXAMPLE:
+# [DOCUMENT TITLE]
+
+## Executive Summary
+[Clear paragraph about the overview]
+
+## Analysis
+[Paragraph about analysis]
+
+## Key Recommendations
+• [Recommendation 1]
+• [Recommendation 2]
+• [Recommendation 3]
+
+## Implementation Plan
+[Clear paragraphs with actionable steps]
+
 Structure the analysis with clear sections covering:
 1. Market Overview and Current Trends
 2. Competitive Landscape Analysis
@@ -103,7 +128,7 @@ Structure the analysis with clear sections covering:
 4. Strategic Opportunities and Recommendations for the knowledge base company
 5. Risk Assessment and Mitigation
 
-Format: Return only the market analysis content, well-structured with clear headings and professional business language.${additionalContextSection}` :
+Format: Return only the market analysis content, well-structured with clear headings, proper formatting, and professional business language.${additionalContextSection}` :
       `Generate a comprehensive market analysis report focusing on ${analysisFocus} with a ${marketScope} scope.
 
 Company Context:
@@ -122,28 +147,42 @@ Requirements:
 - Market opportunities and threats
 - Customer behavior patterns and preferences
 - Length: 500-700 words
-- Include specific metrics, percentages, and market data where relevant
+- Include specific metrics, percentages, and market data where relevant${additionalContext ? `
+- Follow these additional requirements: ${additionalContext}` : ''}
 
-Structure the analysis with clear sections covering:
-1. Market Overview and Current Trends
-2. Competitive Landscape Analysis
-- Data-driven insights and market trends
-- Competitive landscape analysis
-- Strategic recommendations and actionable insights
-- Market opportunities and threats
-- Customer behavior patterns and preferences
-- Length: 500-700 words
-- Include specific metrics, percentages, and market data where relevant
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "Executive Summary", "Analysis", "Strategy", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points for recommendations, tactics, and metrics
+
+STRUCTURE EXAMPLE:
+# [DOCUMENT TITLE]
+
+## Executive Summary
+[Clear paragraph about the overview]
+
+## Analysis
+[Paragraph about analysis]
+
+## Key Recommendations
+• [Recommendation 1]
+• [Recommendation 2]
+• [Recommendation 3]
+
+## Implementation Plan
+[Clear paragraphs with actionable steps]
 
 Structure the analysis with clear sections covering:
 1. Market Overview and Current Trends
 2. Competitive Landscape Analysis
 3. Customer Behavior and Preferences
 4. Strategic Opportunities and Recommendations for ${tenantInfo.companyName}
-5. Risk Assessment and Mitigation${additionalContext ? `
-- Follow these additional requirements: ${additionalContext}` : ''}
+5. Risk Assessment and Mitigation
 
-Format: Return only the market analysis content, well-structured with clear headings and professional business language.${additionalContextSection}`;
+Format: Return only the market analysis content, well-structured with clear headings, proper formatting, and professional business language.${additionalContextSection}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

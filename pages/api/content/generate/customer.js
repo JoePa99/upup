@@ -75,16 +75,24 @@ async function generateCustomerContent(connectionGoal, customerSegment, currentC
     const prompt = hasKnowledgeBase ? 
       `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
 
-FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
-
+🎯 COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
-MANDATORY INSTRUCTIONS:
-1. Write strategy ONLY about the company mentioned in the knowledge base above
-2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
-3. Use the specific company details from the knowledge base to create targeted customer strategy
+📋 STRATEGY DETAILS:
+- Connection Goal: ${connectionGoal}
+- Customer Segment: ${customerSegment}
+- Current Challenges: ${currentChallenges || 'General customer relationship challenges'}
+${additionalContext ? `- Additional Requirements: ${additionalContext}` : ''}
 
-Requirements:
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "Executive Summary", "Customer Analysis", "Strategy", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points for recommendations, tactics, and metrics
+
+🎯 CONTENT REQUIREMENTS:
 - Professional marketing and business analysis language specific to the knowledge base company
 - Use the company knowledge base information to make strategy highly specific and relevant
 - Customer-centric insights and behavioral patterns
@@ -93,19 +101,35 @@ Requirements:
 - Customer engagement tactics and relationship building
 - Retention strategies and loyalty programs
 - Length: 600-800 words
-- Include specific tactics, implementation steps, and measurable outcomes${additionalContext ? `
-- Follow these additional requirements: ${additionalContext}` : ''}
+- Include specific tactics, implementation steps, and measurable outcomes
 
-Structure should include:
-- Understanding the customer segment and their needs
-- Specific strategies for the knowledge base company to achieve the connection goal
-- Implementation tactics and timeline
-- Success metrics and measurement approaches
+STRUCTURE EXAMPLE:
+📚 This strategy incorporates specific information from your company knowledge base.
+
+# Customer Connection Strategy
+
+## Executive Summary
+[Clear paragraph about the strategy overview]
+
+## Customer Analysis
+[Paragraph about target segment analysis]
+
+## Engagement Strategy
+### Key Tactics:
+• [Tactic 1]
+• [Tactic 2]
+• [Tactic 3]
+
+## Implementation Plan
+[Clear paragraphs with actionable steps]
+
+## Success Metrics
+[Measurement approaches]
 
 Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.${additionalContextSection}` :
       `Generate a comprehensive customer connection strategy for ${connectionGoal} targeting ${customerSegment}.
 
-Company Context:
+📋 COMPANY CONTEXT:
 - Company: ${tenantInfo.companyName}
 - Industry: ${tenantInfo.industry}
 - Size: ${tenantInfo.size}
@@ -113,7 +137,15 @@ Company Context:
 - Customer Segment: ${customerSegment}
 - Current Challenges: ${currentChallenges || 'General customer relationship challenges'}
 
-Requirements:
+📝 FORMATTING REQUIREMENTS:
+- Use clear headings and numbered sections
+- Break content into logical paragraphs - NO long run-on blocks of text
+- Use proper spacing between sections and paragraphs
+- Include section headers like "Executive Summary", "Customer Analysis", "Strategy", etc.
+- Make each paragraph focused on one main topic
+- Use bullet points for recommendations, tactics, and metrics
+
+🎯 CONTENT REQUIREMENTS:
 - Professional marketing and business analysis language specific to ${tenantInfo.companyName}
 - Customer-centric insights and behavioral patterns
 - Actionable customer intelligence and recommendations
@@ -123,16 +155,26 @@ Requirements:
 - Length: 600-800 words
 - Include specific tactics, implementation steps, and measurable outcomes
 
-Structure should include:
-- Understanding the customer segment and their needs
-- Specific strategies for ${tenantInfo.companyName} to achieve the connection goal
-- Customer-centric insights and behavioral patterns
-- Actionable customer intelligence and recommendations
-- Demographic, psychographic, and behavioral analysis
-- Customer engagement tactics and relationship building
-- Retention strategies and loyalty programs
-- Length: 600-800 words
-- Include specific tactics, implementation steps, and measurable outcomes
+STRUCTURE EXAMPLE:
+# Customer Connection Strategy
+
+## Executive Summary
+[Clear paragraph about the strategy overview]
+
+## Customer Analysis
+[Paragraph about target segment analysis]
+
+## Engagement Strategy
+### Key Tactics:
+• [Tactic 1]
+• [Tactic 2]
+• [Tactic 3]
+
+## Implementation Plan
+[Clear paragraphs with actionable steps]
+
+## Success Metrics
+[Measurement approaches]
 
 Structure should include:
 - Understanding the customer segment and their needs
