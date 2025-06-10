@@ -135,7 +135,7 @@ Return only the content with proper paragraph spacing - no extra formatting or e
             content: userPrompt
           }
         ],
-        max_tokens: 600,
+        max_tokens: 2000,
         temperature: creativity, // Use creativity slider as temperature
       }),
     });

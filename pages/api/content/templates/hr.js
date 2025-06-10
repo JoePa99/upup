@@ -186,7 +186,7 @@ Format: Return only the HR document content, well-structured with clear headings
             content: prompt
           }
         ],
-        max_tokens: 1200,
+        max_tokens: 2000,
         temperature: 0.6,
       }),
     });

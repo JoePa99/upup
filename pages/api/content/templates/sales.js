@@ -181,7 +181,7 @@ Format: Return only the sales document content, well-structured with clear headi
             content: prompt
           }
         ],
-        max_tokens: 1200,
+        max_tokens: 2000,
         temperature: 0.7,
       }),
     });

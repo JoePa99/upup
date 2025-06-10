@@ -199,7 +199,7 @@ Format: Return only the customer strategy content, well-structured with clear he
             content: prompt
           }
         ],
-        max_tokens: 1300,
+        max_tokens: 2000,
         temperature: 0.7,
       }),
     });

@@ -198,7 +198,7 @@ Format: Return only the market analysis content, well-structured with clear head
             content: prompt
           }
         ],
-        max_tokens: 1200,
+        max_tokens: 2000,
         temperature: 0.7,
       }),
     });

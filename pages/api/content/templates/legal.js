@@ -174,7 +174,7 @@ Format: Return only the legal document content, well-structured with clear secti
             content: prompt
           }
         ],
-        max_tokens: 1400,
+        max_tokens: 2000,
         temperature: 0.3,
       }),
     });

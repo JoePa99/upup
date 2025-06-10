@@ -117,7 +117,7 @@ Guidelines:
       body: JSON.stringify({
         model: 'gpt-4',
         messages: messages,
-        max_tokens: 800,
+        max_tokens: 2000,
         temperature: 0.2,
       }),
     });

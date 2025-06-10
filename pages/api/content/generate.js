@@ -167,7 +167,7 @@ Return only the ${type} content.`;
             content: prompt
           }
         ],
-        max_tokens: 800,
+        max_tokens: 2000,
         temperature: 0.7,
       }),
     });
