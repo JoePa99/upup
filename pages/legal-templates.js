@@ -27,6 +27,11 @@ const LegalTemplates = () => {
   const [documentText, setDocumentText] = useState('');
   const [aiReview, setAiReview] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzedDocument, setAnalyzedDocument] = useState(null);
+  const [showChat, setShowChat] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
@@ -120,78 +125,102 @@ IMPORTANT: This template is for informational purposes only and does not constit
   const analyzeDocument = async () => {
     setIsAnalyzing(true);
     setAiReview('');
+    setAnalyzedDocument(null);
+    setShowChat(false);
+    setChatHistory([]);
     
-    // Simulate AI analysis with comprehensive legal review
-    setTimeout(() => {
-      const review = `AI LEGAL DOCUMENT ANALYSIS
-
-DOCUMENT OVERVIEW
-Document Type: ${uploadedFile ? uploadedFile.name : 'User-provided text'}
-Analysis Date: ${new Date().toLocaleDateString()}
-Review Status: ✅ Complete
-
-EXECUTIVE SUMMARY
-
-This document appears to be a legal agreement with several key provisions that require attention. Our AI analysis has identified critical areas for review, potential risks, and recommendations for improvement.
-
-KEY FINDINGS
-
-🔍 STRUCTURAL ANALYSIS
-• Document follows standard legal formatting conventions
-• Contains appropriate clause hierarchies and section numbering
-• Includes necessary execution provisions and signature blocks
-• Language clarity is generally acceptable with some areas for improvement
-
-⚠️ RISK ASSESSMENT - HIGH PRIORITY
-
-Liability Limitations: The current liability provisions may be insufficient to protect against potential damages. Consider adding more specific indemnification clauses and caps on consequential damages.
-
-Termination Clauses: The termination provisions lack clarity regarding post-termination obligations. This could create disputes regarding intellectual property rights and confidentiality requirements after contract end.
-
-Governing Law: The jurisdiction clause is vague and may create enforcement challenges. Specify exact courts and applicable state laws to avoid forum shopping issues.
-
-🛡️ COMPLIANCE CONSIDERATIONS
-
-Data Privacy: If this agreement involves personal data handling, ensure GDPR, CCPA, and other privacy regulation compliance through specific data processing clauses.
-
-Employment Law: Any employment-related provisions should be reviewed against current labor law requirements, including overtime, classification, and termination procedures.
-
-Industry Regulations: Consider industry-specific compliance requirements that may not be adequately addressed in the current draft.
-
-💡 IMPROVEMENT RECOMMENDATIONS
-
-Force Majeure: Add comprehensive force majeure provisions covering pandemics, cyber incidents, and supply chain disruptions based on recent legal precedents.
-
-Dispute Resolution: Consider adding mediation requirements before arbitration to reduce litigation costs and maintain business relationships.
-
-Intellectual Property: Strengthen IP ownership and licensing provisions with specific work-for-hire clauses and invention assignment requirements.
-
-Performance Standards: Define measurable performance criteria and service level agreements to reduce interpretation disputes.
-
-🔧 SPECIFIC CLAUSE SUGGESTIONS
-
-1. Add "time is of the essence" language for critical deadlines
-2. Include automatic renewal provisions with clear opt-out procedures  
-3. Specify currency and payment terms with late fee structures
-4. Add technology and cybersecurity requirements for data handling
-5. Include insurance requirements with specific coverage amounts
-
-📋 NEXT STEPS
-
-1. Have qualified legal counsel review industry-specific considerations
-2. Negotiate the identified high-risk provisions with counterparty
-3. Consider adding appendices for technical specifications or service levels
-4. Ensure all parties understand their obligations through executive summaries
-5. Plan for periodic contract reviews and updates based on law changes
-
-CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal document patterns
-
-⚠️ IMPORTANT DISCLAIMER: This AI analysis is for informational purposes only and does not constitute legal advice. Always consult with qualified legal counsel before executing any legal agreement.`;
+    try {
+      const { apiRequest } = await import('../utils/api-config');
       
-      setAiReview(review);
-      setIsAnalyzing(false);
+      let result;
+      
+      if (uploadedFile) {
+        // Handle file upload
+        const formData = new FormData();
+        formData.append('document', uploadedFile);
+        
+        result = await apiRequest('/content/analyze-document', {
+          method: 'POST',
+          body: formData,
+          isFormData: true
+        });
+      } else if (documentText.trim()) {
+        // Handle text analysis
+        result = await apiRequest('/content/analyze-document', {
+          method: 'POST',
+          body: JSON.stringify({ text: documentText })
+        });
+      } else {
+        throw new Error('No document or text provided for analysis');
+      }
+      
+      if (result.success) {
+        setAiReview(result.data.analysis);
+        setAnalyzedDocument({
+          text: documentText || 'Uploaded file content',
+          source: result.data.source,
+          analyzedAt: result.data.analyzedAt
+        });
+        setShowPinsSidebar(true);
+      } else {
+        throw new Error(result.message || 'Analysis failed');
+      }
+      
+    } catch (error) {
+      console.error('Error analyzing document:', error);
+      setAiReview(`Error analyzing document: ${error.message}
+
+Please try again or contact support if the issue persists.
+
+⚠️ IMPORTANT DISCLAIMER: This AI analysis is for informational purposes only and does not constitute legal advice. Always consult with qualified legal counsel before executing any legal agreement.`);
       setShowPinsSidebar(true);
-    }, 3500);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const askQuestion = async () => {
+    if (!currentQuestion.trim() || !analyzedDocument) return;
+    
+    setIsAsking(true);
+    
+    try {
+      const { apiRequest } = await import('../utils/api-config');
+      
+      const result = await apiRequest('/content/chat-document', {
+        method: 'POST',
+        body: JSON.stringify({
+          question: currentQuestion,
+          documentText: uploadedFile ? 'File content processed' : documentText,
+          conversationHistory: chatHistory
+        })
+      });
+      
+      if (result.success) {
+        const newEntry = {
+          question: currentQuestion,
+          response: result.data.response,
+          timestamp: result.data.timestamp
+        };
+        
+        setChatHistory(prev => [...prev, newEntry]);
+        setCurrentQuestion('');
+      } else {
+        throw new Error(result.message || 'Failed to get response');
+      }
+      
+    } catch (error) {
+      console.error('Error asking question:', error);
+      const errorEntry = {
+        question: currentQuestion,
+        response: `Sorry, I couldn't process your question: ${error.message}. Please try again.`,
+        timestamp: new Date().toISOString()
+      };
+      setChatHistory(prev => [...prev, errorEntry]);
+      setCurrentQuestion('');
+    } finally {
+      setIsAsking(false);
+    }
   };
 
   return (
@@ -388,6 +417,69 @@ CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal doc
                 title="Legal Document Review"
                 sourceType="legal-review"
               />
+              
+              {analyzedDocument && (
+                <div className="chat-section">
+                  <div className="chat-header">
+                    <h3>💬 Chat with Document</h3>
+                    <button 
+                      className="toggle-chat-btn" 
+                      onClick={() => setShowChat(!showChat)}
+                    >
+                      {showChat ? 'Hide Chat' : 'Ask Questions'}
+                    </button>
+                  </div>
+                  
+                  {showChat && (
+                    <div className="chat-interface">
+                      <div className="chat-history">
+                        {chatHistory.map((entry, index) => (
+                          <div key={index} className="chat-entry">
+                            <div className="question">
+                              <strong>Q:</strong> {entry.question}
+                            </div>
+                            <div className="response">
+                              <strong>A:</strong> {entry.response}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="chat-input">
+                        <div className="input-row">
+                          <input
+                            type="text"
+                            value={currentQuestion}
+                            onChange={(e) => setCurrentQuestion(e.target.value)}
+                            placeholder="Ask a question about this document..."
+                            onKeyPress={(e) => e.key === 'Enter' && !isAsking && askQuestion()}
+                            disabled={isAsking}
+                          />
+                          <button 
+                            onClick={askQuestion} 
+                            disabled={!currentQuestion.trim() || isAsking}
+                            className="ask-btn"
+                          >
+                            {isAsking ? 'Asking...' : 'Ask'}
+                          </button>
+                        </div>
+                        <div className="suggested-questions">
+                          {['What are the key risks in this document?', 'What payment terms are specified?', 'How can this agreement be terminated?'].map((suggestion, index) => (
+                            <button
+                              key={index}
+                              className="suggestion-btn"
+                              onClick={() => setCurrentQuestion(suggestion)}
+                              disabled={isAsking}
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -520,6 +612,145 @@ CONFIDENCE RATING: 87% - High confidence in analysis based on standard legal doc
         .document-textarea::placeholder {
           color: #9ca3af;
           font-style: italic;
+        }
+
+        .chat-section {
+          margin-top: 24px;
+          border-top: 1px solid #e5e7eb;
+          padding-top: 24px;
+        }
+
+        .chat-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+
+        .chat-header h3 {
+          margin: 0;
+          color: #1e293b;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .toggle-chat-btn {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .toggle-chat-btn:hover {
+          background: #2563eb;
+        }
+
+        .chat-interface {
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 16px;
+        }
+
+        .chat-history {
+          max-height: 300px;
+          overflow-y: auto;
+          margin-bottom: 16px;
+        }
+
+        .chat-entry {
+          margin-bottom: 16px;
+          padding: 12px;
+          background: white;
+          border-radius: 6px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .chat-entry .question {
+          margin-bottom: 8px;
+          color: #1e293b;
+          font-size: 14px;
+        }
+
+        .chat-entry .response {
+          color: #475569;
+          font-size: 14px;
+          line-height: 1.5;
+          white-space: pre-wrap;
+        }
+
+        .chat-input {
+          border-top: 1px solid #e2e8f0;
+          padding-top: 16px;
+        }
+
+        .input-row {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .input-row input {
+          flex: 1;
+          padding: 10px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+        }
+
+        .input-row input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .ask-btn {
+          background: #10b981;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .ask-btn:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .ask-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .suggested-questions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .suggestion-btn {
+          background: #e2e8f0;
+          color: #475569;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .suggestion-btn:hover:not(:disabled) {
+          background: #cbd5e1;
+        }
+
+        .suggestion-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       `}</style>
     </Layout>
