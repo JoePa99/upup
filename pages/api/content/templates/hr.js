@@ -31,7 +31,9 @@ export default async function handler(req, res) {
           jobTitle: jobTitle || 'Position',
           department: department || 'General',
           companyName: companyContext.tenantInfo.companyName,
-          contextUsed: companyContext.relevantKnowledge.length > 0
+          contextUsed: companyContext.relevantKnowledge.length > 0,
+          knowledgeItems: companyContext.relevantKnowledge.length,
+          knowledgeSourcesUsed: companyContext.relevantKnowledge.map(k => k.title)
         }
       }
     });
@@ -68,35 +70,35 @@ async function generateHRContent(templateType, jobTitle, department, responsibil
     
     // If we have knowledge base content, make the prompt ONLY about that company
     const prompt = hasKnowledgeBase ? 
-      `Generate a professional ${templateType} for a ${jobTitle || 'position'} in the ${department || 'general'} department.
+      `Generate a professional ${templateType}. USE THE COMPANY KNOWLEDGE BASE INFORMATION TO MAKE THIS SPECIFIC AND RELEVANT.
 
-FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
-
+🎯 COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
-MANDATORY INSTRUCTIONS:
-1. Write HR document ONLY for the company mentioned in the knowledge base above
-2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
-3. Use the specific company details from the knowledge base to create targeted HR content
-
-HR context:
+📋 HR DOCUMENT DETAILS:
 - Document Type: ${templateType}
 - Job Title: ${jobTitle || 'Position'}
 - Department: ${department || 'General'}
 - Key Responsibilities: ${responsibilities || 'Standard job responsibilities'}
 
-Requirements:
-- Professional HR language appropriate for the knowledge base company
-- Use the company knowledge base information to make HR content highly specific and relevant
+📝 REQUIREMENTS:
+- Base the HR document on the company described in the knowledge base above
+- Use specific company culture, values, and policies from the knowledge base
+- Reference the company's actual business, mission, or values where appropriate
 - Clear structure with relevant sections for the document type
 - Include appropriate qualifications, skills, and requirements
-- Cover compensation, benefits, and company culture from knowledge base where applicable
-- Length: 500-800 words
 - Use inclusive language and follow HR best practices
-- Include relevant legal compliance considerations
+- Length: 500-800 words
+
+🏢 KNOWLEDGE BASE INTEGRATION:
+- Reference specific company information from the knowledge base
+- Tailor HR content to match the company's culture and values
+- Include company-specific benefits, policies, or practices mentioned in the knowledge base
 
 Template-specific requirements:
 ${getTemplateSpecificRequirements(templateType)}
+
+Include at the beginning: "📚 This document incorporates specific information from your company knowledge base."
 
 Format: Return only the HR document content, well-structured with clear headings and professional formatting.` :
       `Generate a professional ${templateType} for a ${jobTitle || 'position'} in the ${department || 'general'} department.

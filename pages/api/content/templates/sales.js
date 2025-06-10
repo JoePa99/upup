@@ -31,7 +31,9 @@ export default async function handler(req, res) {
           clientName: clientName || 'Prospect',
           proposalType: proposalType || 'Business proposal',
           companyName: companyContext.tenantInfo.companyName,
-          contextUsed: companyContext.relevantKnowledge.length > 0
+          contextUsed: companyContext.relevantKnowledge.length > 0,
+          knowledgeItems: companyContext.relevantKnowledge.length,
+          knowledgeSourcesUsed: companyContext.relevantKnowledge.map(k => k.title)
         }
       }
     });
@@ -68,32 +70,32 @@ async function generateSalesContent(templateType, clientName, proposalType, requ
     
     // If we have knowledge base content, make the prompt ONLY about that company
     const prompt = hasKnowledgeBase ? 
-      `Generate a professional ${templateType} from the company described in the knowledge base for a client named "${clientName || 'the prospect'}" for a ${proposalType || 'business proposal'}.
+      `Generate a professional ${templateType}. USE THE COMPANY KNOWLEDGE BASE INFORMATION TO MAKE THIS SPECIFIC AND RELEVANT.
 
-FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
-
+🎯 COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
-MANDATORY INSTRUCTIONS:
-1. Write sales document ONLY for the company mentioned in the knowledge base above
-2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
-3. Use the specific company details from the knowledge base to create targeted sales content
-
-Business context:
+📋 SALES DOCUMENT DETAILS:
 - Template Type: ${templateType}
-- Our Company: The company from the knowledge base
 - Client/Prospect: ${clientName || 'Prospect Company'}
 - Proposal Type: ${proposalType || 'New Business'}
 - Key Requirements: ${requirements || 'Standard sales proposal requirements'}
 
-Requirements:
-- Professional business language appropriate for the knowledge base company
-- Use the company knowledge base information to make sales content highly specific and relevant
-- Compelling value propositions and benefits based on company strengths
-- Clear call-to-action and next steps
-- Industry best practices for sales documents
+💼 REQUIREMENTS:
+- Base the sales document on the company described in the knowledge base above
+- Use specific company services, products, and value propositions from the knowledge base
+- Reference the company's actual experience, case studies, or success stories where appropriate
+- Compelling value propositions and benefits based on company strengths from knowledge base
+- Professional business language with clear call-to-action and next steps
 - Length: 500-800 words
-- Include specific sections relevant to the template type
+
+🎯 KNOWLEDGE BASE INTEGRATION:
+- Reference specific company information from the knowledge base
+- Tailor sales content to match the company's actual services and capabilities
+- Include company-specific differentiators or success stories mentioned in the knowledge base
+- Use company's unique value propositions and competitive advantages
+
+Include at the beginning: "📚 This document incorporates specific information from your company knowledge base."
 
 Format: Return only the sales document content, well-structured with clear headings and professional formatting.` :
       `Generate a professional ${templateType} from ${tenantInfo.companyName} for a client named "${clientName || 'the prospect'}" for a ${proposalType || 'business proposal'}.

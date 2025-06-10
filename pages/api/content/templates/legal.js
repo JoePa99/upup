@@ -31,7 +31,9 @@ export default async function handler(req, res) {
           partyName: partyName || 'Other Party',
           projectDetails: projectDetails || 'Business relationship',
           companyName: companyContext.tenantInfo.companyName,
-          contextUsed: companyContext.relevantKnowledge.length > 0
+          contextUsed: companyContext.relevantKnowledge.length > 0,
+          knowledgeItems: companyContext.relevantKnowledge.length,
+          knowledgeSourcesUsed: companyContext.relevantKnowledge.map(k => k.title)
         }
       }
     });
@@ -68,32 +70,32 @@ async function generateLegalContent(templateType, partyName, projectDetails, spe
     
     // If we have knowledge base content, make the prompt ONLY about that company
     const prompt = hasKnowledgeBase ? 
-      `Generate a professional ${templateType} legal document between the company described in the knowledge base and "${partyName || 'the other party'}" for ${projectDetails || 'a business relationship'}.
+      `Generate a professional ${templateType} legal document. USE THE COMPANY KNOWLEDGE BASE INFORMATION TO MAKE THIS SPECIFIC AND RELEVANT.
 
-FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
-
+🎯 COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
-MANDATORY INSTRUCTIONS:
-1. Write legal document ONLY for the company mentioned in the knowledge base above
-2. IGNORE any tenant company name like "${tenantInfo.companyName}" - focus exclusively on the knowledge base company
-3. Use the specific company details from the knowledge base to create targeted legal content
-
-Legal context:
+📋 DOCUMENT DETAILS:
 - Document Type: ${templateType}
-- Our Company: The company from the knowledge base
 - Other Party: ${partyName || 'Other Party'}
 - Project/Relationship: ${projectDetails || 'Business relationship'}
 - Specific Terms: ${specificTerms || 'Standard legal terms'}
 
-Requirements:
-- Professional legal language appropriate for the knowledge base company
-- Use the company knowledge base information to make legal content highly specific and relevant
-- Standard legal document structure with numbered sections
+⚖️ REQUIREMENTS:
+- Base the legal document on the company described in the knowledge base above
+- Use specific company details, values, and context from the knowledge base
+- Make references to the company's actual business, services, or values where appropriate
+- Professional legal language with numbered sections
 - Include appropriate disclaimers and legal protections
 - Cover key areas like scope, responsibilities, termination, and governing law
 - Length: 600-1000 words
-- Include mandatory legal disclaimer about consulting qualified attorney
+
+🔍 KNOWLEDGE BASE INTEGRATION:
+- Reference specific company information from the knowledge base
+- Tailor legal terms to match the company's business model
+- Include company-specific considerations based on the knowledge provided
+
+Include at the beginning: "📚 This document incorporates specific information from your company knowledge base."
 
 CRITICAL: Always include this disclaimer at the end:
 "IMPORTANT: This template is for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before using this agreement."
