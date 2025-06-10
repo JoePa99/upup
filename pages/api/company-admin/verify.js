@@ -5,23 +5,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get JWT token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Use the established auth helper that works with our authentication system
+    const { getUserFromRequest } = await import('../../../utils/auth-helpers.js');
+    
+    const user = await getUserFromRequest(req);
+    
+    if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'No authorization token provided'
+        message: 'Authentication required'
       });
     }
-
-    const token = authHeader.split(' ')[1];
-    const jwt = require('jsonwebtoken');
-    
-    // Verify and decode token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if user has company admin role
-    const isCompanyAdmin = decoded.role === 'company_admin' || decoded.role === 'admin';
+    const isCompanyAdmin = user.role === 'company_admin' || user.role === 'admin';
     
     if (!isCompanyAdmin) {
       return res.status(403).json({
@@ -34,29 +31,15 @@ export default async function handler(req, res) {
       success: true,
       message: 'Company admin access verified',
       user: {
-        id: decoded.id,
-        email: decoded.email,
-        role: decoded.role,
-        tenant_id: decoded.tenant_id,
-        companyName: decoded.companyName
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        tenant_id: user.tenant_id,
+        companyName: user.company_name
       }
     });
   } catch (error) {
     console.error('Company admin verification error:', error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired'
-      });
-    }
     
     return res.status(500).json({
       success: false,

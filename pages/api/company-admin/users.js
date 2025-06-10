@@ -1,27 +1,28 @@
 // Helper function to verify company admin auth
 async function requireCompanyAdminAuth(req, res) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, message: 'No authorization token provided' });
+    // Import the auth helper that works with our authentication system
+    const { getUserFromRequest } = await import('../../../utils/auth-helpers.js');
+    
+    const user = await getUserFromRequest(req);
+    
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
       return false;
     }
-
-    const token = authHeader.split(' ')[1];
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const isCompanyAdmin = decoded.role === 'company_admin' || decoded.role === 'admin';
+    // Check if user is company admin or admin
+    const isCompanyAdmin = user.role === 'company_admin' || user.role === 'admin';
     if (!isCompanyAdmin) {
       res.status(403).json({ success: false, message: 'Company admin access required' });
       return false;
     }
 
-    req.user = decoded;
+    req.user = user;
     return true;
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    res.status(401).json({ success: false, message: 'Authentication failed' });
     return false;
   }
 }
