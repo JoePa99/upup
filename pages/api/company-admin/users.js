@@ -67,7 +67,7 @@ async function handler(req, res) {
         // Get all users for the company admin's tenant
         const { data: users, error: usersError } = await supabase
           .from('users')
-          .select('id, email, name, role, status, created_at, tenant_id')
+          .select('id, email, first_name, last_name, role, created_at, tenant_id')
           .eq('tenant_id', user.tenant_id)
           .order('created_at', { ascending: false });
 
@@ -80,19 +80,25 @@ async function handler(req, res) {
           });
         }
 
+        // Transform users to include a name field for the frontend
+        const transformedUsers = (users || []).map(u => ({
+          ...u,
+          name: `${u.first_name || ''} ${u.last_name || ''}`.trim()
+        }));
+
         return res.status(200).json({
           success: true,
-          data: users || []
+          data: transformedUsers
         });
 
       case 'POST':
         // Create a new user in the company admin's tenant
-        const { email, name, role = 'user', password } = req.body;
+        const { email, first_name, last_name, role = 'user', password } = req.body;
 
-        if (!email || !name || !password) {
+        if (!email || !first_name || !password) {
           return res.status(400).json({
             success: false,
-            message: 'Email, name, and password are required'
+            message: 'Email, first_name, and password are required'
           });
         }
 
@@ -124,12 +130,12 @@ async function handler(req, res) {
         const { data: newUser, error: userError } = await supabase
           .from('users')
           .insert({
-            id: authUser.user.id,
+            auth_user_id: authUser.user.id,
             email,
-            name,
+            first_name,
+            last_name: last_name || '',
             role,
-            tenant_id: user.tenant_id,
-            status: 'active'
+            tenant_id: user.tenant_id
           })
           .select()
           .single();
@@ -145,9 +151,15 @@ async function handler(req, res) {
           });
         }
 
+        // Transform the user response to include name field for frontend compatibility
+        const transformedUser = {
+          ...newUser,
+          name: `${newUser.first_name || ''} ${newUser.last_name || ''}`.trim()
+        };
+
         return res.status(201).json({
           success: true,
-          data: newUser,
+          data: transformedUser,
           message: 'User created successfully'
         });
 
