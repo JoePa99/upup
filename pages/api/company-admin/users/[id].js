@@ -1,27 +1,28 @@
 // Helper function to verify company admin auth
 async function requireCompanyAdminAuth(req, res) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, message: 'No authorization token provided' });
+    // Use the established auth helper that works with our authentication system
+    const { getUserFromRequest } = await import('../../../../utils/auth-helpers.js');
+    
+    const user = await getUserFromRequest(req);
+    
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
       return false;
     }
-
-    const token = authHeader.split(' ')[1];
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const isCompanyAdmin = decoded.role === 'company_admin' || decoded.role === 'admin';
+    // Check if user is company admin or admin
+    const isCompanyAdmin = user.role === 'company_admin' || user.role === 'admin';
     if (!isCompanyAdmin) {
       res.status(403).json({ success: false, message: 'Company admin access required' });
       return false;
     }
 
-    req.user = decoded;
+    req.user = user;
     return true;
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    res.status(401).json({ success: false, message: 'Authentication failed' });
     return false;
   }
 }
@@ -44,7 +45,7 @@ async function handler(req, res) {
     switch (req.method) {
       case 'PUT':
         // Update user (only users in the same tenant)
-        const { name, role, status } = req.body;
+        const { name, first_name, last_name, role, status } = req.body;
 
         // Validate role - company admins can only manage users and company_admins
         if (role && !['user', 'company_admin'].includes(role)) {
@@ -71,9 +72,18 @@ async function handler(req, res) {
 
         // Update user record
         const updateData = {};
-        if (name !== undefined) updateData.name = name;
+        
+        // Handle both formats: separate first_name/last_name OR single name field
+        if (first_name !== undefined) updateData.first_name = first_name;
+        if (last_name !== undefined) updateData.last_name = last_name;
+        if (name !== undefined && !first_name) {
+          // Split the name field if first_name is not provided
+          const nameParts = name.trim().split(' ');
+          updateData.first_name = nameParts[0] || '';
+          updateData.last_name = nameParts.slice(1).join(' ') || '';
+        }
+        
         if (role !== undefined) updateData.role = role;
-        if (status !== undefined) updateData.status = status;
 
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')
@@ -104,7 +114,7 @@ async function handler(req, res) {
         // First verify the user exists and belongs to the same tenant
         const { data: userToDelete, error: fetchDeleteError } = await supabase
           .from('users')
-          .select('id, tenant_id')
+          .select('id, tenant_id, auth_user_id')
           .eq('id', userId)
           .eq('tenant_id', user.tenant_id)
           .single();
@@ -117,7 +127,7 @@ async function handler(req, res) {
         }
 
         // Prevent company admin from deleting themselves
-        if (userId === user.id) {
+        if (parseInt(userId) === user.id) {
           return res.status(400).json({
             success: false,
             message: 'You cannot delete your own account'
@@ -140,11 +150,13 @@ async function handler(req, res) {
           });
         }
 
-        // Also delete from Supabase Auth
-        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId);
-        if (authDeleteError) {
-          console.error('Error deleting auth user:', authDeleteError);
-          // Don't fail the request if auth deletion fails - user record is already deleted
+        // Also delete from Supabase Auth using the auth_user_id
+        if (userToDelete.auth_user_id) {
+          const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userToDelete.auth_user_id);
+          if (authDeleteError) {
+            console.error('Error deleting auth user:', authDeleteError);
+            // Don't fail the request if auth deletion fails - user record is already deleted
+          }
         }
 
         return res.status(200).json({
