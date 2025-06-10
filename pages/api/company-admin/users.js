@@ -93,12 +93,23 @@ async function handler(req, res) {
 
       case 'POST':
         // Create a new user in the company admin's tenant
-        const { email, first_name, last_name, role = 'user', password } = req.body;
+        const { email, first_name, last_name, name, role = 'user', password } = req.body;
 
-        if (!email || !first_name || !password) {
+        // Handle both formats: separate first_name/last_name OR single name field
+        let finalFirstName = first_name;
+        let finalLastName = last_name || '';
+
+        if (!first_name && name) {
+          // Split the name field if first_name is not provided
+          const nameParts = name.trim().split(' ');
+          finalFirstName = nameParts[0] || '';
+          finalLastName = nameParts.slice(1).join(' ') || '';
+        }
+
+        if (!email || !finalFirstName || !password) {
           return res.status(400).json({
             success: false,
-            message: 'Email, first_name, and password are required'
+            message: 'Email, name (or first_name), and password are required'
           });
         }
 
@@ -132,8 +143,8 @@ async function handler(req, res) {
           .insert({
             auth_user_id: authUser.user.id,
             email,
-            first_name,
-            last_name: last_name || '',
+            first_name: finalFirstName,
+            last_name: finalLastName,
             role,
             tenant_id: user.tenant_id
           })
