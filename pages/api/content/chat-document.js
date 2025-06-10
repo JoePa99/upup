@@ -4,16 +4,39 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Chat API received request:', {
+      hasBody: !!req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : []
+    });
+
     const { question, documentText, conversationHistory } = req.body;
 
+    console.log('Chat API extracted data:', {
+      hasQuestion: !!question,
+      questionLength: question?.length,
+      hasDocumentText: !!documentText,
+      documentTextLength: documentText?.length,
+      historyLength: conversationHistory?.length || 0
+    });
+
     if (!question || !documentText) {
+      const errorMsg = `Missing required data: question=${!!question}, documentText=${!!documentText}`;
+      console.error(errorMsg);
       return res.status(400).json({ 
-        message: 'Question and document text are required' 
+        success: false,
+        message: 'Question and document text are required',
+        debug: errorMsg
       });
     }
 
     // Generate response with OpenAI
+    console.log('Calling chatWithDocument...');
     const response = await chatWithDocument(question, documentText, conversationHistory || []);
+    
+    console.log('Chat response generated:', {
+      responseLength: response?.length,
+      success: true
+    });
     
     return res.status(200).json({
       success: true,
@@ -26,6 +49,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Document chat error:', error);
     return res.status(500).json({
+      success: false,
       message: 'Failed to process question',
       error: error.message
     });

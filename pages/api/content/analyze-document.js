@@ -95,35 +95,22 @@ async function analyzeDocumentWithAI(documentText, documentSource) {
       return generateFallbackAnalysis(documentText, documentSource);
     }
 
-    const prompt = `You are an expert legal analyst. Please provide a comprehensive analysis of the following legal document. 
+    const prompt = `You are an expert legal analyst. Please analyze this legal document and provide insights based on what you actually find in the text, not a generic template.
 
-Structure your response using these EXACT headings with proper formatting:
+Focus on:
+- What type of document this actually is
+- The specific provisions, terms, and clauses present
+- Real risks or issues you can identify from the content
+- Practical recommendations based on what's missing or problematic
+- Any unusual or noteworthy aspects of this particular document
 
-## 📋 DOCUMENT OVERVIEW
-- Document Type: [identify the type]
-- Source: ${documentSource}  
-- Analysis Date: ${new Date().toLocaleDateString()}
-- Status: ✅ Analysis Complete
+Be conversational but professional. Use headings and bullets for readability, but tailor your analysis completely to this specific document.
 
-## 🔍 KEY LEGAL PROVISIONS
-[List the main legal provisions and clauses found]
-
-## ⚠️ RISK ASSESSMENT
-[Identify potential legal risks, gaps, or problematic clauses - use bullet points]
-
-## 🛡️ COMPLIANCE CONSIDERATIONS  
-[Note any regulatory or compliance issues]
-
-## 💡 IMPROVEMENT RECOMMENDATIONS
-[Provide specific suggestions for strengthening the document]
-
-## 📋 CRITICAL ACTION ITEMS
-[List urgent items that need immediate attention]
-
-Document Text (first 4000 characters):
+Document Source: ${documentSource}
+Document Text:
 ${documentText.substring(0, 4000)}
 
-Use clear headings, bullet points, and emojis as shown above. Be specific and actionable in your recommendations.`;
+Analyze what's actually here, not what should be here:`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -170,49 +157,61 @@ Use clear headings, bullet points, and emojis as shown above. Be specific and ac
 
 function generateFallbackAnalysis(documentText, documentSource) {
   const wordCount = documentText.split(/\s+/).length;
-  const hasSignature = /signature|signed|executed/i.test(documentText);
-  const hasTermination = /termination|terminate|end|expir/i.test(documentText);
-  const hasLiability = /liability|liable|damages|indemnif/i.test(documentText);
-  const hasGoverningLaw = /governing law|jurisdiction|court/i.test(documentText);
+  
+  // Try to identify document type from content
+  let documentType = 'Legal Document';
+  if (/non.?disclosure|nda|confidential/i.test(documentText)) {
+    documentType = 'Non-Disclosure Agreement';
+  } else if (/employment|employee|job|position/i.test(documentText)) {
+    documentType = 'Employment Document';
+  } else if (/service|work|perform|deliver/i.test(documentText)) {
+    documentType = 'Service Agreement';
+  } else if (/purchase|buy|sell|sale/i.test(documentText)) {
+    documentType = 'Purchase/Sale Agreement';
+  } else if (/lease|rent|rental|tenant/i.test(documentText)) {
+    documentType = 'Lease Agreement';
+  }
 
-  return `## 📋 DOCUMENT OVERVIEW
-- Document Type: Legal Agreement
-- Source: ${documentSource}
-- Word Count: ${wordCount} words
-- Analysis Date: ${new Date().toLocaleDateString()}
-- Status: ✅ Analysis Complete (Fallback Mode)
+  // Extract some actual content snippets
+  const sentences = documentText.split(/[.!?]+/).filter(s => s.trim().length > 20);
+  const firstFewSentences = sentences.slice(0, 3).map(s => s.trim()).join('. ');
 
-## 🔍 KEY LEGAL PROVISIONS
-${hasSignature ? '✅' : '⚠️'} **Signature provisions** - ${hasSignature ? 'Present' : 'Not clearly identified'}
-${hasTermination ? '✅' : '⚠️'} **Termination clauses** - ${hasTermination ? 'Present' : 'Not clearly identified'}  
-${hasLiability ? '✅' : '⚠️'} **Liability provisions** - ${hasLiability ? 'Present' : 'Not clearly identified'}
-${hasGoverningLaw ? '✅' : '⚠️'} **Governing law clauses** - ${hasGoverningLaw ? 'Present' : 'Not clearly identified'}
+  // Look for specific terms and parties
+  const parties = [];
+  const partyMatches = documentText.match(/\b[A-Z][a-zA-Z\s&,.]*(LLC|Inc|Corp|Corporation|Company|Ltd)\b/g);
+  if (partyMatches) {
+    parties.push(...partyMatches.slice(0, 2));
+  }
 
-## ⚠️ RISK ASSESSMENT
-• **Missing Standard Protections** - Verify all essential legal safeguards are included
-• **Unclear Obligations** - Ensure all party responsibilities are clearly defined
-• **Compliance Gaps** - Review against applicable laws and regulations
-• **Enforcement Issues** - Confirm jurisdiction and dispute resolution mechanisms
+  return `## Document Analysis: ${documentType}
 
-## 🛡️ COMPLIANCE CONSIDERATIONS
-• **Legal Review Required** - Have qualified counsel examine all provisions
-• **Regulatory Compliance** - Verify adherence to industry-specific requirements
-• **Data Protection** - Ensure privacy law compliance if handling personal data
-• **Employment Law** - Review any employment-related provisions
+**Source:** ${documentSource} (${wordCount} words)  
+**Analyzed:** ${new Date().toLocaleDateString()}
 
-## 💡 IMPROVEMENT RECOMMENDATIONS
-• **Add Liability Limitations** - Include comprehensive caps on damages
-• **Force Majeure Clauses** - Cover unforeseen circumstances and disruptions
-• **Clear Termination Process** - Specify procedures and post-termination obligations
-• **Technology Requirements** - Add cybersecurity and data handling standards
-• **Insurance Provisions** - Include appropriate coverage requirements
+### What I Found
 
-## 📋 CRITICAL ACTION ITEMS
-1. **Professional Legal Review** - Engage qualified attorney for comprehensive analysis
-2. **Negotiate Missing Provisions** - Address identified gaps with counterparty
-3. **Clarify Obligations** - Ensure all parties understand their responsibilities
-4. **Plan Regular Reviews** - Schedule periodic contract updates
+This appears to be a ${documentType.toLowerCase()}${parties.length > 0 ? ` involving ${parties.join(' and ')}` : ''}.
+
+${firstFewSentences ? `**Key Content:** ${firstFewSentences}...` : ''}
+
+### Quick Assessment
+
+Based on a scan of the document content, here are some observations:
+
+${/signature|signed|executed/i.test(documentText) ? '• **Execution provisions** appear to be included\n' : '• **Missing execution/signature provisions** - verify how this document gets signed\n'}
+${/termination|terminate|end|expir/i.test(documentText) ? '• **Termination clauses** are present\n' : '• **Termination procedures** may need clarification\n'}
+${/liability|liable|damages|indemnif/i.test(documentText) ? '• **Liability terms** are addressed\n' : '• **Liability protection** should be reviewed and potentially strengthened\n'}
+${/governing law|jurisdiction|court/i.test(documentText) ? '• **Governing law** is specified\n' : '• **Jurisdiction and governing law** need to be clearly stated\n'}
+
+### Recommendations
+
+Since I can only provide basic analysis without AI assistance:
+
+1. **Get professional review** - Have a qualified attorney examine this document
+2. **Verify completeness** - Ensure all necessary terms for this type of agreement are included  
+3. **Check compliance** - Confirm the document meets applicable legal requirements
+4. **Review with counterparty** - Discuss any unclear terms before signing
 
 ---
-⚠️ **IMPORTANT DISCLAIMER**: This analysis is provided for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before executing any legal agreement.`;
+⚠️ **Note:** This is a basic analysis only. Always consult with qualified legal counsel before executing any agreement.`;
 }

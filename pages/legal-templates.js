@@ -181,12 +181,25 @@ Please try again or contact support if the issue persists.
   };
 
   const askQuestion = async () => {
-    if (!currentQuestion.trim() || !analyzedDocument) return;
+    if (!currentQuestion.trim() || !analyzedDocument) {
+      console.log('Cannot ask question - missing data:', { 
+        hasQuestion: !!currentQuestion.trim(), 
+        hasDocument: !!analyzedDocument 
+      });
+      return;
+    }
     
+    console.log('Asking question:', currentQuestion);
     setIsAsking(true);
     
     try {
       const { apiRequest } = await import('../utils/api-config');
+      
+      console.log('Sending request with data:', {
+        question: currentQuestion,
+        documentTextLength: analyzedDocument.text?.length,
+        historyLength: chatHistory.length
+      });
       
       const result = await apiRequest('/content/chat-document', {
         method: 'POST',
@@ -197,6 +210,8 @@ Please try again or contact support if the issue persists.
         })
       });
       
+      console.log('Chat API response:', result);
+      
       if (result.success) {
         const newEntry = {
           question: currentQuestion,
@@ -204,9 +219,11 @@ Please try again or contact support if the issue persists.
           timestamp: result.data.timestamp
         };
         
+        console.log('Adding new entry to chat:', newEntry);
         setChatHistory(prev => [...prev, newEntry]);
         setCurrentQuestion('');
       } else {
+        console.error('Chat API returned error:', result);
         throw new Error(result.message || 'Failed to get response');
       }
       
@@ -220,6 +237,7 @@ Please try again or contact support if the issue persists.
       setChatHistory(prev => [...prev, errorEntry]);
       setCurrentQuestion('');
     } finally {
+      console.log('Setting isAsking to false');
       setIsAsking(false);
     }
   };
