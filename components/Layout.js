@@ -15,6 +15,7 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
       if (path === '/dashboard') setActivePage('dashboard');
       else if (path === '/pins') setActivePage('pins');
       else if (path === '/super-admin') setActivePage('super-admin');
+      else if (path === '/company-admin') setActivePage('company-admin');
       else if (path.includes('generator')) setActivePage(path.replace('/', ''));
       else if (path.includes('templates')) setActivePage(path.replace('/', ''));
     } catch (error) {
@@ -85,6 +86,7 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
         <div className="user-info">
           <span>{user?.tenantName || 'Staedtler Pencils'}</span>
           {user?.isSuperAdmin && <span style={{ color: '#ff6b6b', fontSize: '12px', marginLeft: '8px' }}>SUPER ADMIN</span>}
+          {(user?.role === 'company_admin' || user?.role === 'admin') && !user?.isSuperAdmin && <span style={{ color: '#7b1fa2', fontSize: '12px', marginLeft: '8px' }}>COMPANY ADMIN</span>}
           <div className="avatar" onClick={handleLogout} style={{ cursor: 'pointer' }} title="Click to logout">
             {user?.tenantName ? user.tenantName.substring(0, 2).toUpperCase() : 'SP'}
           </div>
@@ -174,6 +176,20 @@ const Layout = ({ children, title = 'Up, Up, Down, Down - AI Business Platform' 
             💼 Sales Templates
           </div>
         </div>
+
+        {/* Company Admin Section - Only show for company admins */}
+        {(user?.role === 'company_admin' || user?.role === 'admin') && !user?.isSuperAdmin && (
+          <div className="nav-section">
+            <div className="nav-title">Company Admin</div>
+            <div 
+              className={`nav-item ${activePage === 'company-admin' ? 'active' : ''}`}
+              onClick={() => navigateToPage('company-admin')}
+              style={{ cursor: 'pointer' }}
+            >
+              🏢 Company Admin
+            </div>
+          </div>
+        )}
 
         {/* Super Admin Section - Only show for super admins */}
         {user?.isSuperAdmin && (
