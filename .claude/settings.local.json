@@ -6,7 +6,8 @@
       "Bash(git add:*)",
       "Bash(grep:*)",
       "Bash(mkdir:*)",
-      "WebFetch(domain:upup-bn6a.vercel.app)"
+      "WebFetch(domain:upup-bn6a.vercel.app)",
+      "Bash(rg:*)"
     ],
     "deny": []
   },

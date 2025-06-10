@@ -78,7 +78,7 @@
 ### OpenAI (Recommended)
 1. Get API key from https://platform.openai.com/api-keys
 2. Set `OPENAI_API_KEY` in environment variables
-3. Models used: `gpt-3.5-turbo`, `gpt-4` (optional)
+3. Models used: `gpt-4o`, `gpt-4` (optional)
 
 ### Anthropic Claude (Alternative)
 1. Get API key from https://console.anthropic.com

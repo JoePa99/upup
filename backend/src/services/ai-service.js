@@ -29,7 +29,7 @@ const aiService = {
     const {
       maxTokens = parseInt(process.env.MAX_CONTENT_LENGTH) || 500,
       temperature = parseFloat(process.env.DEFAULT_TEMPERATURE) || 0.7,
-      model = 'gpt-3.5-turbo',
+      model = 'gpt-4o',
       provider = process.env.AI_DEFAULT_PROVIDER || 'openai'
     } = options;
 

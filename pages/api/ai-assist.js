@@ -98,7 +98,7 @@ Format: ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "sugges
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'user',

@@ -57,7 +57,7 @@ npm run dev
 
 ## 💰 API Costs
 
-**OpenAI GPT-3.5-turbo:**
+**OpenAI GPT-4o:**
 - ~$0.001-0.002 per content generation
 - Very affordable for testing and development
 
