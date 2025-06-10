@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
 import FloatingPinButton from '../components/FloatingPinButton';
+import AISuggestionsPopover from '../components/AISuggestionsPopover';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const CustomerGenerator = () => {
@@ -23,6 +24,15 @@ const CustomerGenerator = () => {
   const [contentTitle, setContentTitle] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
+  const [aiPopover, setAiPopover] = useState({ isOpen: false, fieldName: '', fieldType: '' });
+  
+  // Refs for AI assist buttons
+  const aiAssistRefs = {
+    customerSegment: useRef(null),
+    currentChallenges: useRef(null),
+    otherConnectionGoal: useRef(null),
+    additionalContext: useRef(null)
+  };
 
   // Use useEffect for client-side redirects only
   React.useEffect(() => {
@@ -49,22 +59,23 @@ const CustomerGenerator = () => {
     }));
   };
 
-  const aiAssist = (fieldName) => {
-    const suggestions = {
-      customerSegment: ['Professional Artists & Designers', 'Design Students & Educators', 'Creative Agencies & Studios', 'Technical Illustrators', 'Hobbyist Creators', 'Architecture Firms', 'Fashion Designers', 'Product Designers'],
-      currentChallenges: ['High customer acquisition costs', 'Seasonal sales variations', 'Competition from digital tools', 'Retail partner relationships', 'Brand awareness in new markets'],
-      otherConnectionGoal: ['Build Brand Loyalty', 'Increase Purchase Frequency', 'Reduce Churn Rate', 'Expand Market Share', 'Enhance Customer Experience']
-    };
-    
-    const fieldSuggestions = suggestions[fieldName] || [];
-    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
-    
-    if (randomSuggestion) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: randomSuggestion
-      }));
-    }
+  const aiAssist = (fieldName, fieldType = 'input') => {
+    setAiPopover({
+      isOpen: true,
+      fieldName,
+      fieldType
+    });
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      [aiPopover.fieldName]: suggestion
+    }));
+  };
+
+  const closeAiPopover = () => {
+    setAiPopover({ isOpen: false, fieldName: '', fieldType: '' });
   };
 
   const generateCustomerConnection = async () => {
@@ -234,6 +245,17 @@ const CustomerGenerator = () => {
       <FloatingPinButton 
         onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
         showPinboard={showPinsSidebar}
+      />
+      
+      <AISuggestionsPopover
+        isOpen={aiPopover.isOpen}
+        onClose={closeAiPopover}
+        onSelectSuggestion={handleSuggestionSelect}
+        fieldName={aiPopover.fieldName}
+        fieldType={aiPopover.fieldType}
+        existingFormData={formData}
+        generatorType="customer"
+        triggerRef={aiAssistRefs[aiPopover.fieldName]}
       />
     </Layout>
   );

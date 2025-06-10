@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import FloatingPinButton from '../components/FloatingPinButton';
+import AISuggestionsPopover from '../components/AISuggestionsPopover';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const SalesTemplates = () => {
@@ -22,6 +24,14 @@ const SalesTemplates = () => {
   const [contentTitle, setContentTitle] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
+  const [aiPopover, setAiPopover] = useState({ isOpen: false, fieldName: '', fieldType: '' });
+  
+  // Refs for AI assist buttons
+  const aiAssistRefs = {
+    field1: useRef(null),
+    field3: useRef(null),
+    otherField2: useRef(null)
+  };
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
@@ -45,22 +55,23 @@ const SalesTemplates = () => {
     }));
   };
 
-  const aiAssist = (fieldName) => {
-    const suggestions = {
-      field1: ['Metropolitan Art Academy', 'Creative Design Studio', 'Corporate Training Center', 'University Art Department', 'Professional Architects Firm'],
-      field3: ['• Professional-grade writing instruments for precise technical drawings\n• Custom branding options for corporate identity\n• Volume pricing with dedicated account management\n• Training and onboarding support for team adoption', '• Sustainable product options aligned with environmental goals\n• Premium gift sets for client appreciation programs\n• Educational discounts for students and faculty\n• Comprehensive warranty and replacement policies'],
-      otherField2: ['Strategic Partnership', 'Acquisition Proposal', 'Joint Venture', 'Licensing Agreement', 'Distribution Partnership']
-    };
-    
-    const fieldSuggestions = suggestions[fieldName] || [];
-    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
-    
-    if (randomSuggestion) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: randomSuggestion
-      }));
-    }
+  const aiAssist = (fieldName, fieldType = 'input') => {
+    setAiPopover({
+      isOpen: true,
+      fieldName,
+      fieldType
+    });
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      [aiPopover.fieldName]: suggestion
+    }));
+  };
+
+  const closeAiPopover = () => {
+    setAiPopover({ isOpen: false, fieldName: '', fieldType: '' });
   };
 
   const generateSalesTemplate = async () => {
@@ -295,6 +306,21 @@ CONTACT INFORMATION
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      <FloatingPinButton 
+        onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
+        showPinboard={showPinsSidebar}
+      />
+      
+      <AISuggestionsPopover
+        isOpen={aiPopover.isOpen}
+        onClose={closeAiPopover}
+        onSelectSuggestion={handleSuggestionSelect}
+        fieldName={aiPopover.fieldName}
+        fieldType={aiPopover.fieldType}
+        existingFormData={formData}
+        generatorType="sales"
+        triggerRef={aiAssistRefs[aiPopover.fieldName]}
+      />
     </Layout>
   );
 };

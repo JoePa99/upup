@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
 import FloatingPinButton from '../components/FloatingPinButton';
+import AISuggestionsPopover from '../components/AISuggestionsPopover';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const MarketGenerator = () => {
@@ -24,6 +25,15 @@ const MarketGenerator = () => {
   const [contentTitle, setContentTitle] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
+  const [aiPopover, setAiPopover] = useState({ isOpen: false, fieldName: '', fieldType: '' });
+  
+  // Refs for AI assist buttons
+  const aiAssistRefs = {
+    specificCompetitors: useRef(null),
+    otherAnalysisFocus: useRef(null),
+    otherMarketScope: useRef(null),
+    additionalContext: useRef(null)
+  };
 
   // Use useEffect for client-side redirects only
   React.useEffect(() => {
@@ -50,22 +60,23 @@ const MarketGenerator = () => {
     }));
   };
 
-  const aiAssist = (fieldName) => {
-    const suggestions = {
-      specificCompetitors: ['Faber-Castell', 'Pilot Corporation', 'Prismacolor', 'Copic', 'Sakura'],
-      otherAnalysisFocus: ['SWOT Analysis', 'Porter Five Forces', 'Market Segmentation', 'Value Chain Analysis', 'Competitive Benchmarking'],
-      otherMarketScope: ['Vertical Markets', 'Niche Segments', 'Emerging Markets', 'B2B vs B2C', 'Online vs Offline']
-    };
-    
-    const fieldSuggestions = suggestions[fieldName] || [];
-    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
-    
-    if (randomSuggestion) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: randomSuggestion
-      }));
-    }
+  const aiAssist = (fieldName, fieldType = 'input') => {
+    setAiPopover({
+      isOpen: true,
+      fieldName,
+      fieldType
+    });
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      [aiPopover.fieldName]: suggestion
+    }));
+  };
+
+  const closeAiPopover = () => {
+    setAiPopover({ isOpen: false, fieldName: '', fieldType: '' });
   };
 
   const generateMarketInsights = async () => {
@@ -250,6 +261,17 @@ const MarketGenerator = () => {
       <FloatingPinButton 
         onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
         showPinboard={showPinsSidebar}
+      />
+      
+      <AISuggestionsPopover
+        isOpen={aiPopover.isOpen}
+        onClose={closeAiPopover}
+        onSelectSuggestion={handleSuggestionSelect}
+        fieldName={aiPopover.fieldName}
+        fieldType={aiPopover.fieldType}
+        existingFormData={formData}
+        generatorType="market"
+        triggerRef={aiAssistRefs[aiPopover.fieldName]}
       />
     </Layout>
   );

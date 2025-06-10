@@ -91,15 +91,29 @@ async function generateFreeWriteContent(prompt, useKnowledgeBase, creativity, ad
 
 ${knowledgeSection}${additionalContextSection}
 
-Requirements:
-- Generate 3-4 short, punchy paragraphs (200-400 words total)
+📝 FORMATTING REQUIREMENTS:
+- Break content into 3-4 short, punchy paragraphs with clear spacing
+- Use varied sentence lengths and creative language  
+- Make each paragraph focused and pin-able as individual insights
+- Add proper paragraph breaks - NO wall of text
+- Each paragraph should stand alone as a complete thought
+
+📋 CONTENT REQUIREMENTS:
+- Generate 200-400 words total
 - Make it engaging and memorable
-- Use varied sentence lengths and creative language
-- Each paragraph should be pin-able as individual insights
 - Focus on ${creativity > 0.7 ? 'bold, experimental ideas' : creativity > 0.5 ? 'creative but practical concepts' : 'clear, reliable messaging'}
 - Write in a ${creativity > 0.8 ? 'highly creative and unconventional' : creativity > 0.6 ? 'creative and engaging' : creativity > 0.4 ? 'balanced and professional' : 'conservative and straightforward'} style
 
-Return only the content - no extra formatting or explanations.`;
+STRUCTURE EXAMPLE:
+[First paragraph - Hook/opening thought]
+
+[Second paragraph - Core insight or development]  
+
+[Third paragraph - Deeper exploration or implication]
+
+[Fourth paragraph - Conclusion or call to action]
+
+Return only the content with proper paragraph spacing - no extra formatting or explanations.`;
 
     console.log('Making OpenAI API call with creativity level:', creativity);
     

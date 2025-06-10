@@ -104,27 +104,43 @@ async function generateAIContent(topic, type, audience, pins, companyContext, ad
     const prompt = hasKnowledgeBase ? 
       `Create a ${type} about ${topic} for ${audience}.
 
-FOCUS COMPANY: The company described in the knowledge base below (IGNORE any other company names).
-
+🎯 COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
-MANDATORY INSTRUCTIONS:
-1. Format as a proper ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format with ABAB CDCD EFEF GG rhyme scheme' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
+📝 FORMATTING REQUIREMENTS:
+${type.toLowerCase().includes('sonnet') ? 
+  '- Follow proper sonnet format: 14 lines with ABAB CDCD EFEF GG rhyme scheme' :
+  type === 'Social Media Post' ? 
+    '- Use social media formatting: hashtags, emojis, bullet points\n- Keep engaging and scannable\n- 150-200 words maximum' :
+    '- Use clear headings (# Main Title, ## Sections)\n- Break content into logical paragraphs - NO long run-on blocks of text\n- Use proper spacing between sections and paragraphs\n- Include bullet points or numbered lists where appropriate\n- Make each paragraph focused on one main topic'}
+
+📋 CONTENT REQUIREMENTS:
+1. Format as a proper ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
 2. Write ONLY about the company mentioned in the knowledge base above
 3. Use specific details, products, services, or information from the knowledge base
 4. DO NOT mention "${tenantInfo.companyName}" - focus on the knowledge base company
 5. Professional tone for ${audience}${additionalContext ? `
 6. Follow these additional requirements: ${additionalContext}` : ''}
 
+📚 Include at the beginning: "This content incorporates specific information from your company knowledge base."
+
 Return only the ${type} content - no extra text.` :
       
       `Create a ${type} about ${topic} for ${audience}.
 
+📋 COMPANY CONTEXT:
 Company: ${tenantInfo.companyName}
 Industry: ${tenantInfo.industry}
 Values: ${tenantInfo.values}
 
-Requirements:
+📝 FORMATTING REQUIREMENTS:
+${type.toLowerCase().includes('sonnet') ? 
+  '- Follow proper sonnet format: 14 lines with ABAB CDCD EFEF GG rhyme scheme' :
+  type === 'Social Media Post' ? 
+    '- Use social media formatting: hashtags, emojis, bullet points\n- Keep engaging and scannable\n- 150-200 words maximum' :
+    '- Use clear headings (# Main Title, ## Sections)\n- Break content into logical paragraphs - NO long run-on blocks of text\n- Use proper spacing between sections and paragraphs\n- Include bullet points or numbered lists where appropriate\n- Make each paragraph focused on one main topic'}
+
+📋 CONTENT REQUIREMENTS:
 - Format as ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
 - Professional tone for ${audience}
 - Reference company context above${additionalContext ? `

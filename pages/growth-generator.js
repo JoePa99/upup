@@ -60,22 +60,23 @@ const GrowthGenerator = () => {
     }));
   };
 
-  const aiAssist = (fieldName) => {
-    const suggestions = {
-      growthConstraints: ['Limited marketing budget', 'Small team capacity', 'Seasonal demand fluctuations', 'Supply chain dependencies', 'Regulatory compliance requirements'],
-      otherGrowthFocus: ['Customer Retention', 'Digital Transformation', 'Sustainability Initiatives', 'Innovation Pipeline', 'Brand Expansion'],
-      otherTimeHorizon: ['Next Month', 'Next 18 Months', 'Next 3-5 Years', 'Next Decade', 'Ongoing']
-    };
-    
-    const fieldSuggestions = suggestions[fieldName] || [];
-    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
-    
-    if (randomSuggestion) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: randomSuggestion
-      }));
-    }
+  const aiAssist = (fieldName, fieldType = 'input') => {
+    setAiPopover({
+      isOpen: true,
+      fieldName,
+      fieldType
+    });
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      [aiPopover.fieldName]: suggestion
+    }));
+  };
+
+  const closeAiPopover = () => {
+    setAiPopover({ isOpen: false, fieldName: '', fieldType: '' });
   };
 
   const generateGrowthOpportunities = async () => {
@@ -256,6 +257,17 @@ const GrowthGenerator = () => {
       <FloatingPinButton 
         onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
         showPinboard={showPinsSidebar}
+      />
+      
+      <AISuggestionsPopover
+        isOpen={aiPopover.isOpen}
+        onClose={closeAiPopover}
+        onSelectSuggestion={handleSuggestionSelect}
+        fieldName={aiPopover.fieldName}
+        fieldType={aiPopover.fieldType}
+        existingFormData={formData}
+        generatorType="growth"
+        triggerRef={aiAssistRefs[aiPopover.fieldName]}
       />
     </Layout>
   );

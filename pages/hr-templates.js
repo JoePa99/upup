@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import PinsSidebar from '../components/PinsSidebar';
 import SentenceDisplay from '../components/SentenceDisplay';
+import FloatingPinButton from '../components/FloatingPinButton';
+import AISuggestionsPopover from '../components/AISuggestionsPopover';
 import { useUsageTracking } from '../hooks/useUsageTracking';
 
 const HRTemplates = () => {
@@ -22,6 +24,14 @@ const HRTemplates = () => {
   const [contentTitle, setContentTitle] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [showPinsSidebar, setShowPinsSidebar] = useState(false);
+  const [aiPopover, setAiPopover] = useState({ isOpen: false, fieldName: '', fieldType: '' });
+  
+  // Refs for AI assist buttons
+  const aiAssistRefs = {
+    field1: useRef(null),
+    field3: useRef(null),
+    otherField2: useRef(null)
+  };
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && !loading && !isAuthenticated) {
@@ -45,22 +55,23 @@ const HRTemplates = () => {
     }));
   };
 
-  const aiAssist = (fieldName) => {
-    const suggestions = {
-      field1: ['Senior Marketing Manager', 'Data Analyst', 'Product Manager', 'Software Engineer', 'UX Designer', 'Sales Director'],
-      field3: ['• Lead strategic initiatives and cross-functional collaboration\n• Develop and execute comprehensive project plans\n• Mentor team members and drive professional development\n• Analyze performance metrics and optimize processes', '• Manage multiple projects simultaneously while maintaining high quality standards\n• Build and maintain relationships with key stakeholders\n• Drive innovation through data-driven insights and user feedback\n• Contribute to company culture and values through leadership and example'],
-      otherField2: ['Design', 'Data Science', 'DevOps', 'Quality Assurance', 'Business Development', 'Legal']
-    };
-    
-    const fieldSuggestions = suggestions[fieldName] || [];
-    const randomSuggestion = fieldSuggestions[Math.floor(Math.random() * fieldSuggestions.length)];
-    
-    if (randomSuggestion) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: randomSuggestion
-      }));
-    }
+  const aiAssist = (fieldName, fieldType = 'input') => {
+    setAiPopover({
+      isOpen: true,
+      fieldName,
+      fieldType
+    });
+  };
+
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      [aiPopover.fieldName]: suggestion
+    }));
+  };
+
+  const closeAiPopover = () => {
+    setAiPopover({ isOpen: false, fieldName: '', fieldType: '' });
   };
 
   const generateHRTemplate = async () => {
@@ -227,6 +238,21 @@ const HRTemplates = () => {
       )}
 
       <PinsSidebar show={showPinsSidebar} onClose={() => setShowPinsSidebar(false)} />
+      <FloatingPinButton 
+        onTogglePinboard={() => setShowPinsSidebar(!showPinsSidebar)}
+        showPinboard={showPinsSidebar}
+      />
+      
+      <AISuggestionsPopover
+        isOpen={aiPopover.isOpen}
+        onClose={closeAiPopover}
+        onSelectSuggestion={handleSuggestionSelect}
+        fieldName={aiPopover.fieldName}
+        fieldType={aiPopover.fieldType}
+        existingFormData={formData}
+        generatorType="hr"
+        triggerRef={aiAssistRefs[aiPopover.fieldName]}
+      />
     </Layout>
   );
 };
