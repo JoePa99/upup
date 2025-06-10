@@ -64,7 +64,7 @@ async function handler(req, res) {
           .select('id', { count: 'exact' })
           .eq('tenant_id', user.tenant_id);
 
-        const settings = {
+        const companyData = {
           company_name: tenant?.name || 'Unknown Company',
           domain: tenant?.domain || '',
           industry: tenant?.industry || '',
@@ -83,7 +83,7 @@ async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          data: settings
+          data: companyData
         });
 
       case 'PUT':
