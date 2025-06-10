@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 // Initialize Supabase client for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let supabaseAdmin = null;
 if (supabaseUrl && supabaseServiceKey) {
@@ -66,12 +66,13 @@ export async function getUserFromRequest(req) {
         console.log('✅ Custom JWT user found:', userData.email);
         return {
           id: userData.id,
-          authUserId: userData.id, // Use same ID for compatibility
-          tenantId: userData.tenant_id,
-          tenantName: userData.tenants.name,
+          auth_user_id: userData.id, // Use same ID for compatibility
+          tenant_id: userData.tenant_id,
+          company_name: userData.tenants.name,
           email: userData.email,
-          firstName: userData.first_name,
-          lastName: userData.last_name,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim(),
           role: userData.role
         };
       }
@@ -120,12 +121,13 @@ export async function getUserFromRequest(req) {
     console.log('✅ Supabase auth user found:', userData.email);
     return {
       id: userData.id,
-      authUserId: user.id,
-      tenantId: userData.tenant_id,
-      tenantName: userData.tenants.name,
+      auth_user_id: user.id,
+      tenant_id: userData.tenant_id,
+      company_name: userData.tenants.name,
       email: userData.email,
-      firstName: userData.first_name,
-      lastName: userData.last_name,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim(),
       role: userData.role
     };
 
