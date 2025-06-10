@@ -145,6 +145,7 @@ async function handler(req, res) {
             email,
             first_name: finalFirstName,
             last_name: finalLastName,
+            password_hash: 'auth_managed', // Placeholder since password is managed by Supabase Auth
             role,
             tenant_id: user.tenant_id
           })
