@@ -74,7 +74,8 @@ export default async function handler(req, res) {
         analysis,
         documentLength: documentText.length,
         source: documentSource,
-        analyzedAt: new Date().toISOString()
+        analyzedAt: new Date().toISOString(),
+        documentText: documentText // Include the actual document text for chat
       }
     });
 
@@ -94,22 +95,35 @@ async function analyzeDocumentWithAI(documentText, documentSource) {
       return generateFallbackAnalysis(documentText, documentSource);
     }
 
-    const prompt = `You are an expert legal analyst. Please provide a comprehensive analysis of the following legal document. Focus on:
+    const prompt = `You are an expert legal analyst. Please provide a comprehensive analysis of the following legal document. 
 
-1. Document Type & Overview
-2. Key Legal Provisions
-3. Risk Assessment (identify potential issues, gaps, or problematic clauses)
-4. Compliance Considerations
-5. Improvement Recommendations
-6. Critical Action Items
+Structure your response using these EXACT headings with proper formatting:
 
-Please structure your analysis professionally and highlight any urgent concerns or recommendations.
+## 📋 DOCUMENT OVERVIEW
+- Document Type: [identify the type]
+- Source: ${documentSource}  
+- Analysis Date: ${new Date().toLocaleDateString()}
+- Status: ✅ Analysis Complete
 
-Document Source: ${documentSource}
+## 🔍 KEY LEGAL PROVISIONS
+[List the main legal provisions and clauses found]
+
+## ⚠️ RISK ASSESSMENT
+[Identify potential legal risks, gaps, or problematic clauses - use bullet points]
+
+## 🛡️ COMPLIANCE CONSIDERATIONS  
+[Note any regulatory or compliance issues]
+
+## 💡 IMPROVEMENT RECOMMENDATIONS
+[Provide specific suggestions for strengthening the document]
+
+## 📋 CRITICAL ACTION ITEMS
+[List urgent items that need immediate attention]
+
 Document Text (first 4000 characters):
 ${documentText.substring(0, 4000)}
 
-Provide a detailed, professional legal analysis:`;
+Use clear headings, bullet points, and emojis as shown above. Be specific and actionable in your recommendations.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -161,45 +175,44 @@ function generateFallbackAnalysis(documentText, documentSource) {
   const hasLiability = /liability|liable|damages|indemnif/i.test(documentText);
   const hasGoverningLaw = /governing law|jurisdiction|court/i.test(documentText);
 
-  return `AI LEGAL DOCUMENT ANALYSIS
+  return `## 📋 DOCUMENT OVERVIEW
+- Document Type: Legal Agreement
+- Source: ${documentSource}
+- Word Count: ${wordCount} words
+- Analysis Date: ${new Date().toLocaleDateString()}
+- Status: ✅ Analysis Complete (Fallback Mode)
 
-DOCUMENT OVERVIEW
-Source: ${documentSource}
-Word Count: ${wordCount} words
-Analysis Date: ${new Date().toLocaleDateString()}
-Review Status: ✅ Complete (Fallback Analysis)
+## 🔍 KEY LEGAL PROVISIONS
+${hasSignature ? '✅' : '⚠️'} **Signature provisions** - ${hasSignature ? 'Present' : 'Not clearly identified'}
+${hasTermination ? '✅' : '⚠️'} **Termination clauses** - ${hasTermination ? 'Present' : 'Not clearly identified'}  
+${hasLiability ? '✅' : '⚠️'} **Liability provisions** - ${hasLiability ? 'Present' : 'Not clearly identified'}
+${hasGoverningLaw ? '✅' : '⚠️'} **Governing law clauses** - ${hasGoverningLaw ? 'Present' : 'Not clearly identified'}
 
-STRUCTURAL ANALYSIS
-${hasSignature ? '✅' : '⚠️'} Signature provisions ${hasSignature ? 'present' : 'not clearly identified'}
-${hasTermination ? '✅' : '⚠️'} Termination clauses ${hasTermination ? 'present' : 'not clearly identified'}  
-${hasLiability ? '✅' : '⚠️'} Liability provisions ${hasLiability ? 'present' : 'not clearly identified'}
-${hasGoverningLaw ? '✅' : '⚠️'} Governing law clauses ${hasGoverningLaw ? 'present' : 'not clearly identified'}
+## ⚠️ RISK ASSESSMENT
+• **Missing Standard Protections** - Verify all essential legal safeguards are included
+• **Unclear Obligations** - Ensure all party responsibilities are clearly defined
+• **Compliance Gaps** - Review against applicable laws and regulations
+• **Enforcement Issues** - Confirm jurisdiction and dispute resolution mechanisms
 
-KEY RECOMMENDATIONS
+## 🛡️ COMPLIANCE CONSIDERATIONS
+• **Legal Review Required** - Have qualified counsel examine all provisions
+• **Regulatory Compliance** - Verify adherence to industry-specific requirements
+• **Data Protection** - Ensure privacy law compliance if handling personal data
+• **Employment Law** - Review any employment-related provisions
 
-🔍 IMMEDIATE REVIEW NEEDED
-• Have qualified legal counsel review all provisions
-• Ensure all parties understand their obligations
-• Verify compliance with applicable laws and regulations
-• Consider adding missing standard legal protections
+## 💡 IMPROVEMENT RECOMMENDATIONS
+• **Add Liability Limitations** - Include comprehensive caps on damages
+• **Force Majeure Clauses** - Cover unforeseen circumstances and disruptions
+• **Clear Termination Process** - Specify procedures and post-termination obligations
+• **Technology Requirements** - Add cybersecurity and data handling standards
+• **Insurance Provisions** - Include appropriate coverage requirements
 
-⚠️ RISK MITIGATION
-• Add comprehensive liability limitations if missing
-• Include force majeure provisions for unforeseen circumstances  
-• Specify dispute resolution procedures
-• Ensure proper governing law and jurisdiction clauses
+## 📋 CRITICAL ACTION ITEMS
+1. **Professional Legal Review** - Engage qualified attorney for comprehensive analysis
+2. **Negotiate Missing Provisions** - Address identified gaps with counterparty
+3. **Clarify Obligations** - Ensure all parties understand their responsibilities
+4. **Plan Regular Reviews** - Schedule periodic contract updates
 
-💡 BEST PRACTICES
-• Consider adding automatic renewal terms with opt-out periods
-• Include technology and data security requirements if applicable
-• Add insurance and indemnification requirements
-• Plan for periodic contract reviews and updates
-
-📋 NEXT STEPS
-1. Professional legal review by qualified attorney
-2. Negotiate any identified gaps or concerns with counterparty
-3. Ensure all parties have clear understanding of obligations
-4. Consider industry-specific compliance requirements
-
-⚠️ IMPORTANT DISCLAIMER: This analysis is provided for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before executing any legal agreement.`;
+---
+⚠️ **IMPORTANT DISCLAIMER**: This analysis is provided for informational purposes only and does not constitute legal advice. Please consult with a qualified attorney before executing any legal agreement.`;
 }

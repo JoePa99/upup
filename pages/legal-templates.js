@@ -157,9 +157,10 @@ IMPORTANT: This template is for informational purposes only and does not constit
       if (result.success) {
         setAiReview(result.data.analysis);
         setAnalyzedDocument({
-          text: documentText || 'Uploaded file content',
+          text: result.data.documentText || documentText,
           source: result.data.source,
-          analyzedAt: result.data.analyzedAt
+          analyzedAt: result.data.analyzedAt,
+          isFile: !!uploadedFile
         });
         setShowPinsSidebar(true);
       } else {
@@ -191,7 +192,7 @@ Please try again or contact support if the issue persists.
         method: 'POST',
         body: JSON.stringify({
           question: currentQuestion,
-          documentText: uploadedFile ? 'File content processed' : documentText,
+          documentText: analyzedDocument.text,
           conversationHistory: chatHistory
         })
       });
@@ -751,6 +752,66 @@ Please try again or contact support if the issue persists.
         .suggestion-btn:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+
+        /* Analysis formatting styles */
+        :global(.analysis-heading) {
+          color: #1e293b;
+          font-size: 18px;
+          font-weight: 700;
+          margin: 24px 0 12px 0;
+          padding: 8px 0;
+          border-bottom: 2px solid #e2e8f0;
+        }
+
+        :global(.analysis-bullet) {
+          display: flex;
+          align-items: flex-start;
+          margin: 8px 0;
+          padding-left: 8px;
+        }
+
+        :global(.bullet-icon) {
+          color: #3b82f6;
+          font-weight: bold;
+          margin-right: 8px;
+          min-width: 16px;
+        }
+
+        :global(.analysis-numbered) {
+          margin: 8px 0;
+          padding-left: 16px;
+          color: #374151;
+        }
+
+        :global(.analysis-text) {
+          margin: 6px 0;
+          color: #374151;
+          line-height: 1.6;
+        }
+
+        :global(.analysis-spacer) {
+          height: 12px;
+        }
+
+        :global(.analysis-divider) {
+          border: none;
+          border-top: 1px solid #d1d5db;
+          margin: 20px 0;
+        }
+
+        /* Override default generated-content styles for better analysis display */
+        :global(.generated-content) {
+          line-height: 1.6;
+        }
+
+        :global(.generated-content h2) {
+          color: #1e293b;
+          font-size: 18px;
+          font-weight: 700;
+          margin: 24px 0 12px 0;
+          padding: 8px 0;
+          border-bottom: 2px solid #e2e8f0;
         }
       `}</style>
     </Layout>

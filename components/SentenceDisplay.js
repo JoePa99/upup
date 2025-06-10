@@ -63,6 +63,13 @@ const SentenceDisplay = ({ content, title, sourceType = 'content' }) => {
   const renderContentWithPinnedHighlights = (text) => {
     const { pinnedSentences } = usePins();
     
+    // Check if this looks like markdown content (for legal analysis)
+    const isMarkdown = text.includes('##') || text.includes('**') || text.includes('- ');
+    
+    if (isMarkdown) {
+      return renderMarkdownContent(text);
+    }
+    
     // If no pins, just return plain text
     if (!pinnedSentences || pinnedSentences.length === 0) {
       return text;
@@ -104,6 +111,80 @@ const SentenceDisplay = ({ content, title, sourceType = 'content' }) => {
     }
     
     return elements.length > 0 ? elements : text;
+  };
+
+  const renderMarkdownContent = (text) => {
+    // Simple markdown rendering for legal analysis
+    const lines = text.split('\n');
+    const elements = [];
+    
+    lines.forEach((line, index) => {
+      if (line.startsWith('## ')) {
+        // Heading
+        elements.push(
+          <h2 key={index} className="analysis-heading">
+            {line.replace('## ', '')}
+          </h2>
+        );
+      } else if (line.startsWith('• **') && line.includes('** - ')) {
+        // Bullet with bold text
+        const parts = line.split('** - ');
+        const boldText = parts[0].replace('• **', '');
+        const regularText = parts[1];
+        elements.push(
+          <div key={index} className="analysis-bullet">
+            <span className="bullet-icon">•</span>
+            <strong>{boldText}</strong> - {regularText}
+          </div>
+        );
+      } else if (line.startsWith('• ') || line.startsWith('- ')) {
+        // Regular bullet point
+        elements.push(
+          <div key={index} className="analysis-bullet">
+            <span className="bullet-icon">•</span>
+            {line.replace(/^[•-] /, '')}
+          </div>
+        );
+      } else if (line.match(/^\d+\./)) {
+        // Numbered list
+        elements.push(
+          <div key={index} className="analysis-numbered">
+            {line}
+          </div>
+        );
+      } else if (line.includes('**') && !line.startsWith('##')) {
+        // Bold text inline
+        const parts = line.split('**');
+        const rendered = [];
+        parts.forEach((part, i) => {
+          if (i % 2 === 1) {
+            rendered.push(<strong key={i}>{part}</strong>);
+          } else {
+            rendered.push(part);
+          }
+        });
+        elements.push(
+          <div key={index} className="analysis-text">
+            {rendered}
+          </div>
+        );
+      } else if (line.trim() === '---') {
+        // Horizontal rule
+        elements.push(<hr key={index} className="analysis-divider" />);
+      } else if (line.trim() !== '') {
+        // Regular text
+        elements.push(
+          <div key={index} className="analysis-text">
+            {line}
+          </div>
+        );
+      } else {
+        // Empty line for spacing
+        elements.push(<div key={index} className="analysis-spacer"></div>);
+      }
+    });
+    
+    return elements;
   };
 
   return (

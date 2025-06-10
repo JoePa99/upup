@@ -40,19 +40,36 @@ async function chatWithDocument(question, documentText, conversationHistory) {
     }
 
     // Prepare conversation context
+    const documentPreview = documentText.substring(0, 3000);
+    const hasActualContent = documentText && documentText.length > 20 && 
+                           !documentText.includes('File content processed') && 
+                           !documentText.includes('FILE_UPLOADED');
+    
+    if (!hasActualContent) {
+      return `I apologize, but I don't have access to the actual document content to answer your question. Please ensure the document was properly uploaded and analyzed before asking questions.
+
+If you uploaded a file, the text extraction may have failed. Try:
+1. Re-uploading the document
+2. Converting to a text file (.txt) and trying again
+3. Copying and pasting the text directly into the text area
+
+💡 Remember: This is AI assistance for informational purposes only. For legal decisions, always consult with a qualified attorney.`;
+    }
+    
     const messages = [
       {
         role: 'system',
         content: `You are a legal expert assistant helping users understand a legal document. 
 
 DOCUMENT CONTENT:
-${documentText.substring(0, 3000)}
+${documentPreview}
 
 Guidelines:
-- Answer questions specifically about this document
-- Provide clear, practical explanations
-- Highlight important legal concepts and risks
-- If the document doesn't contain information to answer the question, say so clearly
+- Answer questions specifically about this document content
+- Provide clear, practical explanations based on what you can see in the document
+- Highlight important legal concepts and risks found in the text
+- If the document doesn't contain specific information to answer the question, clearly state what you cannot find
+- Be specific about clauses, terms, or sections when referencing the document
 - Always include appropriate disclaimers about seeking qualified legal counsel
 - Be concise but thorough in your responses`
       }
