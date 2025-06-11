@@ -5,7 +5,7 @@ async function getCompanyContext(query, req) {
     const { getUserFromRequest } = await import('./auth-helpers.js');
     const user = await getUserFromRequest(req);
     
-    if (!user || !user.tenantId) {
+    if (!user || !user.tenant_id) {
       console.log('No authenticated user found, using fallback context');
       return {
         tenantInfo: {
