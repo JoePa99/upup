@@ -120,14 +120,14 @@ ${type.toLowerCase().includes('sonnet') ?
     `- Use engaging social media formatting with hashtags and emojis where appropriate
 - Keep content scannable with good line breaks
 - 150-200 words maximum` :
-    `- Start with a clear, compelling headline (just regular text, not ###)
-- Use simple headings without markdown symbols like ###, ##, #
-- Write in clear, readable paragraphs with good spacing
-- Use simple bullet points (just - or numbers) when helpful
-- DO NOT use ### or ## or # for headings
-- NO asterisks (*) or excessive formatting symbols
-- Keep paragraphs focused and reasonably short
-- Make the content easy to read and professional looking`}
+    `CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused`}
 
 CONTENT REQUIREMENTS:
 1. Create ${type.toLowerCase().includes('sonnet') ? 'a 14-line sonnet with perfect structure' : type === 'Social Media Post' ? 'engaging 150-200 word social content' : 'comprehensive 400-600 word professional content'}
@@ -138,9 +138,7 @@ CONTENT REQUIREMENTS:
 6. Make the content clear, well-organized, and easy to read${additionalContext ? `
 7. Additional requirements: ${additionalContext}` : ''}
 
-Include at the beginning: "This content incorporates specific information from your company knowledge base."
-
-Return ONLY the beautifully formatted ${type} content - no extra text.` :
+Return ONLY the well-formatted ${type} content - no extra text or meta-commentary.` :
       
       `Create a well-formatted ${type} about ${topic} for ${audience}.
 
@@ -157,14 +155,14 @@ ${type.toLowerCase().includes('sonnet') ?
     `- Use engaging social media formatting with hashtags and emojis where appropriate
 - Keep content scannable with good line breaks
 - 150-200 words maximum` :
-    `- Start with a clear, compelling headline (just regular text, not ###)
-- Use simple headings without markdown symbols like ###, ##, #
-- Write in clear, readable paragraphs with good spacing
-- Use simple bullet points (just - or numbers) when helpful
-- DO NOT use ### or ## or # for headings
-- NO asterisks (*) or excessive formatting symbols
-- Keep paragraphs focused and reasonably short
-- Make the content easy to read and professional looking`}
+    `CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused`}
 
 CONTENT REQUIREMENTS:
 - Create ${type.toLowerCase().includes('sonnet') ? 'a 14-line sonnet with perfect structure' : type === 'Social Media Post' ? 'engaging 150-200 word social content' : 'comprehensive 400-600 word professional content'}

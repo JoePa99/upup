@@ -82,12 +82,14 @@ ${knowledgeSection}
 - Key Requirements: ${requirements || 'Standard sales proposal requirements'}
 
 💼 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered/bulleted sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "Executive Summary", "Our Solution", "Benefits", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points for benefits, features, and key points
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 💼 CONTENT REQUIREMENTS:
 - Base the sales document on the company described in the knowledge base above
@@ -104,22 +106,22 @@ ${knowledgeSection}
 - Use company's unique value propositions and competitive advantages
 
 STRUCTURE EXAMPLE:
-📚 This document incorporates specific information from your company knowledge base.
+This document incorporates specific information from your company knowledge base.
 
-# [PROPOSAL TITLE]
+[PROPOSAL TITLE]
 
-## Executive Summary
+Executive Summary
 [Clear paragraph about the proposal overview]
 
-## Our Solution
+Our Solution
 [Paragraph describing the solution]
 
-## Key Benefits
-• [Benefit 1]
-• [Benefit 2]
-• [Benefit 3]
+Key Benefits
+- [Benefit 1]
+- [Benefit 2]
+- [Benefit 3]
 
-## Next Steps
+Next Steps
 [Clear paragraph with call-to-action]
 
 Format: Return only the sales document content, well-structured with clear headings and professional formatting.` :
@@ -133,12 +135,14 @@ Format: Return only the sales document content, well-structured with clear headi
 - Key Requirements: ${requirements || 'Standard sales proposal requirements'}
 
 💼 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered/bulleted sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "Executive Summary", "Our Solution", "Benefits", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points for benefits, features, and key points
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 💼 CONTENT REQUIREMENTS:
 - Professional business language appropriate for sales communications
@@ -149,20 +153,20 @@ Format: Return only the sales document content, well-structured with clear headi
 - Include specific sections relevant to the template type
 
 STRUCTURE EXAMPLE:
-# [PROPOSAL TITLE]
+[PROPOSAL TITLE]
 
-## Executive Summary
+Executive Summary
 [Clear paragraph about the proposal overview]
 
-## Our Solution
+Our Solution
 [Paragraph describing the solution]
 
-## Key Benefits
-• [Benefit 1]
-• [Benefit 2]
-• [Benefit 3]
+Key Benefits
+- [Benefit 1]
+- [Benefit 2]
+- [Benefit 3]
 
-## Next Steps
+Next Steps
 [Clear paragraph with call-to-action]
 
 Format: Return only the sales document content, well-structured with clear headings and professional formatting.`;

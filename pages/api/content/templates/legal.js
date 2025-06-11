@@ -82,12 +82,14 @@ ${knowledgeSection}
 - Specific Terms: ${specificTerms || 'Standard legal terms'}
 
 ⚖️ FORMATTING REQUIREMENTS:
-- Use clear headings and numbered sections (1., 2., 3., etc.)
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "1. SCOPE OF WORK", "2. PAYMENT TERMS", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points or numbered lists within sections where appropriate
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 ⚖️ CONTENT REQUIREMENTS:
 - Base the legal document on the company described in the knowledge base above
@@ -104,14 +106,14 @@ ${knowledgeSection}
 - Include company-specific considerations based on the knowledge provided
 
 STRUCTURE EXAMPLE:
-📚 This document incorporates specific information from your company knowledge base.
+This document incorporates specific information from your company knowledge base.
 
-# [DOCUMENT TITLE]
+[DOCUMENT TITLE]
 
-## 1. SCOPE OF WORK
+1. SCOPE OF WORK
 [Paragraph about scope]
 
-## 2. PAYMENT TERMS
+2. PAYMENT TERMS
 [Paragraph about payment]
 
 [Continue with proper sections...]
@@ -145,12 +147,12 @@ Format: Return only the legal document content, well-structured with clear secti
 - Length: 600-1000 words
 
 STRUCTURE EXAMPLE:
-# [DOCUMENT TITLE]
+[DOCUMENT TITLE]
 
-## 1. SCOPE OF WORK
+1. SCOPE OF WORK
 [Clear paragraph about scope]
 
-## 2. PAYMENT TERMS
+2. PAYMENT TERMS
 [Clear paragraph about payment]
 
 [Continue with proper sections...]

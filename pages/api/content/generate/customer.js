@@ -85,12 +85,14 @@ ${knowledgeSection}
 ${additionalContext ? `- Additional Requirements: ${additionalContext}` : ''}
 
 📝 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "Executive Summary", "Customer Analysis", "Strategy", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points for recommendations, tactics, and metrics
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 🎯 CONTENT REQUIREMENTS:
 - Professional marketing and business analysis language specific to the knowledge base company
@@ -104,26 +106,26 @@ ${additionalContext ? `- Additional Requirements: ${additionalContext}` : ''}
 - Include specific tactics, implementation steps, and measurable outcomes
 
 STRUCTURE EXAMPLE:
-📚 This strategy incorporates specific information from your company knowledge base.
+This strategy incorporates specific information from your company knowledge base.
 
-# Customer Connection Strategy
+Customer Connection Strategy
 
-## Executive Summary
+Executive Summary
 [Clear paragraph about the strategy overview]
 
-## Customer Analysis
+Customer Analysis
 [Paragraph about target segment analysis]
 
-## Engagement Strategy
-### Key Tactics:
-• [Tactic 1]
-• [Tactic 2]
-• [Tactic 3]
+Engagement Strategy
+Key Tactics:
+- [Tactic 1]
+- [Tactic 2]
+- [Tactic 3]
 
-## Implementation Plan
+Implementation Plan
 [Clear paragraphs with actionable steps]
 
-## Success Metrics
+Success Metrics
 [Measurement approaches]
 
 Format: Return only the customer strategy content, well-structured with clear headings and actionable recommendations.${additionalContextSection}` :
@@ -138,12 +140,14 @@ Format: Return only the customer strategy content, well-structured with clear he
 - Current Challenges: ${currentChallenges || 'General customer relationship challenges'}
 
 📝 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "Executive Summary", "Customer Analysis", "Strategy", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points for recommendations, tactics, and metrics
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 🎯 CONTENT REQUIREMENTS:
 - Professional marketing and business analysis language specific to ${tenantInfo.companyName}
@@ -156,24 +160,24 @@ Format: Return only the customer strategy content, well-structured with clear he
 - Include specific tactics, implementation steps, and measurable outcomes
 
 STRUCTURE EXAMPLE:
-# Customer Connection Strategy
+Customer Connection Strategy
 
-## Executive Summary
+Executive Summary
 [Clear paragraph about the strategy overview]
 
-## Customer Analysis
+Customer Analysis
 [Paragraph about target segment analysis]
 
-## Engagement Strategy
-### Key Tactics:
-• [Tactic 1]
-• [Tactic 2]
-• [Tactic 3]
+Engagement Strategy
+Key Tactics:
+- [Tactic 1]
+- [Tactic 2]
+- [Tactic 3]
 
-## Implementation Plan
+Implementation Plan
 [Clear paragraphs with actionable steps]
 
-## Success Metrics
+Success Metrics
 [Measurement approaches]
 
 Structure should include:

@@ -97,28 +97,30 @@ Requirements:
 - Follow these additional requirements: ${additionalContext}` : ''}
 
 📝 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "Executive Summary", "Analysis", "Strategy", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points for recommendations, tactics, and metrics
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 STRUCTURE EXAMPLE:
-# [DOCUMENT TITLE]
+[DOCUMENT TITLE]
 
-## Executive Summary
+Executive Summary
 [Clear paragraph about the overview]
 
-## Analysis
+Analysis
 [Paragraph about analysis]
 
-## Key Recommendations
-• [Recommendation 1]
-• [Recommendation 2]
-• [Recommendation 3]
+Key Recommendations
+- [Recommendation 1]
+- [Recommendation 2]
+- [Recommendation 3]
 
-## Implementation Plan
+Implementation Plan
 [Clear paragraphs with actionable steps]
 
 Structure the analysis with clear sections covering:
@@ -151,28 +153,30 @@ Requirements:
 - Follow these additional requirements: ${additionalContext}` : ''}
 
 📝 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers like "Executive Summary", "Analysis", "Strategy", etc.
-- Make each paragraph focused on one main topic
-- Use bullet points for recommendations, tactics, and metrics
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 STRUCTURE EXAMPLE:
-# [DOCUMENT TITLE]
+[DOCUMENT TITLE]
 
-## Executive Summary
+Executive Summary
 [Clear paragraph about the overview]
 
-## Analysis
+Analysis
 [Paragraph about analysis]
 
-## Key Recommendations
-• [Recommendation 1]
-• [Recommendation 2]
-• [Recommendation 3]
+Key Recommendations
+- [Recommendation 1]
+- [Recommendation 2]
+- [Recommendation 3]
 
-## Implementation Plan
+Implementation Plan
 [Clear paragraphs with actionable steps]
 
 Structure the analysis with clear sections covering:

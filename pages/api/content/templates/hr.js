@@ -82,12 +82,14 @@ ${knowledgeSection}
 - Key Responsibilities: ${responsibilities || 'Standard job responsibilities'}
 
 📝 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered/bulleted sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers appropriate to the HR document type
-- Make each paragraph focused on one main topic
-- Use bullet points or numbered lists for qualifications, responsibilities, etc.
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 📝 CONTENT REQUIREMENTS:
 - Base the HR document on the company described in the knowledge base above
@@ -107,19 +109,19 @@ Template-specific requirements:
 ${getTemplateSpecificRequirements(templateType)}
 
 STRUCTURE EXAMPLE:
-📚 This document incorporates specific information from your company knowledge base.
+This document incorporates specific information from your company knowledge base.
 
-# [DOCUMENT TITLE]
+[DOCUMENT TITLE]
 
-## Overview
+Overview
 [Clear paragraph about the role/document purpose]
 
-## Key Responsibilities
-• [Responsibility 1]
-• [Responsibility 2]
-• [Responsibility 3]
+Key Responsibilities
+- [Responsibility 1]
+- [Responsibility 2]
+- [Responsibility 3]
 
-## Qualifications
+Qualifications
 [Paragraph about qualifications]
 
 [Continue with appropriate sections...]
@@ -135,12 +137,14 @@ Format: Return only the HR document content, well-structured with clear headings
 - Key Responsibilities: ${responsibilities || 'Standard job responsibilities'}
 
 📝 FORMATTING REQUIREMENTS:
-- Use clear headings and numbered/bulleted sections
-- Break content into logical paragraphs - NO long run-on blocks of text
-- Use proper spacing between sections and paragraphs
-- Include section headers appropriate to the HR document type
-- Make each paragraph focused on one main topic
-- Use bullet points or numbered lists for qualifications, responsibilities, etc.
+CRITICAL: Use PLAIN TEXT formatting only - NO markdown symbols
+- Write headlines as regular text (NOT ###, ##, or #)
+- Use simple paragraphs with line breaks for separation
+- For bullet points use simple dashes (-) or numbers, NOT •
+- NEVER use **, *, ###, ##, # symbols in the content
+- Write everything in plain readable text
+- Separate sections with blank lines only
+- Keep paragraphs short and focused
 
 📝 CONTENT REQUIREMENTS:
 - Professional HR language appropriate for business documents
@@ -155,17 +159,17 @@ Template-specific requirements:
 ${getTemplateSpecificRequirements(templateType)}
 
 STRUCTURE EXAMPLE:
-# [DOCUMENT TITLE]
+[DOCUMENT TITLE]
 
-## Overview
+Overview
 [Clear paragraph about the role/document purpose]
 
-## Key Responsibilities
-• [Responsibility 1]
-• [Responsibility 2]
-• [Responsibility 3]
+Key Responsibilities
+- [Responsibility 1]
+- [Responsibility 2]
+- [Responsibility 3]
 
-## Qualifications
+Qualifications
 [Paragraph about qualifications]
 
 [Continue with appropriate sections...]
