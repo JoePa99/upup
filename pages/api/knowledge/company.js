@@ -163,7 +163,7 @@ export default async function handler(req, res) {
       if (supabaseAdmin) {
         try {
           // Set tenant context for RLS
-          await setTenantContext(user.tenantId, user.id);
+          await setTenantContext(user.tenant_id, user.id);
           
           // Create embeddings for the content
           const embeddings = await createEmbeddings(content);
@@ -173,7 +173,7 @@ export default async function handler(req, res) {
           const { data, error } = await supabaseAdmin
             .from('company_knowledge')
             .insert({
-              tenant_id: user.tenantId,
+              tenant_id: user.tenant_id,
               title,
               content,
               document_type: documentType || 'general',
@@ -191,7 +191,7 @@ export default async function handler(req, res) {
             console.error('Error details:', JSON.stringify(error, null, 2));
             // Log detailed info for debugging
             console.log('Insert details:', {
-              tenant_id: user.tenantId,
+              tenant_id: user.tenant_id,
               user_id: user.id,
               title: title,
               content_length: content ? content.length : 0,
@@ -219,7 +219,7 @@ export default async function handler(req, res) {
           knowledge_level: 'company',
           file_name: fileName,
           file_size_kb: fileSize || (content ? Math.round(content.length / 10) : 0),
-          tenant_id: user.tenantId,
+          tenant_id: user.tenant_id,
           created_by: user.id,
           is_temporary: true,
           created_by_name: 'Demo User'
@@ -274,18 +274,18 @@ export default async function handler(req, res) {
       if (supabaseAdmin) {
         try {
           // Set tenant context for RLS
-          await setTenantContext(user.tenantId, user.id);
+          await setTenantContext(user.tenant_id, user.id);
           
           // Debug: Check both tenant IDs to find the data
-          console.log('Checking for knowledge with tenant_id:', user.tenantId);
+          console.log('Checking for knowledge with tenant_id:', user.tenant_id);
           
           const { data, error } = await supabaseAdmin
             .from('company_knowledge')
             .select('*')
-            .eq('tenant_id', user.tenantId)
+            .eq('tenant_id', user.tenant_id)
             .order('created_at', { ascending: false });
             
-          console.log('Query result for tenant', user.tenantId, ':', data?.length || 0, 'items');
+          console.log('Query result for tenant', user.tenant_id, ':', data?.length || 0, 'items');
           
           // Also check tenant ID 1 to see if data is there from upload
           const { data: dataForTenant1 } = await supabaseAdmin
@@ -317,7 +317,7 @@ export default async function handler(req, res) {
             created_at: '2024-01-15T10:30:00Z',
             created_by_name: 'System Admin',
             size_kb: 2450,
-            tenant_id: user.tenantId,
+            tenant_id: user.tenant_id,
             is_mock: true
           },
           {
@@ -327,7 +327,7 @@ export default async function handler(req, res) {
             created_at: '2024-01-10T14:20:00Z',
             created_by_name: 'System Admin',
             size_kb: 1890,
-            tenant_id: user.tenantId,
+            tenant_id: user.tenant_id,
             is_mock: true
           }
         ];
@@ -342,7 +342,7 @@ export default async function handler(req, res) {
         debug: {
           source: supabaseAdmin ? 'supabase' : 'frontend_only',
           supabase_available: !!supabaseAdmin,
-          user_tenant_id: user.tenantId,
+          user_tenant_id: user.tenant_id,
           note: 'Without Supabase, uploads only persist in frontend session'
         }
       });
@@ -372,13 +372,13 @@ export default async function handler(req, res) {
       if (supabaseAdmin) {
         try {
           // Set tenant context for RLS
-          await setTenantContext(user.tenantId, user.id);
+          await setTenantContext(user.tenant_id, user.id);
           
           const { error } = await supabaseAdmin
             .from('company_knowledge')
             .delete()
             .eq('id', id)
-            .eq('tenant_id', user.tenantId);
+            .eq('tenant_id', user.tenant_id);
 
           if (error) {
             console.error('Supabase delete error:', error);
