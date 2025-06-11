@@ -14,7 +14,13 @@ app = FastAPI(title="UPUP Content Generation Service", version="1.0.0")
 # Configure CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://upup-bn6a.vercel.app"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "https://upup-bn6a.vercel.app",
+        "https://upup.vercel.app",
+        "https://*.vercel.app",
+        "https://yourdomain.com"  # Add your custom domain
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,17 +48,20 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
     try:
         headers = {"Authorization": authorization, "Content-Type": "application/json"}
         
+        # Use environment variable for Next.js API URL, default to production
+        nextjs_url = os.getenv("NEXTJS_API_URL", "https://upup-bn6a.vercel.app")
+        
         async with httpx.AsyncClient() as client:
             # Try to get company knowledge
             company_response = await client.get(
-                "http://localhost:3000/api/knowledge/company", 
+                f"{nextjs_url}/api/knowledge/company", 
                 headers=headers,
                 timeout=10.0
             )
             
             # Try to get platform knowledge
             platform_response = await client.get(
-                "http://localhost:3000/api/super-admin/platform-knowledge",
+                f"{nextjs_url}/api/super-admin/platform-knowledge",
                 headers=headers,
                 timeout=10.0
             )

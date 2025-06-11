@@ -61,7 +61,10 @@ const StreamingContentGenerator = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:8000/content/generate/stream', {
+      // Use environment variable for FastAPI URL, fallback to production
+      const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'https://your-fastapi-service.railway.app';
+      
+      const response = await fetch(`${fastApiUrl}/content/generate/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

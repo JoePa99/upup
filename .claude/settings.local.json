@@ -7,7 +7,8 @@
       "Bash(grep:*)",
       "Bash(mkdir:*)",
       "WebFetch(domain:upup-bn6a.vercel.app)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   },
