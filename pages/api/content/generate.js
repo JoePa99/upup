@@ -102,51 +102,92 @@ async function generateAIContent(topic, type, audience, pins, companyContext, ad
     
     // If we have knowledge base content, make the prompt ONLY about that company
     const prompt = hasKnowledgeBase ? 
-      `Create a ${type} about ${topic} for ${audience}.
+      `Create a stunning, professionally formatted ${type} about ${topic} for ${audience}.
 
 🎯 COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
-📝 FORMATTING REQUIREMENTS:
+🎨 VISUAL FORMATTING REQUIREMENTS - MAKE IT LOOK AMAZING:
 ${type.toLowerCase().includes('sonnet') ? 
-  '- Follow proper sonnet format: 14 lines with ABAB CDCD EFEF GG rhyme scheme' :
+  `- Follow proper sonnet format: 14 lines with ABAB CDCD EFEF GG rhyme scheme
+- Use elegant line spacing and typography` :
   type === 'Social Media Post' ? 
-    '- Use social media formatting: hashtags, emojis, bullet points\n- Keep engaging and scannable\n- 150-200 words maximum' :
-    '- Use clear headings (# Main Title, ## Sections)\n- Break content into logical paragraphs - NO long run-on blocks of text\n- Use proper spacing between sections and paragraphs\n- Include bullet points or numbered lists where appropriate\n- Make each paragraph focused on one main topic'}
+    `- Use engaging social media formatting with emojis, hashtags, and visual elements
+- Create scannable content with strategic line breaks and spacing
+- Include eye-catching bullet points and visual separators
+- Use emojis strategically for visual appeal
+- 150-200 words maximum with perfect visual flow` :
+    `🔥 EXCEPTIONAL FORMATTING STANDARDS:
+- Start with a compelling headline using # for main title
+- Use ## for major sections and ### for subsections  
+- Create visually appealing content with perfect spacing between ALL elements
+- Use strategic bullet points (•) and numbered lists for key information
+- Include visual separators like --- between major sections
+- Bold **important concepts** and *emphasize key points*
+- Use > blockquotes for impactful statements
+- Create short, punchy paragraphs (2-3 sentences max)
+- Leave blank lines between ALL paragraphs and sections
+- Use tables when presenting data or comparisons
+- Include call-to-action boxes or highlights
+- Make it look like premium, magazine-quality content`}
 
-📋 CONTENT REQUIREMENTS:
-1. Format as a proper ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
-2. Write ONLY about the company mentioned in the knowledge base above
-3. Use specific details, products, services, or information from the knowledge base
-4. DO NOT mention "${tenantInfo.companyName}" - focus on the knowledge base company
-5. Professional tone for ${audience}${additionalContext ? `
-6. Follow these additional requirements: ${additionalContext}` : ''}
+📋 CONTENT EXCELLENCE REQUIREMENTS:
+1. Create ${type.toLowerCase().includes('sonnet') ? 'a 14-line sonnet with perfect structure' : type === 'Social Media Post' ? 'engaging 150-200 word social content' : 'comprehensive 400-600 word professional content'}
+2. Write EXCLUSIVELY about the company from the knowledge base
+3. Incorporate specific details, products, services, and insights from knowledge base
+4. DO NOT mention "${tenantInfo.companyName}" - focus entirely on knowledge base company
+5. Use professional, engaging tone perfectly suited for ${audience}
+6. Make every section visually distinct and beautifully formatted${additionalContext ? `
+7. Additional requirements: ${additionalContext}` : ''}
 
-📚 Include at the beginning: "This content incorporates specific information from your company knowledge base."
+✨ VISUAL ENHANCEMENT DIRECTIVE:
+Create content that looks absolutely stunning when rendered - like it belongs in a premium business magazine or professional publication. Every element should be perfectly spaced, visually appealing, and easy to scan.
 
-Return only the ${type} content - no extra text.` :
+🔖 Include at the beginning: "*This content incorporates specific information from your company knowledge base.*"
+
+Return ONLY the beautifully formatted ${type} content - no extra text.` :
       
-      `Create a ${type} about ${topic} for ${audience}.
+      `Create a stunning, professionally formatted ${type} about ${topic} for ${audience}.
 
-📋 COMPANY CONTEXT:
+🏢 COMPANY CONTEXT:
 Company: ${tenantInfo.companyName}
 Industry: ${tenantInfo.industry}
 Values: ${tenantInfo.values}
 
-📝 FORMATTING REQUIREMENTS:
+🎨 VISUAL FORMATTING REQUIREMENTS - MAKE IT LOOK AMAZING:
 ${type.toLowerCase().includes('sonnet') ? 
-  '- Follow proper sonnet format: 14 lines with ABAB CDCD EFEF GG rhyme scheme' :
+  `- Follow proper sonnet format: 14 lines with ABAB CDCD EFEF GG rhyme scheme
+- Use elegant line spacing and typography` :
   type === 'Social Media Post' ? 
-    '- Use social media formatting: hashtags, emojis, bullet points\n- Keep engaging and scannable\n- 150-200 words maximum' :
-    '- Use clear headings (# Main Title, ## Sections)\n- Break content into logical paragraphs - NO long run-on blocks of text\n- Use proper spacing between sections and paragraphs\n- Include bullet points or numbered lists where appropriate\n- Make each paragraph focused on one main topic'}
+    `- Use engaging social media formatting with emojis, hashtags, and visual elements
+- Create scannable content with strategic line breaks and spacing
+- Include eye-catching bullet points and visual separators
+- Use emojis strategically for visual appeal
+- 150-200 words maximum with perfect visual flow` :
+    `🔥 EXCEPTIONAL FORMATTING STANDARDS:
+- Start with a compelling headline using # for main title
+- Use ## for major sections and ### for subsections  
+- Create visually appealing content with perfect spacing between ALL elements
+- Use strategic bullet points (•) and numbered lists for key information
+- Include visual separators like --- between major sections
+- Bold **important concepts** and *emphasize key points*
+- Use > blockquotes for impactful statements
+- Create short, punchy paragraphs (2-3 sentences max)
+- Leave blank lines between ALL paragraphs and sections
+- Use tables when presenting data or comparisons
+- Include call-to-action boxes or highlights
+- Make it look like premium, magazine-quality content`}
 
-📋 CONTENT REQUIREMENTS:
-- Format as ${type} (${type.toLowerCase().includes('sonnet') ? '14 lines in sonnet format' : type === 'Social Media Post' ? '150-200 words' : '300-500 words'})
-- Professional tone for ${audience}
-- Reference company context above${additionalContext ? `
-- Follow these additional requirements: ${additionalContext}` : ''}
+📋 CONTENT EXCELLENCE REQUIREMENTS:
+- Create ${type.toLowerCase().includes('sonnet') ? 'a 14-line sonnet with perfect structure' : type === 'Social Media Post' ? 'engaging 150-200 word social content' : 'comprehensive 400-600 word professional content'}
+- Use professional, engaging tone perfectly suited for ${audience}
+- Reference and incorporate the company context above strategically${additionalContext ? `
+- Additional requirements: ${additionalContext}` : ''}
 
-Return only the ${type} content.`;
+✨ VISUAL ENHANCEMENT DIRECTIVE:
+Create content that looks absolutely stunning when rendered - like it belongs in a premium business magazine or professional publication. Every element should be perfectly spaced, visually appealing, and easy to scan.
+
+Return ONLY the beautifully formatted ${type} content - no extra text.`;
 
     console.log('Making OpenAI API call...');
     console.log('OpenAI API Key available:', !!process.env.OPENAI_API_KEY);
