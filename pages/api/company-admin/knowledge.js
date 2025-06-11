@@ -55,8 +55,8 @@ async function handler(req, res) {
       case 'GET':
         // Get all knowledge for the company admin's tenant
         const { data: knowledge, error: knowledgeError } = await supabase
-          .from('knowledge_base')
-          .select('id, title, filename, category, file_type, file_size, created_at, tenant_id')
+          .from('company_knowledge')
+          .select('id, title, content, document_type, category, created_at, tenant_id')
           .eq('tenant_id', user.tenant_id)
           .order('created_at', { ascending: false });
 
@@ -109,16 +109,13 @@ async function handler(req, res) {
 
             // Insert knowledge record
             const { data: knowledgeRecord, error: insertError } = await supabase
-              .from('knowledge_base')
+              .from('company_knowledge')
               .insert({
                 title: file.originalFilename || 'Untitled Document',
-                filename: file.originalFilename,
-                category,
-                file_type: fileType,
-                file_size: file.size,
                 content: fileContent,
-                tenant_id: user.tenant_id,
-                uploaded_by: user.id
+                document_type: fileType,
+                category,
+                tenant_id: user.tenant_id
               })
               .select()
               .single();
