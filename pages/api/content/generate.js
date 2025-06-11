@@ -24,10 +24,15 @@ export default async function handler(req, res) {
     console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
     console.log('Knowledge context length:', companyContext.companyContext.length);
     console.log('Full knowledge context:', companyContext.companyContext);
+    console.log('Company context object:', JSON.stringify(companyContext, null, 2));
     
     const hasKnowledgeForDebug = companyContext.relevantKnowledge.length > 0;
     console.log('Has knowledge base:', hasKnowledgeForDebug);
     console.log('Full relevant knowledge array:', JSON.stringify(companyContext.relevantKnowledge, null, 2));
+    
+    // Check auth headers
+    console.log('Auth header present:', !!req.headers.authorization);
+    console.log('Request headers origin:', req.headers.origin);
     
     if (!hasKnowledgeForDebug) {
       console.log('🚨 NO KNOWLEDGE BASE CONTENT FOUND! This is why it uses tenant company.');
@@ -115,12 +120,14 @@ ${type.toLowerCase().includes('sonnet') ?
     `- Use engaging social media formatting with hashtags and emojis where appropriate
 - Keep content scannable with good line breaks
 - 150-200 words maximum` :
-    `- Start with a clear, compelling headline
-- Use headings to organize sections (but don't overuse #, ##, ###)
+    `- Start with a clear, compelling headline (just regular text, not ###)
+- Use simple headings without markdown symbols like ###, ##, #
 - Write in clear, readable paragraphs with good spacing
-- Use simple bullet points or numbered lists when helpful
+- Use simple bullet points (just - or numbers) when helpful
+- DO NOT use ### or ## or # for headings
+- NO asterisks (*) or excessive formatting symbols
 - Keep paragraphs focused and reasonably short
-- Make the content easy to read and professional`}
+- Make the content easy to read and professional looking`}
 
 CONTENT REQUIREMENTS:
 1. Create ${type.toLowerCase().includes('sonnet') ? 'a 14-line sonnet with perfect structure' : type === 'Social Media Post' ? 'engaging 150-200 word social content' : 'comprehensive 400-600 word professional content'}
@@ -150,12 +157,14 @@ ${type.toLowerCase().includes('sonnet') ?
     `- Use engaging social media formatting with hashtags and emojis where appropriate
 - Keep content scannable with good line breaks
 - 150-200 words maximum` :
-    `- Start with a clear, compelling headline
-- Use headings to organize sections (but don't overuse #, ##, ###)
+    `- Start with a clear, compelling headline (just regular text, not ###)
+- Use simple headings without markdown symbols like ###, ##, #
 - Write in clear, readable paragraphs with good spacing
-- Use simple bullet points or numbered lists when helpful
+- Use simple bullet points (just - or numbers) when helpful
+- DO NOT use ### or ## or # for headings
+- NO asterisks (*) or excessive formatting symbols
 - Keep paragraphs focused and reasonably short
-- Make the content easy to read and professional`}
+- Make the content easy to read and professional looking`}
 
 CONTENT REQUIREMENTS:
 - Create ${type.toLowerCase().includes('sonnet') ? 'a 14-line sonnet with perfect structure' : type === 'Social Media Post' ? 'engaging 150-200 word social content' : 'comprehensive 400-600 word professional content'}
