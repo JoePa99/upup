@@ -86,45 +86,95 @@ const ContentGenerator = () => {
   const generateContent = async () => {
     setIsLoading(true);
     setShowContent(false);
+    setGeneratedContent(''); // Clear previous content
     
     try {
-      // Import the API helper to get auth headers
-      const { apiRequest } = await import('../utils/api-config');
+      // Get auth token
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Use FastAPI streaming endpoint
+      const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'https://upup-production.up.railway.app';
       
-      const data = await apiRequest('/content/generate', {
+      const response = await fetch(`${fastApiUrl}/generate/stream`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          contentTopic: formData.contentTopic || 'customer retention',
+          topic: formData.contentTopic || 'customer retention',
           contentType: formData.contentType === 'other' ? formData.otherContentType : formData.contentType,
-          contentAudience: formData.contentAudience || 'professional customers',
-          additionalContext: formData.additionalContext
+          audience: formData.contentAudience || 'professional customers',
+          additionalContext: formData.additionalContext || null,
+          pins: [] // No pins for regular content generation
         })
       });
 
-      // data is already parsed JSON from apiRequest helper
-      setGeneratedContent(data.data.content);
-      setContentTitle(data.data.title || `Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
-      setShowContent(true);
-      
-      // Debug: Log knowledge base information
-      if (data.debug) {
-        console.log('=== KNOWLEDGE DEBUG INFO ===');
-        console.log('Knowledge found:', data.debug.knowledgeFound);
-        console.log('Knowledge context length:', data.debug.knowledgeContextLength);
-        console.log('Has knowledge base:', data.debug.hasKnowledgeBase);
-        console.log('Knowledge context:', data.debug.knowledgeContext);
-        console.log('Relevant knowledge:', data.debug.relevantKnowledge);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let hasMetadata = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
         
-        // Show alert with debug info for easy viewing
-        if (!data.debug.hasKnowledgeBase) {
-          alert(`🚨 NO KNOWLEDGE BASE FOUND!\n\nCompany: ${data.debug.tenantInfo?.companyName}\nKnowledge items: ${data.debug.knowledgeFound}\n\nThis is why the content uses generic placeholders instead of specific company information.`);
-        } else {
-          alert(`✅ Knowledge base found!\n\nCompany: ${data.debug.tenantInfo?.companyName}\nKnowledge items: ${data.debug.knowledgeFound}\nContext length: ${data.debug.knowledgeContextLength} characters\n\nCheck browser console for full details.`);
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              switch (data.type) {
+                case 'metadata':
+                  // Show knowledge base status
+                  if (!hasMetadata) {
+                    hasMetadata = true;
+                    const metadata = data.data;
+                    if (metadata.hasKnowledge) {
+                      alert(`✅ Knowledge base found!\n\nKnowledge items: ${metadata.knowledgeItems}\n\nGenerating content with your company-specific information...`);
+                    } else {
+                      alert(`🚨 No specific knowledge found for this topic.\n\nGenerating general content...`);
+                    }
+                  }
+                  break;
+                  
+                case 'content':
+                  // Stream content in real-time
+                  setGeneratedContent(prev => prev + data.data);
+                  if (!showContent) {
+                    setShowContent(true);
+                    setContentTitle(`Strategic Content: ${formData.contentTopic || 'Customer Retention'}`);
+                  }
+                  break;
+                  
+                case 'complete':
+                  setIsLoading(false);
+                  // Track successful content generation
+                  trackContentGenerated('content', 800);
+                  break;
+                  
+                case 'error':
+                  throw new Error(data.data);
+                  
+                default:
+                  console.log('Unknown message type:', data.type);
+              }
+            } catch (parseError) {
+              console.error('Error parsing streaming data:', parseError);
+            }
+          }
         }
       }
-      
-      // Track successful content generation
-      trackContentGenerated('content', 800); // Estimate 800 tokens for content generation
     } catch (error) {
       console.error('Content generation error:', error);
       
