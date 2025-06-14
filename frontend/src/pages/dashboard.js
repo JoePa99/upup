@@ -128,6 +128,12 @@ const Dashboard = () => {
               </button>
             </li>
             <li className="tool-item">
+              <span className="tool-name">🚀 Streaming Content (NEW)</span>
+              <button className="tool-button" onClick={() => navigateToPage('streaming-content')}>
+                Try
+              </button>
+            </li>
+            <li className="tool-item">
               <span className="tool-name">Sales Proposals</span>
               <button className="tool-button" onClick={() => navigateToPage('sales-templates')}>
                 Create
