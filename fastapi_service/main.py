@@ -81,25 +81,29 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
             print(f"🔍 FastAPI: Company data type: {type(company_data)}")
             print(f"🔍 FastAPI: Platform data type: {type(platform_data)}")
             
-            # Safely extract knowledge data - ensure we always get lists
+            # Safely extract knowledge data - handle the actual API response structure
             company_knowledge = []
             platform_knowledge = []
             
             if isinstance(company_data, dict):
-                temp_data = company_data.get("data", [])
-                if isinstance(temp_data, list):
-                    company_knowledge = temp_data
-                else:
-                    print(f"🔍 FastAPI: Warning - company data.data is not a list: {type(temp_data)}")
+                # The API returns: {"success": true, "data": {"knowledge": [...], "total": X}}
+                data_obj = company_data.get("data", {})
+                if isinstance(data_obj, dict):
+                    company_knowledge = data_obj.get("knowledge", [])
+                elif isinstance(data_obj, list):
+                    company_knowledge = data_obj
+                print(f"🔍 FastAPI: Extracted company knowledge: {len(company_knowledge)} items")
             elif isinstance(company_data, list):
                 company_knowledge = company_data
                 
             if isinstance(platform_data, dict):
-                temp_data = platform_data.get("data", [])
-                if isinstance(temp_data, list):
-                    platform_knowledge = temp_data
-                else:
-                    print(f"🔍 FastAPI: Warning - platform data.data is not a list: {type(temp_data)}")
+                # Same structure for platform data
+                data_obj = platform_data.get("data", {})
+                if isinstance(data_obj, dict):
+                    platform_knowledge = data_obj.get("knowledge", [])
+                elif isinstance(data_obj, list):
+                    platform_knowledge = data_obj
+                print(f"🔍 FastAPI: Extracted platform knowledge: {len(platform_knowledge)} items")
             elif isinstance(platform_data, list):
                 platform_knowledge = platform_data
             
