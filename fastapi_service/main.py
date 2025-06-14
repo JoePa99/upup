@@ -191,7 +191,7 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "UPUP FastAPI Content Service"}
 
-@app.post("/content/generate/stream")
+@app.post("/generate/stream")
 async def generate_content_stream(
     request: ContentRequest,
     authorization: str = Depends(get_auth_header)
@@ -256,7 +256,7 @@ async def generate_content_stream(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Content generation failed: {str(e)}")
 
-@app.post("/content/generate")
+@app.post("/generate")
 async def generate_content_non_stream(
     request: ContentRequest,
     authorization: str = Depends(get_auth_header)
