@@ -64,7 +64,7 @@ const StreamingContentGenerator = () => {
       // Use environment variable for FastAPI URL, fallback to production
       const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL || 'https://your-fastapi-service.railway.app';
       
-      const response = await fetch(`${fastApiUrl}/content/generate/stream`, {
+      const response = await fetch(`${fastApiUrl}/generate/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
