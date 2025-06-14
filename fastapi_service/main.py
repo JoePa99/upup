@@ -111,12 +111,22 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
             if isinstance(platform_knowledge, list):
                 combined_knowledge.extend(platform_knowledge)
             
+            print(f"🔍 FastAPI: Total combined knowledge items: {len(combined_knowledge)}")
+            print(f"🔍 FastAPI: Search terms: {search_terms}")
+            
+            # If no exact matches found, use all available knowledge for context
             for item in combined_knowledge:
                 content = item.get("content", "").lower()
                 title = item.get("title", "").lower()
                 
                 if any(term in content or term in title for term in search_terms):
                     all_knowledge.append(item)
+                    print(f"🔍 FastAPI: Found exact match in: {title[:50]}...")
+            
+            # If no exact matches, use all available knowledge (fallback strategy)
+            if len(all_knowledge) == 0 and len(combined_knowledge) > 0:
+                all_knowledge = combined_knowledge[:3]  # Use first 3 items as general context
+                print(f"🔍 FastAPI: No exact matches found, using {len(all_knowledge)} general knowledge items as context")
             
             print(f"🔍 FastAPI: Found {len(all_knowledge)} relevant knowledge items for topic '{topic}'")
             
