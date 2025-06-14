@@ -78,18 +78,40 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
             company_data = company_response.json() if company_response.status_code == 200 else {"data": []}
             platform_data = platform_response.json() if platform_response.status_code == 200 else {"data": []}
             
-            print(f"🔍 FastAPI: Company data items: {len(company_data.get('data', []))}")
-            print(f"🔍 FastAPI: Platform data items: {len(platform_data.get('data', []))}")
+            print(f"🔍 FastAPI: Company data type: {type(company_data)}")
+            print(f"🔍 FastAPI: Platform data type: {type(platform_data)}")
             
-            # Process knowledge data
-            company_knowledge = company_data.get("data", [])
-            platform_knowledge = platform_data.get("data", [])
+            # Safely extract knowledge data
+            company_knowledge = []
+            platform_knowledge = []
+            
+            if isinstance(company_data, dict):
+                company_knowledge = company_data.get("data", [])
+            elif isinstance(company_data, list):
+                company_knowledge = company_data
+                
+            if isinstance(platform_data, dict):
+                platform_knowledge = platform_data.get("data", [])
+            elif isinstance(platform_data, list):
+                platform_knowledge = platform_data
+            
+            print(f"🔍 FastAPI: Company knowledge items: {len(company_knowledge)}")
+            print(f"🔍 FastAPI: Platform knowledge items: {len(platform_knowledge)}")
+            print(f"🔍 FastAPI: Company knowledge type: {type(company_knowledge)}")
+            print(f"🔍 FastAPI: Platform knowledge type: {type(platform_knowledge)}")
             
             # Combine and filter relevant knowledge
             all_knowledge = []
             search_terms = topic.lower().split()
             
-            for item in company_knowledge + platform_knowledge:
+            # Ensure both are lists before combining
+            combined_knowledge = []
+            if isinstance(company_knowledge, list):
+                combined_knowledge.extend(company_knowledge)
+            if isinstance(platform_knowledge, list):
+                combined_knowledge.extend(platform_knowledge)
+            
+            for item in combined_knowledge:
                 content = item.get("content", "").lower()
                 title = item.get("title", "").lower()
                 
