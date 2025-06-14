@@ -136,15 +136,11 @@ const ContentGenerator = () => {
               
               switch (data.type) {
                 case 'metadata':
-                  // Show knowledge base status
+                  // Process metadata silently (no more popup)
                   if (!hasMetadata) {
                     hasMetadata = true;
                     const metadata = data.data;
-                    if (metadata.hasKnowledge) {
-                      alert(`✅ Knowledge base found!\n\nKnowledge items: ${metadata.knowledgeItems}\n\nGenerating content with your company-specific information...`);
-                    } else {
-                      alert(`🚨 No specific knowledge found for this topic.\n\nGenerating general content...`);
-                    }
+                    console.log(`Knowledge base status: ${metadata.hasKnowledge ? `Found ${metadata.knowledgeItems} items` : 'No specific knowledge found'}`);
                   }
                   break;
                   
