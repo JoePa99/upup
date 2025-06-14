@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import openai
+from openai import AsyncOpenAI
 import json
 import asyncio
 import os
@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # Configure OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Pydantic models for request validation
 class ContentRequest(BaseModel):
@@ -206,7 +206,7 @@ async def generate_content_stream(
         prompt = create_content_prompt(request, context)
         
         # Validate OpenAI API key
-        if not openai.api_key:
+        if not client.api_key:
             raise HTTPException(status_code=500, detail="OpenAI API key not configured")
         
         async def content_generator():
@@ -220,7 +220,7 @@ async def generate_content_stream(
                 yield f"data: {json.dumps({'type': 'metadata', 'data': metadata})}\n\n"
                 
                 # Create streaming OpenAI request
-                response = await openai.ChatCompletion.acreate(
+                response = await client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
                         {"role": "user", "content": prompt}
@@ -232,7 +232,7 @@ async def generate_content_stream(
                 
                 # Stream the content as it's generated
                 async for chunk in response:
-                    if chunk.choices[0].delta.get('content'):
+                    if chunk.choices[0].delta.content:
                         content_chunk = chunk.choices[0].delta.content
                         yield f"data: {json.dumps({'type': 'content', 'data': content_chunk})}\n\n"
                 
@@ -271,7 +271,7 @@ async def generate_content_non_stream(
         prompt = create_content_prompt(request, context)
         
         # Generate content with OpenAI
-        response = await openai.ChatCompletion.acreate(
+        response = await client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "user", "content": prompt}

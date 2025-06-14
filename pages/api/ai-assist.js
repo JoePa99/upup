@@ -17,6 +17,13 @@ export default async function handler(req, res) {
     // Get company context for informed suggestions
     const companyContext = await getCompanyContext(fieldName, req);
     
+    console.log('=== AI ASSIST DEBUG ===');
+    console.log('Field name:', fieldName);
+    console.log('Generator type:', generatorType);
+    console.log('Knowledge items found:', companyContext.relevantKnowledge.length);
+    console.log('Knowledge context length:', companyContext.companyContext.length);
+    console.log('Has knowledge base:', companyContext.relevantKnowledge.length > 0);
+    
     // Generate AI suggestions
     const suggestions = await generateAISuggestions(
       fieldName, 
@@ -66,9 +73,10 @@ async function generateAISuggestions(fieldName, fieldType, existingFormData, gen
     const hasKnowledgeBase = relevantKnowledge.length > 0;
     const focusCompany = hasKnowledgeBase ? 'the company from the knowledge base' : tenantInfo.companyName;
     
-    const prompt = `Generate 4-5 specific, actionable suggestions for the "${fieldName}" field in a ${generatorType} generator.
+    const prompt = hasKnowledgeBase ? 
+      `Generate 4-5 specific, actionable suggestions for the "${fieldName}" field in a ${generatorType} generator.
 
-${hasKnowledgeBase ? `FOCUS COMPANY: Use the company described in the knowledge base below (IGNORE "${tenantInfo.companyName}").` : `Company: ${tenantInfo.companyName}`}
+COMPANY KNOWLEDGE BASE - USE THIS INFORMATION:
 ${knowledgeSection}
 
 Current form context:
@@ -79,9 +87,34 @@ Field details:
 - Field type: ${fieldType}
 - Generator type: ${generatorType}
 
+CRITICAL REQUIREMENTS:
+1. Generate suggestions EXCLUSIVELY for the company described in the knowledge base above
+2. Use specific details, products, services, or information from the knowledge base
+3. DO NOT use generic suggestions - be specific to this company
+4. Consider the existing form data when making suggestions
+5. Each suggestion should be concise (1-2 sentences max)
+6. Make suggestions actionable and specific to ${generatorType}
+7. Return ONLY a JSON array of strings, no other text
+
+Format: ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]` :
+      
+      `Generate 4-5 specific, actionable suggestions for the "${fieldName}" field in a ${generatorType} generator.
+
+Company: ${tenantInfo.companyName}
+Industry: ${tenantInfo.industry}
+Values: ${tenantInfo.values}
+
+Current form context:
+${formContext}
+
+Field details:
+- Field name: ${fieldName}
+- Field type: ${fieldType}
+- Generator type: ${generatorType}
+
 Requirements:
-1. Generate 4-5 specific, relevant suggestions for ${focusCompany}
-2. ${hasKnowledgeBase ? 'Base suggestions on the knowledge base company details' : 'Make suggestions relevant to the company context'}
+1. Generate 4-5 specific, relevant suggestions for ${tenantInfo.companyName}
+2. Make suggestions relevant to the company context above
 3. Consider the existing form data when making suggestions
 4. Each suggestion should be concise (1-2 sentences max)
 5. Make suggestions actionable and specific to ${generatorType}
@@ -90,6 +123,8 @@ Requirements:
 Format: ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]`;
 
     console.log('Making OpenAI API call for AI assist...');
+    console.log('Has knowledge base:', hasKnowledgeBase);
+    console.log('Prompt preview:', prompt.substring(0, 200) + '...');
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -105,7 +140,7 @@ Format: ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "sugges
             content: prompt
           }
         ],
-        max_tokens: 400,
+        max_tokens: 600,
         temperature: 0.8,
       }),
     });
