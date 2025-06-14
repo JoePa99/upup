@@ -81,17 +81,25 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
             print(f"🔍 FastAPI: Company data type: {type(company_data)}")
             print(f"🔍 FastAPI: Platform data type: {type(platform_data)}")
             
-            # Safely extract knowledge data
+            # Safely extract knowledge data - ensure we always get lists
             company_knowledge = []
             platform_knowledge = []
             
             if isinstance(company_data, dict):
-                company_knowledge = company_data.get("data", [])
+                temp_data = company_data.get("data", [])
+                if isinstance(temp_data, list):
+                    company_knowledge = temp_data
+                else:
+                    print(f"🔍 FastAPI: Warning - company data.data is not a list: {type(temp_data)}")
             elif isinstance(company_data, list):
                 company_knowledge = company_data
                 
             if isinstance(platform_data, dict):
-                platform_knowledge = platform_data.get("data", [])
+                temp_data = platform_data.get("data", [])
+                if isinstance(temp_data, list):
+                    platform_knowledge = temp_data
+                else:
+                    print(f"🔍 FastAPI: Warning - platform data.data is not a list: {type(temp_data)}")
             elif isinstance(platform_data, list):
                 platform_knowledge = platform_data
             
@@ -99,6 +107,10 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
             print(f"🔍 FastAPI: Platform knowledge items: {len(platform_knowledge)}")
             print(f"🔍 FastAPI: Company knowledge type: {type(company_knowledge)}")
             print(f"🔍 FastAPI: Platform knowledge type: {type(platform_knowledge)}")
+            
+            # Debug: Print first knowledge item structure
+            if len(company_knowledge) > 0:
+                print(f"🔍 FastAPI: First company knowledge item keys: {list(company_knowledge[0].keys()) if isinstance(company_knowledge[0], dict) else 'Not a dict'}")
             
             # Combine and filter relevant knowledge
             all_knowledge = []
