@@ -51,23 +51,33 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
         # Use environment variable for Next.js API URL, default to production
         nextjs_url = os.getenv("NEXTJS_API_URL", "https://upup-bn6a.vercel.app")
         
+        print(f"🔍 FastAPI: Fetching knowledge from {nextjs_url}")
+        print(f"🔍 FastAPI: Auth header: {authorization[:50]}...")
+        
         async with httpx.AsyncClient() as client:
             # Try to get company knowledge
+            print(f"🔍 FastAPI: Calling {nextjs_url}/api/knowledge/company")
             company_response = await client.get(
                 f"{nextjs_url}/api/knowledge/company", 
                 headers=headers,
                 timeout=10.0
             )
+            print(f"🔍 FastAPI: Company response status: {company_response.status_code}")
             
             # Try to get platform knowledge
+            print(f"🔍 FastAPI: Calling {nextjs_url}/api/super-admin/platform-knowledge")
             platform_response = await client.get(
                 f"{nextjs_url}/api/super-admin/platform-knowledge",
                 headers=headers,
                 timeout=10.0
             )
+            print(f"🔍 FastAPI: Platform response status: {platform_response.status_code}")
             
             company_data = company_response.json() if company_response.status_code == 200 else {"data": []}
             platform_data = platform_response.json() if platform_response.status_code == 200 else {"data": []}
+            
+            print(f"🔍 FastAPI: Company data items: {len(company_data.get('data', []))}")
+            print(f"🔍 FastAPI: Platform data items: {len(platform_data.get('data', []))}")
             
             # Process knowledge data
             company_knowledge = company_data.get("data", [])
@@ -83,6 +93,8 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
                 
                 if any(term in content or term in title for term in search_terms):
                     all_knowledge.append(item)
+            
+            print(f"🔍 FastAPI: Found {len(all_knowledge)} relevant knowledge items for topic '{topic}'")
             
             # Create context string
             company_context = ""
