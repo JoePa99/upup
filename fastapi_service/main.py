@@ -49,25 +49,27 @@ async def get_company_context(topic: str, authorization: str) -> KnowledgeContex
         headers = {"Authorization": authorization, "Content-Type": "application/json"}
         
         # Use environment variable for Next.js API URL, default to production
-        nextjs_url = os.getenv("NEXTJS_API_URL", "https://upup-bn6a.vercel.app")
+        nextjs_url = os.getenv("NEXTJS_API_URL", "https://upup-bn6a.vercel.app").rstrip('/')
         
         print(f"🔍 FastAPI: Fetching knowledge from {nextjs_url}")
         print(f"🔍 FastAPI: Auth header: {authorization[:50]}...")
         
         async with httpx.AsyncClient() as client:
             # Try to get company knowledge
-            print(f"🔍 FastAPI: Calling {nextjs_url}/api/knowledge/company")
+            company_url = f"{nextjs_url}/api/knowledge/company"
+            print(f"🔍 FastAPI: Calling {company_url}")
             company_response = await client.get(
-                f"{nextjs_url}/api/knowledge/company", 
+                company_url, 
                 headers=headers,
                 timeout=10.0
             )
             print(f"🔍 FastAPI: Company response status: {company_response.status_code}")
             
             # Try to get platform knowledge
-            print(f"🔍 FastAPI: Calling {nextjs_url}/api/super-admin/platform-knowledge")
+            platform_url = f"{nextjs_url}/api/super-admin/platform-knowledge"
+            print(f"🔍 FastAPI: Calling {platform_url}")
             platform_response = await client.get(
-                f"{nextjs_url}/api/super-admin/platform-knowledge",
+                platform_url,
                 headers=headers,
                 timeout=10.0
             )
