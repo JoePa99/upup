@@ -300,6 +300,24 @@ async def generate_content_non_stream(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Content generation failed: {str(e)}")
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy", 
+        "service": "UPUP FastAPI Content Service",
+        "version": "1.0.0"
+    }
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {
+        "message": "UPUP FastAPI Content Generation Service", 
+        "status": "running",
+        "endpoints": ["/health", "/generate/stream", "/generate"]
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
